@@ -34,7 +34,7 @@ Milestone "Agent fleet operational". The agent fleet is provisioned, Ada answers
   1. After the platform owner sends a small task in Slack, a draft pull request appears on GitHub from branch `agent/ada/<slug>`, authored by `ada-agent-hyprn`, with a description of what changed and how it was verified.
   2. The pull request stays a draft and is not merged by Ada; its commits carry the "Ada (AI agent)" identity.
   3. Two tasks run in two worktrees on the host side by side, each with its own branch, port block, Compose project name and test database name.
-  4. Token versions 1 and 2 of `agent-ada-github-token` are disabled, and `runbooks/agents/github.md` shows the current token's expiry and the next rotation date.
+  4. The former `agent-ada-*` secrets and the earlier tokens are deleted, and `runbooks/agents/github.md` shows the current token's expiry and the next rotation date.
 **Plans**: TBD
 
 ### Phase 3: Acceptance and isolation checks

@@ -6,7 +6,7 @@ Ada works on GitHub through its machine account `ada-agent-hyprn` ([ADR-0004](..
 
 - `ada-agent-hyprn` is a member of `hyprn-labs` with **Write** on each repository it works on (Repository → Settings → Collaborators and teams).
 - Fine-grained token: resource owner `hyprn-labs`; selected repositories; Contents and Pull requests read/write; Metadata read; expiry 90 days or less.
-- Secret `agent-ada-github-token` in `hyprn-agents`, readable by the host identity only.
+- Secret `ada-agent-github-token` in `hyprn-agents`, readable by the host identity only.
 
 ## Rotate the token
 
@@ -14,14 +14,14 @@ Ada works on GitHub through its machine account `ada-agent-hyprn` ([ADR-0004](..
 2. Load it from the clipboard:
 
    ```bash
-   pbpaste | CLOUDSDK_CONFIG="$HOME/.config/gcloud-hyprn" gcloud secrets versions add agent-ada-github-token --project=hyprn-agents --data-file=-
+   pbpaste | CLOUDSDK_CONFIG="$HOME/.config/gcloud-hyprn" gcloud secrets versions add ada-agent-github-token --project=hyprn-agents --data-file=-
    ```
 
 3. Run `agents/host/apply.sh` (reloads secrets, restarts the session).
 4. Delete the old token in GitHub and disable its secret version:
 
    ```bash
-   gcloud secrets versions disable <n> --secret=agent-ada-github-token --project=hyprn-agents
+   gcloud secrets versions disable <n> --secret=ada-agent-github-token --project=hyprn-agents
    ```
 
 ## Record

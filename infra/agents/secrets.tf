@@ -98,3 +98,67 @@ resource "google_secret_manager_secret_iam_member" "host_github" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.host.email}"
 }
+
+# Per-agent secrets named <name>-agent-<purpose> (conventions/README.md).
+# The agent-<name>-<purpose> resources above are removed once these hold the values.
+locals {
+  agent_slack_secrets = {
+    for pair in setproduct(var.agents, ["slack-app-token", "slack-bot-token"]) :
+    "${pair[0]}-agent-${pair[1]}" => pair[0]
+  }
+}
+
+resource "google_secret_manager_secret" "agent_slack" {
+  for_each  = local.agent_slack_secrets
+  secret_id = each.key
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  labels = {
+    component  = "agents"
+    agent      = each.value
+    managed_by = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "agent_slack" {
+  for_each = {
+    for pair in setproduct(keys(local.agent_slack_secrets), ["host", "wake"]) :
+    "${pair[0]}-${pair[1]}" => { secret = pair[0], reader = pair[1] }
+  }
+  secret_id = google_secret_manager_secret.agent_slack[each.value.secret].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${each.value.reader == "host" ? google_service_account.host.email : google_service_account.wake.email}"
+}
+
+resource "google_secret_manager_secret" "agent_github_token" {
+  for_each  = toset(var.agents)
+  secret_id = "${each.key}-agent-github-token"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  labels = {
+    component  = "agents"
+    agent      = each.key
+    managed_by = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "agent_github_token" {
+  for_each  = google_secret_manager_secret.agent_github_token
+  secret_id = each.value.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.host.email}"
+}

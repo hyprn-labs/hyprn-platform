@@ -10,5 +10,5 @@ Agent personas (for example Ada) appear in per-agent identities only, never in c
 | Display name (Claude, Slack, GitHub, Git) | `<Name> (AI agent)` | Ada (AI agent) |
 | GitHub machine account | `<name>-agent-hyprn` | `ada-agent-hyprn` |
 | Linux user on the agent host | `<name>` | `ada` |
-| Secrets | `agent-<name>-<purpose>` | `agent-ada-github-token` |
+| Secrets | `<name>-agent-<purpose>` | `ada-agent-github-token` |
 | Git branches | `agent/<name>/<slug>` | `agent/ada/fix-readme` |

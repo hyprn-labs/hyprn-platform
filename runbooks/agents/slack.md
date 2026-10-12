@@ -14,8 +14,8 @@ Each agent has its own Slack app, reached over Socket Mode by the channel plugin
 Copy each value to the clipboard from the password manager, then load it; the value never appears on screen or in shell history.
 
 ```bash
-pbpaste | gcloud secrets versions add agent-ada-slack-app-token --project=hyprn-agents --data-file=-
-pbpaste | gcloud secrets versions add agent-ada-slack-bot-token --project=hyprn-agents --data-file=-
+pbpaste | gcloud secrets versions add ada-agent-slack-app-token --project=hyprn-agents --data-file=-
+pbpaste | gcloud secrets versions add ada-agent-slack-bot-token --project=hyprn-agents --data-file=-
 ```
 
 The allowlist is a JSON list of Slack member IDs (`U…`). With a profile link (Slack profile → ⋯ → Copy link to profile) on the clipboard:
@@ -62,3 +62,4 @@ Test: a direct message to the agent gets :eyes: and an answer; in a channel the 
 | 2026-10-12 | Acceptance (D5, partial) | Direct message to Ada answered; @mention in a private channel answered after Ada was invited. Channels stay mention-only. Pending: permission relay in Slack, rejection of other senders, wake from a stopped host. |
 | 2026-10-12 | Wake test 1 | Host stopped; wake service listening. Owner's direct message at 20:18:55 got the "waking" reply, host booted 20:19:14, session 20:19:19, but the message was not answered: the catch-up after start delivered nothing and left no trace (Claude Code replaced the first server instance a few seconds after start). Fix (plugin 0.1.1): catch-up repeated at 5, 30 and 90 s (delivered messages are skipped) and the server logs to `~/.local/state/hyprn-slack/server.log` (timestamps only, no message content). After deployment the missed message was delivered. |
 | 2026-10-12 | Wake test 2 | Host stopped; owner's direct message woke it: start requested 20:55:07, boot 20:55:24, message delivered to Ada 20:55:57 (50 s) and answered without asking again. |
+| 2026-10-13 | Secret names | Per-agent secrets renamed to `<name>-agent-<purpose>`: new secrets created (8 added), latest values copied without printing and verified identical, host loader and wake service switched. Host: 18 checks pass, tokens loaded, Slack reconnected; wake service active with no restarts. Former `agent-ada-*` secrets kept until deletion. |

@@ -30,7 +30,7 @@ The platform owner gives Ada a task in Slack and receives a reviewable draft pul
 - Ada signed in with a Claude Team seat; role instructions in `agents/roles/`.
 - Slack control: own channel server in `agents/marketplace/plugins/slack/`, plugin `slack@hyprn-agents` installed from the root-owned local marketplace, secrets in Secret Manager, sender allowlist, organization settings `channelsEnabled`, `allowedChannelPlugins` and `disableBypassPermissionsMode` set.
 - Wake from Slack verified: a message to a stopped host reaches Ada 50 s after the start request.
-- GitHub access (ADR-0004): machine account `ada-agent-hyprn` with a fine-grained token (Contents and Pull requests read/write), Write on `hyprn-platform` and `hyprn-mvp`, token in Secret Manager as `agent-ada-github-token` loaded to tmpfs, Git identity "Ada (AI agent)". Repository published to GitHub as `hyprn-labs/hyprn-platform` (private).
+- GitHub access (ADR-0004): machine account `ada-agent-hyprn` with a fine-grained token (Contents and Pull requests read/write), Write on `hyprn-platform` and `hyprn-mvp`, token in Secret Manager as `ada-agent-github-token` loaded to tmpfs, Git identity "Ada (AI agent)". Repository published to GitHub as `hyprn-labs/hyprn-platform` (private).
 
 ### Active
 
@@ -98,7 +98,7 @@ Decisions below are locked. Do not plan work that reverses them.
 
 - Ada uses the machine account `ada-agent-hyprn` (display name "Ada (AI agent)"), a member of `hyprn-labs` with Write on `hyprn-platform` and `hyprn-mvp`.
 - Fine-grained token: resource owner `hyprn-labs`, selected repositories only, Contents and Pull requests read/write, Metadata read, no Workflows, Administration or Secrets, expiry 90 days or less.
-- Token lives in the password manager and in Secret Manager as `agent-ada-github-token`, readable by the host identity only; the root loader writes it to tmpfs for `ada` only. Git identity "Ada (AI agent)" with the account's no-reply address.
+- Token lives in the password manager and in Secret Manager as `ada-agent-github-token`, readable by the host identity only; the root loader writes it to tmpfs for `ada` only. Git identity "Ada (AI agent)" with the account's no-reply address.
 - Agents never merge or deploy. Until the organization's plan enforces a ruleset on `main`, Claude Code permission rules deny merging and pushing to `main`. Replacing the machine account with the GitHub App changes only the secret and the credential helper.
 
 ### ADR-0003: Our own Slack channel server for agents (supersedes the plugin choice in ADR-0001 section 6)
