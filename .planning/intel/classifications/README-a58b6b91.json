@@ -1,0 +1,13 @@
+{
+  "source_path": "agents/marketplace/README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "agents/marketplace",
+  "summary": "Audit record and design notes for the hyprn-agents Claude Code plugin marketplace, covering the Slack channel plugin and rejected community candidates.",
+  "scope": ["hyprn-agents plugin marketplace", "Slack channel plugin", "plugins/slack/server.py", "Socket Mode", "sender allowlist", "agent host install path /opt/hyprn-agents/marketplace", "Reef-Digital/claude-code-slack", "Muneshige1567/claude-channel-slack"],
+  "cross_refs": ["../../docs/adr/0001-agent-fleet.md", "plugins/slack/", "plugins/slack/server.py"],
+  "locked": false,
+  "precedence": null,
+  "notes": "Type set by MANIFEST_TYPE (DOC); manifest_override is true. The content is an audit record that includes a decision (own Slack server at plugins/slack/server.py) and requirements taken from ADR-0001 section 6. These are present for the synthesizer, but the manifest type DOC was kept as authoritative. Output filename is README-agents-marketplace-nohash.json rather than README-<sha8>.json: no shell or hashing tool was available to compute the SHA-256 of the source path, and README-nohash.json already holds the sibling classification for hyprn-platform/README.md, so this name was chosen to avoid overwriting it. Rename to README-<first 8 hex of sha256('agents/marketplace/README.md')>.json once the hash is available."
+}

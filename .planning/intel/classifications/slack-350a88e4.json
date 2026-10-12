@@ -1,0 +1,13 @@
+{
+  "source_path": "runbooks/agents/slack.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Runbook: Slack control of agents",
+  "summary": "Runbook for connecting Slack to hyprn agents: per-agent Slack app setup, secret loading, Claude organization settings, provisioning, wake testing, and a status record.",
+  "scope": ["Slack app configuration", "Slack app-level and bot tokens", "Google Secret Manager secrets in hyprn-agents project", "Claude organization settings", "agents host provisioning", "wake service", "slack@hyprn-agents plugin", "agent Ada"],
+  "cross_refs": ["../../docs/plans/agent-fleet.md", "../../agents/marketplace/README.md", "../../agents/wake/README.md", "../../agents/marketplace/plugins/slack/slack-app-manifest.yaml"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

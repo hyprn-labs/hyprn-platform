@@ -1,6 +1,6 @@
 # Runbook: agent host
 
-Plan part B ([plan](../../docs/plans/agent-fleet.md)); infrastructure in [`infra/agents/`](../../infra/agents/README.md), on-demand operation in [ADR-0002](../../docs/adr/0002-agent-host-on-demand.md).
+The agent host `hyprn-agents-host-01` runs on demand ([ADR-0002](../../docs/adr/0002-agent-host-on-demand.md)): the wake service starts it from Slack and it powers off after 30 idle minutes. Infrastructure: [`infra/agents/`](../../infra/agents/README.md); provisioning: [`agents/host/`](../../agents/host/README.md).
 
 ## Access
 
@@ -10,7 +10,15 @@ gcloud compute ssh hyprn-agents-host-01 --zone=europe-west1-b --project=hyprn-ag
 gcloud compute instances stop hyprn-agents-host-01 --zone=europe-west1-b --project=hyprn-agents
 ```
 
-The first `gcloud compute ssh` creates a local key pair and registers its public key in the operator's OS Login profile. Administrators log in as their OS Login user and become an agent user with `sudo -iu <agent>`.
+The first `gcloud compute ssh` creates a key pair and registers its public key in the administrator's OS Login profile. Administrators log in as their OS Login user and act as an agent with `sudo -iu <agent>`; an open SSH session keeps the host on.
+
+## Provision
+
+```bash
+agents/host/apply.sh
+```
+
+It reloads secrets, restarts agent sessions (each resumes its conversation) and ends with the host checks.
 
 ## Record
 

@@ -1,14 +1,16 @@
 # agents
 
-The agent fleet: background coding agents that take tasks, open draft pull requests and are steered from Slack. Decision: [ADR-0001](../docs/adr/0001-agent-fleet.md); tasks: [plan](../docs/plans/agent-fleet.md). No secrets, tokens, keys or session data here; they live in the password manager and the `hyprn-agents` secret store.
+The agent fleet ([ADR-0001](../docs/adr/0001-agent-fleet.md)): background coding agents that take tasks in Slack, work in their own worktrees and open draft pull requests that humans review and merge.
 
-| Agent | Role | Claude seat | Slack app | GitHub App | Linux user |
+| Agent | Role | Claude seat | Slack app | GitHub account | Linux user |
 |---|---|---|---|---|---|
-| Ada | Coding agent | Team Standard | Ada (AI agent) | `hyprn-ada` (after publication) | `ada` |
+| Ada | Coding agent | Team Standard | Ada (AI agent) | `hyprn-ada` | `ada` |
 
-- `roles/` — role instructions per agent.
-- `policy/` — reviewed copy of the organization-wide Claude Code policy.
-- `marketplace/` — our plugin marketplace with the audited Slack channel plugin.
-- `host/` — agent host provisioning.
-- `wake/` — wake service that starts the stopped host from Slack.
-- `measurement/` — usage and cost measurement.
+| Folder | Contents |
+|---|---|
+| [`roles/`](roles/README.md) | Role instructions per agent |
+| [`policy/`](policy/README.md) | Reviewed copy of the organization-wide Claude Code policy |
+| [`marketplace/`](marketplace/README.md) | Plugin marketplace `hyprn-agents` with the Slack channel plugin |
+| [`host/`](host/README.md) | Agent host provisioning |
+| [`wake/`](wake/README.md) | Wake service that starts the stopped host from Slack |
+| [`measurement/`](measurement/README.md) | Usage and cost measurement |

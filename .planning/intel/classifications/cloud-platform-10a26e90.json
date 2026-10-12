@@ -1,0 +1,42 @@
+{
+  "source_path": "docs/specs/cloud-platform.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Cloud platform specification",
+  "summary": "Specifies how the HYPRN MVP cloud edition is hosted, delivered and operated on Google Cloud: infrastructure, identities, delivery, runtime lifecycle, recovery, observability, security and cost.",
+  "scope": [
+    "Google Cloud",
+    "staging and prod environments",
+    "Google Cloud projects per environment",
+    "host VM and persistent data disk",
+    "Terraform",
+    "GitHub Actions and Workload Identity Federation",
+    "Secret Manager",
+    "Artifact Registry",
+    "Cloud Storage buckets",
+    "Cloud SQL for PostgreSQL",
+    "Docker Compose",
+    "edge proxy (Caddy)",
+    "host reconciler and systemd units",
+    "app component",
+    "modeling component",
+    "execution component",
+    "worker component",
+    "managed-agent bridge",
+    "sign-in service (Keycloak, proposed)",
+    "VPC network and firewall rules",
+    "IAP and OS Login",
+    "release descriptor",
+    "desired-state manifest",
+    "backup and restore",
+    "observability and alerting",
+    "cost guardrails"
+  ],
+  "cross_refs": [
+    "docs/legal/licensing.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,6 +1,6 @@
 # Cloud platform specification
 
-Status: current specification. Nothing here is provisioned yet, and this document authorizes no cloud account, deployment, publication or pilot opening.
+Status: current specification. In service: the organization baseline and the agent fleet (`bootstrap/`, `infra/agents/`). Staging, prod and the delivery pipeline follow this document.
 
 It specifies how the HYPRN MVP cloud edition is hosted, delivered and operated on Google Cloud: infrastructure, identities, delivery, runtime lifecycle, recovery, observability, security and cost. Product behavior (scientific semantics, API, agent tools, UI) is specified in the product repository and appears here only where the platform must preserve it.
 
@@ -35,8 +35,8 @@ Non-goals: Kubernetes, Argo CD, Cloud Run, service mesh, message broker, develop
 | Environment | Where | Purpose | Data |
 |---|---|---|---|
 | `local` | Developer machine, local edition | Development and owner testing | Never copied to the cloud |
-| `staging` | Project `hyprn-staging-<suffix>` | Qualification of exactly the release later promoted | Synthetic only, engineering access |
-| `prod` | Project `hyprn-prod-<suffix>` | Invited pilot, then the hosted product | Pilot and customer data |
+| `staging` | Project `hyprn-staging` | Qualification of exactly the release later promoted | Synthetic only, engineering access |
+| `prod` | Project `hyprn-prod` | Invited pilot, then the hosted product | Pilot and customer data |
 
 Staging and prod never share a project, host, disk, database, bucket, secret, service account, Terraform state or scientific identity. Projects are the Google Cloud unit for services, billing and permissions ([resource hierarchy](https://docs.cloud.google.com/resource-manager/docs/cloud-platform-resource-hierarchy)), so "staging cannot touch prod" becomes an IAM property, testable with negative checks. Each environment has its own Terraform root and state bucket; Terraform workspaces are not an access boundary. Production data is never restored into staging; restore drills use a temporary isolated host (section 9.6).
 
@@ -83,7 +83,7 @@ The descriptor digest plus target identifies the release. Deployment input is al
 - Company namespace `hyprn` for platform resources; each hosted product keeps its own product codename (`hyprn-mvp` for the first product); environments `local`, `staging`, `prod` only; components and roles as above. Never an architecture style, a person or a partner in durable identities.
 - Physical names `hyprn-<env>-<role>[-<instance>]` (for example `hyprn-prod-host-01`, `hyprn-staging-backup`); purpose-named service accounts (`hyprn-prod-runtime`, `hyprn-prod-terraform`); secret alias `modeling-auth` maps to `hyprn-<env>-modeling-auth` at a pinned version.
 - Labels `product`, `environment`, `component`, `owner`, `managed_by`.
-- Helpers validate each resource type's name rules. Globally unique project and bucket suffixes are explicit bindings. Names never grant authority, encode tenancy or contain personal data. Renames use a state move or import, never an accidental replace.
+- Helpers validate each resource type's name rules. Project and bucket IDs are global: plain names first, a random suffix only when a name is taken, recorded as an explicit binding. Names never grant authority, encode tenancy or contain personal data. Renames use a state move or import, never an accidental replace.
 - The product name is HYPRN MVP in prose; product technical identifiers use `hyprn-mvp` and the `HYPRN_MVP_` environment prefix.
 
 ## 5. Infrastructure layout
@@ -415,7 +415,7 @@ The first hosted release is an invited pilot whose envelope is measured, not inh
 | # | Question | Default |
 |---|---|---|
 | Q1 | Region and residency | `europe-west1` / `europe-west1-b` for both environments |
-| Q2 | Billing, organization, project suffixes | Company organization with a `hyprn` folder; `hyprn-staging-<suffix>`, `hyprn-prod-<suffix>` |
+| Q2 | Billing, organization, project names | Organization `hyprn.ai` and the company billing account exist; one folder per environment; projects `hyprn-staging`, `hyprn-prod` (suffix only if taken) |
 | Q3 | Application PostgreSQL hosting | Cloud SQL, zonal, private IP, PITR on, logical dump in the coordinated set; alternative: PostgreSQL container on the data disk |
 | Q4 | Sign-in service | Keycloak on the environment host from the identity milestone; alternative: a managed identity product |
 | Q5 | Edge arrangement | Direct Caddy edge with static IP; alternative: a provider-operated tunnel. Qualify one, never both |

@@ -74,12 +74,16 @@ Machine size and always-on operation superseded by [ADR-0002](0002-agent-host-on
 
 ### 5. GitHub
 
+Interim: agents use a GitHub machine account with a fine-grained token until the App exists ([ADR-0004](0004-agent-github-machine-account.md)).
+
 - GitHub Team plan: draft pull requests, protected branches and enforced code owners on private repositories need it.
 - Each agent App has Contents read/write, Pull requests read/write and Metadata read; no Workflows and no Administration permission; installed on selected repositories only. Its private key is held in the password manager and Secret Manager; the host mints one-hour installation tokens.
 - Contents write also allows merging, so a ruleset on `main` is the control: pull request required, approval from code owners that are human teams only, stale approvals dismissed, no force push, no bypass for any App. Signed commits are not required for now.
 - Agents can open pull requests only once the repositories they work on exist on GitHub.
 
 ### 6. Slack control
+
+Plugin choice superseded by [ADR-0003](0003-own-slack-channel-server.md): our own channel server.
 
 - Each agent runs one persistent Claude Code session with a Slack channel plugin (Claude Code channels, research preview).
 - The Team Owner enables channels and sets the Claude Code policy once, organization-wide, in the admin console: `channelsEnabled`, `allowedChannelPlugins` (our marketplace and plugin), `strictKnownMarketplaces` and `disableBypassPermissionsMode`. A reviewed copy lives in [`agents/policy/`](../../agents/policy/README.md).
@@ -145,4 +149,4 @@ Vendor capabilities checked against official documentation on 2026-10-12:
 | Default service accounts may get Editor unless the organization policy prevents it | Checked | [Service account types](https://docs.cloud.google.com/iam/docs/service-account-types) |
 | Slack Socket Mode needs no public URL; Slack Free allows 10 apps | Checked | [Socket Mode](https://docs.slack.dev/apis/events-api/using-socket-mode), [Free plan limits](https://slack.com/help/articles/27204752526611-Feature-limitations-on-the-free-version-of-Slack) |
 
-The ordered tasks are in [`docs/plans/agent-fleet.md`](../plans/agent-fleet.md).
+The ordered tasks are in the planning directory, [`.planning/milestones/agent-fleet-foundation/PLAN.md`](../../.planning/milestones/agent-fleet-foundation/PLAN.md).

@@ -1,3 +1,3 @@
 # catalog
 
-Inventory of environments, components and their owners.
+Inventory of environments, components, agents and their owners.

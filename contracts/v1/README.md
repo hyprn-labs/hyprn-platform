@@ -1,3 +1,3 @@
 # contracts/v1
 
-The fixed deployment schema set (workload, runtime, desired state) and fixtures, pinned by exact commit and file hashes when used in product CI. No separate schema publishing service.
+The deployment schema set — workload, runtime binding and desired state — with golden and negative fixtures. Product CI pins it by platform commit and file hashes ([specification](../../docs/specs/cloud-platform.md) section 4.2).
