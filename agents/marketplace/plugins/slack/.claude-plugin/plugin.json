@@ -1,0 +1,5 @@
+{
+  "name": "slack",
+  "description": "Slack channel for hyprn agents: Socket Mode (outbound only), messages only from allowlisted Slack users, permission relay to the same users.",
+  "version": "0.1.1"
+}

@@ -1,0 +1,18 @@
+[Unit]
+Description=hyprn agents: Claude Code session for %i
+After=network-online.target hyprn-agents-egress.service hyprn-agent-secrets@%i.service user@.service
+Wants=network-online.target hyprn-agent-secrets@%i.service
+Requires=hyprn-agents-egress.service
+
+[Service]
+Type=forking
+User=%i
+Group=%i
+WorkingDirectory=~
+ExecStart=/usr/bin/tmux new-session -d -s agent /usr/local/libexec/hyprn-agent-session
+ExecStop=/usr/bin/tmux kill-session -t agent
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=hyprn agents: block metadata server for agent users
+After=nftables.service
+Before=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/nft -f /etc/hyprn-agents/egress.nft
+ExecStop=/usr/sbin/nft delete table inet hyprn_agents
+
+[Install]
+WantedBy=multi-user.target

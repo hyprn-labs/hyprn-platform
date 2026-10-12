@@ -1,0 +1,15 @@
+# Agent users (UIDs 20000-20999) and their rootless containers cannot reach the
+# metadata server, so they cannot use the VM identity (ADR-0001 section 4).
+# The same address is the VPC DNS resolver; DNS (port 53) stays allowed.
+table inet hyprn_agents
+delete table inet hyprn_agents
+
+table inet hyprn_agents {
+  chain output {
+    type filter hook output priority filter; policy accept;
+    meta skuid 20000-20999 ip daddr 169.254.169.254 udp dport 53 accept
+    meta skuid 20000-20999 ip daddr 169.254.169.254 tcp dport 53 accept
+    meta skuid 20000-20999 ip daddr 169.254.169.254 counter reject
+    meta skuid 20000-20999 ip6 daddr fd20:ce::254 counter reject
+  }
+}

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Powers off the host after IDLE_MINUTES without agent activity or an SSH
+# session (ADR-0002). The disk is kept; the wake service starts the host again.
+set -euo pipefail
+IDLE_MINUTES="${IDLE_MINUTES:-30}"
+
+up=$(cut -d. -f1 /proc/uptime)
+[ "$up" -ge $((IDLE_MINUTES * 60)) ] || exit 0          # grace period after boot
+[ -e /run/hyprn-agents/hold ] && exit 0                 # manual hold
+ss -Htn state established '( sport = :22 )' | grep -q . && exit 0   # SSH, incl. IAP
+awk '{ exit !($2 > 0.5) }' /proc/loadavg && exit 0       # builds or tests running
+# Agent conversation activity (transcript files written by Claude Code).
+find /home -mindepth 5 -maxdepth 7 -path '*/.claude/projects/*' -name '*.jsonl' \
+  -mmin -"$IDLE_MINUTES" -print -quit 2>/dev/null | grep -q . && exit 0
+
+logger -t hyprn-idle-stop "idle for ${IDLE_MINUTES} minutes; powering off"
+systemctl poweroff

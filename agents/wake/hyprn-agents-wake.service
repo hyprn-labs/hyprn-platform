@@ -1,0 +1,18 @@
+[Unit]
+Description=hyprn agents: wake the agent host from Slack
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=hyprn-wake
+Group=hyprn-wake
+ExecStart=/usr/bin/python3 -I /opt/hyprn-agents/wake/wake.py
+Restart=always
+RestartSec=15
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

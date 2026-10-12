@@ -1,0 +1,2 @@
+# name  uid    display name (one line per agent; UIDs 20000-20999 are agent users)
+ada     20001  Ada (AI agent)

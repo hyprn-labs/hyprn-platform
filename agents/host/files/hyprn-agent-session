@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Long-lived Claude Code session for one agent, run inside tmux by
+# hyprn-agent@<name>.service. Resumes the previous conversation after a boot.
+set -uo pipefail
+. /etc/profile.d/hyprn-agents.sh
+export DISABLE_AUTOUPDATER=1
+# Channel servers must use the pre-2026 MCP handshake (channels reference).
+export MCP_PROTOCOL_NEGOTIATION=legacy
+cd "$HOME/work"
+
+ARGS=()
+ARGS_FILE="/etc/hyprn-agents/agents/$(id -un).args"
+[ -s "$ARGS_FILE" ] && read -r -a ARGS < "$ARGS_FILE"
+PROJECT_DIR="$HOME/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')"
+
+while true; do
+  if compgen -G "$PROJECT_DIR/*.jsonl" >/dev/null; then
+    claude --continue "${ARGS[@]}"
+  else
+    claude "${ARGS[@]}"
+  fi
+  sleep 10
+done

@@ -1,0 +1,6 @@
+[Unit]
+Description=hyprn agents: power off when idle
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/hyprn-idle-stop

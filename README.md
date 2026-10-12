@@ -4,11 +4,12 @@ The company's cloud platform, able to host HYPRN MVP and later products: Terrafo
 
 Ownership: the product owns scientific and API contracts, data schema migrations, health behaviour and images; the platform owns allowed deployment classes, cloud bindings, trust policy, host templates and the desired release per environment. Terraform owns cloud resources; the reconciler owns rendered runtime state; neither rewrites the other's artifacts.
 
-Status: skeleton. Implementation starts with the cloud work, after the local edition. The platform specification will live in `docs/specs/`.
+Status: skeleton. Implementation starts with the cloud work, after the local edition. The platform specification is in `docs/specs/`; the agent fleet is planned in `docs/plans/agent-fleet.md`.
 
 ```
 bootstrap/ governance/ contracts/v1/ conventions/
 infra/modules/{environment,host}/  infra/environments/{staging,prod}/
 environments/{staging,prod}/       host/ policies/ tests/ catalog/ runbooks/
-docs/{specs,adr}/        .github/workflows/ (later)
+agents/  infra/agents/            (agent fleet, ADR-0001)
+docs/{specs,adr,plans}/  .github/workflows/ (later)
 ```

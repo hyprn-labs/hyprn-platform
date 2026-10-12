@@ -1,0 +1,13 @@
+{
+  "name": "hyprn-agents",
+  "owner": {
+    "name": "hyprn platform"
+  },
+  "plugins": [
+    {
+      "name": "slack",
+      "source": "./plugins/slack",
+      "description": "Slack channel for hyprn agents: Socket Mode, allowlisted senders, permission relay."
+    }
+  ]
+}
