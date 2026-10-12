@@ -6,3 +6,4 @@ Architecture decision records for this repository (MADR). Decisions spanning pro
 |---|---|---|
 | [0001](0001-agent-fleet.md) | Agent fleet — background coding agents on Claude Team seats in a separate project | Accepted |
 | [0002](0002-agent-host-on-demand.md) | Agent host on demand, woken from Slack | Accepted |
+| [0004](0004-agent-github-machine-account.md) | Agent GitHub access through a machine account until the GitHub App | Accepted |

@@ -71,3 +71,30 @@ resource "google_secret_manager_secret_iam_member" "allowed_users" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${each.value}"
 }
+
+# GitHub token per agent (interim machine account, ADR-0004); host only.
+resource "google_secret_manager_secret" "agent_github" {
+  for_each  = toset(var.agents)
+  secret_id = "agent-${each.key}-github-token"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  labels = {
+    component  = "agents"
+    agent      = each.key
+    managed_by = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "host_github" {
+  for_each  = google_secret_manager_secret.agent_github
+  secret_id = each.value.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.host.email}"
+}

@@ -65,6 +65,7 @@ install_host_files() {
   install -m 0644 "$HERE/files/hyprn-agent@.service" /etc/systemd/system/
   install -m 0644 "$HERE/files/profile.sh" /etc/profile.d/hyprn-agents.sh
   install -m 0755 "$HERE/files/hyprn-agent-secrets" /usr/local/libexec/hyprn-agent-secrets
+  install -m 0755 "$HERE/files/hyprn-git-credential" /usr/local/libexec/hyprn-git-credential
   install -m 0644 "$HERE/files/hyprn-agent-secrets@.service" /etc/systemd/system/
 
   # Plugin marketplace, root-owned; agents read it and install from it.
@@ -79,7 +80,7 @@ install_host_files() {
 }
 
 add_agent() {
-  local name="$1" uid="$2" display="$3"
+  local name="$1" uid="$2" github="$3" display="$4"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
   log "agent $name ($uid)"
 
@@ -112,6 +113,13 @@ add_agent() {
   if [ -f "$ROLES/$name.md" ]; then
     install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.claude/CLAUDE.md"
   fi
+  # Git identity: the agent's GitHub account and its no-reply address.
+  as_agent "git config --global user.name '$display'"
+  as_agent "git config --global user.email '$github@users.noreply.github.com'"
+  as_agent "git config --global --replace-all credential.https://github.com.helper /usr/local/libexec/hyprn-git-credential"
+  as_agent "git config --global init.defaultBranch main"
+  as_agent "git config --global push.autoSetupRemote true"
+
   # Slack channel plugin from the local marketplace.
   as_agent "claude plugin marketplace add /opt/hyprn-agents/marketplace" >/dev/null 2>&1 || true
   as_agent "claude plugin marketplace update hyprn-agents" >/dev/null
@@ -137,7 +145,7 @@ add_agent() {
 
 install_base
 install_host_files
-grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid display; do
-  add_agent "$name" "$uid" "$display"
+grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid github display; do
+  add_agent "$name" "$uid" "$github" "$display"
 done
 log "done"
