@@ -23,7 +23,7 @@ No PRD exists for this milestone. These requirements are derived from the remain
 
 ### GitHub workflow (GH)
 
-- [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `hyprn-ada`. The description states what changed and how it was verified. Commits carry "Ada (AI agent)".
+- [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-hyprn`. The description states what changed and how it was verified. Commits carry "Ada (AI agent)".
 - [ ] **GH-02**: A worktree helper creates one worktree per task on branch `agent/<name>/<slug>` and sets its own port block, Compose project name and test database name as environment variables. Two worktrees run side by side without collisions.
 - [ ] **GH-03**: Superseded versions of `agent-ada-github-token` (versions 1 and 2) are disabled, and `runbooks/agents/github.md` records the token's expiry date and the next rotation date.
 

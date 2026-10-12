@@ -80,7 +80,7 @@ install_host_files() {
 }
 
 add_agent() {
-  local name="$1" uid="$2" github="$3" display="$4"
+  local name="$1" uid="$2" github="$3" github_id="$4" display="$5"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
   log "agent $name ($uid)"
 
@@ -113,9 +113,9 @@ add_agent() {
   if [ -f "$ROLES/$name.md" ]; then
     install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.claude/CLAUDE.md"
   fi
-  # Git identity: the agent's GitHub account and its no-reply address.
+  # Git identity: the agent's GitHub account; the ID-based no-reply address survives account renames.
   as_agent "git config --global user.name '$display'"
-  as_agent "git config --global user.email '$github@users.noreply.github.com'"
+  as_agent "git config --global user.email '$github_id+$github@users.noreply.github.com'"
   as_agent "git config --global --replace-all credential.https://github.com.helper /usr/local/libexec/hyprn-git-credential"
   as_agent "git config --global init.defaultBranch main"
   as_agent "git config --global push.autoSetupRemote true"
@@ -145,7 +145,7 @@ add_agent() {
 
 install_base
 install_host_files
-grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid github display; do
-  add_agent "$name" "$uid" "$github" "$display"
+grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid github github_id display; do
+  add_agent "$name" "$uid" "$github" "$github_id" "$display"
 done
 log "done"
