@@ -1,0 +1,23 @@
+# Terraform state, plans and local settings
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan*
+crash.log
+*.auto.tfvars
+secrets.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+# Credentials
+*.json.key
+credentials/
+.env
+.env.*
+# Agents and OS
+.claude/worktrees/
+.claude/settings.local.json
+.DS_Store
