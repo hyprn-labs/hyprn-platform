@@ -1,6 +1,6 @@
 # hyprn-platform — agent instructions
 
-This repository is hyprn's cloud platform: the Google Cloud organization and its guardrails, Terraform roots, environments and identities, the deployment contract, the host reconciler, the agent fleet and its runbooks. Products live in their own repositories; HYPRN MVP is `hyprn-mvp`. Decisions spanning product and platform are ADRs in `hyprn-mvp/docs/adr/`, linked from `docs/adr/README.md`.
+This repository is HYPRN's cloud platform: the Google Cloud organization and its guardrails, Terraform roots, environments and identities, the deployment contract, the host reconciler, the agent fleet and its runbooks. Products live in their own repositories; HYPRN MVP is `hyprn-mvp`. Decisions spanning product and platform are ADRs in `hyprn-mvp/docs/adr/`, linked from `docs/adr/README.md`.
 
 This is the only agent instruction file in the repository.
 
@@ -31,7 +31,7 @@ This is the only agent instruction file in the repository.
 
 - Never commit credentials, Terraform state or plan files, tfvars with secret values, service-account keys or session data. Secret values live in the company password manager (master copy) and Secret Manager (runtime copy).
 - Never print a secret value; check tokens by shape (prefix, length) only.
-- Run `gcloud`, Terraform and `gh` with the configurations dedicated to hyprn (`CLOUDSDK_CONFIG`, `GOOGLE_APPLICATION_CREDENTIALS`, `GH_CONFIG_DIR`); without them a command runs as the wrong identity.
+- Run `gcloud`, Terraform and `gh` with the configurations dedicated to HYPRN (`CLOUDSDK_CONFIG`, `GOOGLE_APPLICATION_CREDENTIALS`, `GH_CONFIG_DIR`); without them a command runs as the wrong identity.
 - Repository content names roles, groups and agent identities, never people or their personal accounts.
 
 ## Writing
