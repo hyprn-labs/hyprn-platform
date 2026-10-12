@@ -1,6 +1,6 @@
 # hyprn-platform
 
-hyprn's cloud platform on Google Cloud: the organization and its guardrails, environments and identities, the deployment contract between products and hosts, the host reconciler, the agent fleet, and the runbooks that operate them. Products ship from their own repositories; the first is HYPRN MVP (`hyprn-mvp`).
+HYPRN's cloud platform on Google Cloud: the organization and its guardrails, environments and identities, the deployment contract between products and hosts, the host reconciler, the agent fleet, and the runbooks that operate them. Products ship from their own repositories; the first is HYPRN MVP (`hyprn-mvp`).
 
 **In service:** the organization baseline ([`bootstrap/`](bootstrap/README.md)) and the agent fleet ([`infra/agents/`](infra/agents/README.md), [`agents/`](agents/README.md)): Ada, a coding agent steered from Slack, on an on-demand host with no public address. Staging and prod follow the [platform specification](docs/specs/cloud-platform.md).
 
