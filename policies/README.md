@@ -1,3 +1,3 @@
 # policies
 
-Policy checks on rendered configuration: no worker credentials, network or socket; no foreign stores; no public modeling/app ports in host mode; pinned images; resource limits; no cross-environment resources.
+Policy checks on rendered configuration: worker without credentials, network or sockets; no foreign stores; no public modeling or application ports in host mode; pinned images; resource limits; no cross-environment resources.

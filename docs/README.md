@@ -1,5 +1,4 @@
-# Platform documentation
+# docs
 
-- `adr/` — decisions for this repository.
-- `specs/` — the platform specification. It cites only public sources (cloud provider and GitHub documentation) and HYPRN's own decisions.
-- `plans/` — ordered tasks with completion checks for work in progress.
+- [`specs/cloud-platform.md`](specs/cloud-platform.md) — the platform specification: environments, identities, delivery, runtime lifecycle, recovery, observability, security and cost. It cites public sources and hyprn's own decisions.
+- [`adr/`](adr/README.md) — decision records for this repository.

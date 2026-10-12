@@ -1,78 +1,59 @@
-# Runbook: Google Cloud for the agent fleet
+# Runbook: Google Cloud organization
 
-Plan steps A1–A4 ([plan](../../docs/plans/agent-fleet.md)). Commands run from the platform owner's workstation with a gcloud configuration dedicated to `hyprn.ai`. Read-only steps run without a separate go; every step that creates, changes or deletes resources, IAM, organization policy or billing runs only after the owner's explicit go for that step, and removals get their own go.
+Organization access, billing and the bootstrap project for `hyprn.ai`. Everything else at organization level is Terraform in [`bootstrap/`](../../bootstrap/README.md). Commands run with the gcloud configuration dedicated to hyprn.
 
 ```bash
-export ORG=1071176223527          # organization hyprn.ai
-export OWNER=<platform owner's hyprn.ai account>
+export ORG=1071176223527             # organization hyprn.ai
 export BILLING=01CF81-DB21A5-2DAFB0  # company billing account
 ```
 
-## A1. Organization and billing (read-only)
+## Inspect
 
 ```bash
-gcloud organizations list
-gcloud billing accounts list
 gcloud organizations get-iam-policy "$ORG"
+gcloud billing accounts get-iam-policy "$BILLING"
+gcloud org-policies list --organization="$ORG"
 gcloud org-policies describe <constraint> --organization="$ORG" --effective
 ```
 
-## A2. Organization access
+## Access model
 
-Cloud admin roles are held by the group `gcp-admins@hyprn.ai`, not by a person, so onboarding or a handover is one membership change. Roles are granted only when a step needs them: project and billing-account creation still come from the domain-wide defaults until the project exists; `projectCreator` is granted when staging and prod are created, `cloudasset.viewer` at A5.
+- The group `gcp-admins@hyprn.ai` holds every cloud admin role; membership is the only thing that changes when people join or leave. No person and no domain holds a role directly.
+- Organization: Organization Administrator, Folder Admin, Project Creator, Organization Policy Administrator. Billing account: Billing Account Administrator. Projects: Owner.
+- Break-glass: a role-named super admin in the Workspace admin console with its own security key and offline backup codes, used only for recovery; it holds no standing Google Cloud role.
+- Members use 2-step verification with a security key.
 
-1. Workspace admin console (owner):
-   - 2-step verification with a security key on the owner's account; backup codes stored offline.
-   - Break-glass super admin, role-named (for example `breakglass@hyprn.ai`), with its own security key and backup codes stored offline. Used only for recovery; it holds no standing Google Cloud role, since a super admin can grant itself one when needed.
-   - Group `gcp-admins@hyprn.ai`, owner as the only member.
-2. Grant the group the roles the bootstrap needs (change):
-
-   ```bash
-   for role in resourcemanager.organizationAdmin resourcemanager.folderAdmin resourcemanager.projectCreator orgpolicy.policyAdmin; do
-     gcloud organizations add-iam-policy-binding "$ORG" --member="group:gcp-admins@hyprn.ai" --role="roles/$role" --condition=None
-   done
-   gcloud billing accounts add-iam-policy-binding "$BILLING" --member="group:gcp-admins@hyprn.ai" --role="roles/billing.admin"
-   ```
-
-3. Once access through the group is confirmed, remove the owner's direct Organization Administrator binding (removal, own go):
-
-   ```bash
-   gcloud organizations remove-iam-policy-binding "$ORG" --member="user:$OWNER" --role="roles/resourcemanager.organizationAdmin"
-   ```
-
-4. Create the company billing account in the console (Billing → Create account). Payment details are entered by the owner only. Billing Account Administrator on it is then granted to `gcp-admins` and the owner's direct binding removed.
-5. After A3 (project created and linked to billing), remove the domain-wide defaults (removal, own go):
-
-   ```bash
-   gcloud organizations remove-iam-policy-binding "$ORG" --member="domain:hyprn.ai" --role="roles/resourcemanager.projectCreator"
-   gcloud organizations remove-iam-policy-binding "$ORG" --member="domain:hyprn.ai" --role="roles/billing.creator"
-   ```
-
-Check: organization IAM lists named principals only.
-
-## A3. Organization policies, folder and project
-
-Organization-wide, consistent with the platform specification (no service-account keys, no default network, OS Login, Shielded VMs, private uniform buckets, resources in the EU only):
+## Grant the group its roles
 
 ```bash
-for c in iam.disableServiceAccountKeyCreation compute.skipDefaultNetworkCreation compute.requireOsLogin compute.requireShieldedVm storage.uniformBucketLevelAccess storage.publicAccessPrevention; do
-  printf 'name: organizations/%s/policies/%s\nspec:\n  rules:\n  - enforce: true\n' "$ORG" "$c" > "/tmp/$c.yaml"
-  gcloud org-policies set-policy "/tmp/$c.yaml"
+for role in resourcemanager.organizationAdmin resourcemanager.folderAdmin resourcemanager.projectCreator orgpolicy.policyAdmin; do
+  gcloud organizations add-iam-policy-binding "$ORG" --member="group:gcp-admins@hyprn.ai" --role="roles/$role" --condition=None
 done
-printf 'name: organizations/%s/policies/gcp.resourceLocations\nspec:\n  rules:\n  - values:\n      allowedValues:\n      - in:eu-locations\n' "$ORG" > /tmp/resourceLocations.yaml
-gcloud org-policies set-policy /tmp/resourceLocations.yaml
+gcloud billing accounts add-iam-policy-binding "$BILLING" --member="group:gcp-admins@hyprn.ai" --role="roles/billing.admin"
 ```
 
-External IPs are denied on the `agents` folder only; the prod host needs a static external IP later.
+## Bootstrap project
 
 ```bash
-gcloud resource-manager folders create --display-name=agents --organization="$ORG"
-export FOLDER=<numeric id from the output>
-printf 'name: folders/%s/policies/compute.vmExternalIpAccess\nspec:\n  rules:\n  - denyAll: true\n' "$FOLDER" > /tmp/vmExternalIpAccess.yaml
-gcloud org-policies set-policy /tmp/vmExternalIpAccess.yaml
+gcloud projects create hyprn-bootstrap --name="hyprn bootstrap" --organization="$ORG" --labels=component=bootstrap,managed_by=terraform
+gcloud billing projects link hyprn-bootstrap --billing-account="$BILLING"
 ```
 
-Project, billing link, APIs and budget: prepared after the billing account exists.
+Then the prerequisites and run in [`bootstrap/`](../../bootstrap/README.md).
+
+## Remove direct grants
+
+After access through the group is confirmed:
+
+```bash
+gcloud organizations remove-iam-policy-binding "$ORG" --member="domain:hyprn.ai" --role="roles/resourcemanager.projectCreator"
+gcloud organizations remove-iam-policy-binding "$ORG" --member="domain:hyprn.ai" --role="roles/billing.creator"
+gcloud organizations remove-iam-policy-binding "$ORG" --member="user:<account>" --role="roles/resourcemanager.organizationAdmin"
+gcloud billing accounts remove-iam-policy-binding "$BILLING" --member="user:<account>" --role="roles/billing.admin"
+gcloud projects remove-iam-policy-binding <project> --member="user:<account>" --role="roles/owner"
+```
+
+Check: organization, billing and project IAM list `gcp-admins` and Google service agents only.
 
 ## Record
 

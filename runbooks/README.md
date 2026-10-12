@@ -1,3 +1,5 @@
 # runbooks
 
-Operational procedures: deploy, drain, backup, restore drill, incident response, secret rotation.
+Operating procedures, each ending with a record of what was done.
+
+- [`agents/`](agents/README.md) — Google Cloud organization, agent host, Slack control, GitHub access.

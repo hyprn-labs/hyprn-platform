@@ -1,6 +1,6 @@
 # Runbook: Slack control of agents
 
-Plan part D ([plan](../../docs/plans/agent-fleet.md)); plugin and audit in [`agents/marketplace/`](../../agents/marketplace/README.md); wake service in [`agents/wake/`](../../agents/wake/README.md). Values never go into Git, chat or shell history.
+Each agent has its own Slack app, reached over Socket Mode by the channel plugin ([`agents/marketplace/`](../../agents/marketplace/README.md)) and, while the host is stopped, by the wake service ([`agents/wake/`](../../agents/wake/README.md)).
 
 ## 1. Slack app (per agent, Slack app settings)
 
@@ -9,19 +9,22 @@ Plan part D ([plan](../../docs/plans/agent-fleet.md)); plugin and audit in [`age
 3. OAuth & Permissions: Bot User OAuth Token (`xoxb-…`).
 4. Store both in the company password manager.
 
-## 2. Secret values (owner, from a terminal with the hyprn gcloud configuration)
+## 2. Secret values
 
-Each command reads the value from standard input: paste it, press Enter, then Ctrl-D. Nothing lands in shell history.
+Copy each value to the clipboard from the password manager, then load it; the value never appears on screen or in shell history.
 
 ```bash
-gcloud secrets versions add agent-ada-slack-app-token --project=hyprn-agents --data-file=-
-gcloud secrets versions add agent-ada-slack-bot-token --project=hyprn-agents --data-file=-
-gcloud secrets versions add agents-slack-allowed-users --project=hyprn-agents --data-file=-
+pbpaste | gcloud secrets versions add agent-ada-slack-app-token --project=hyprn-agents --data-file=-
+pbpaste | gcloud secrets versions add agent-ada-slack-bot-token --project=hyprn-agents --data-file=-
 ```
 
-The allowlist value is a JSON list of Slack member IDs (Slack profile → ⋯ → Copy member ID), for example `["U0123456789"]`.
+The allowlist is a JSON list of Slack member IDs (`U…`). With a profile link (Slack profile → ⋯ → Copy link to profile) on the clipboard:
 
-## 3. Claude organization settings (Team Owner, admin console)
+```bash
+printf '["%s"]' "$(pbpaste | grep -oE '[UW][A-Z0-9]{6,}$')" | gcloud secrets versions add agents-slack-allowed-users --project=hyprn-agents --data-file=-
+```
+
+## 3. Claude organization settings (admin console)
 
 Organization-wide Claude Code settings:
 
@@ -44,7 +47,7 @@ agents/host/apply.sh
 agents/wake/apply.sh
 ```
 
-Then: direct-message the agent in Slack; it reacts with :eyes: and answers. Stop the host; a new direct message gets "Waking up" and an answer after boot. A message from anyone else gets no reaction.
+Test: a direct message to the agent gets :eyes: and an answer; in a channel the agent belongs to, an @mention does the same. With the host stopped, a direct message gets "Waking up" and the answer after boot. A message from anyone else gets no reaction.
 
 ## Record
 
