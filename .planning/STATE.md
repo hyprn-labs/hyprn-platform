@@ -69,7 +69,7 @@ Recent decisions affecting current work:
 | VMs | `hyprn-agents-host-01` (`t2d-standard-8`, 10.10.0.3, on demand), `hyprn-agents-wake-01` (`e2-micro`, 10.10.0.2, always on) |
 | Secrets | `agent-ada-slack-app-token` (v2), `agent-ada-slack-bot-token` (v1), `agents-slack-allowed-users` (v3), `agent-ada-github-token` (v3) |
 | Claude Code on host | 2.1.287, plugin `slack@hyprn-agents` 0.1.1 |
-| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; agent account `ada-hyprn` (Write on both) |
+| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; agent account `ada-agent-hyprn` (Write on both) |
 
 ### Operational Notes
 
@@ -92,7 +92,7 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Blockers/Concerns
 
-- The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. `ada-hyprn` has Write on two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
+- The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. `ada-agent-hyprn` has Write on two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
 - Draft-pull-request test from Slack is not yet done (Phase 2).
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Owner steps (admin console, GitHub settings, Secret Manager changes) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.
