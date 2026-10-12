@@ -1,0 +1,25 @@
+{
+  "source_path": "docs/adr/0002-agent-host-on-demand.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR-0002: Agent host on demand, woken from Slack",
+  "summary": "Decides to run the agent host on demand as a t2d-standard-8 VM, with an always-on e2-micro Slack Socket Mode wake service, superseding ADR-0001's machine size and always-on operation.",
+  "scope": [
+    "agent host hyprn-agents-host-01",
+    "wake service hyprn-agents-wake-01",
+    "Slack Socket Mode",
+    "wake identity hyprn-agents-wake",
+    "Secret Manager",
+    "t2d-standard-8 machine type",
+    "e2-micro machine type",
+    "persistent disk"
+  ],
+  "cross_refs": [
+    "0001-agent-fleet.md",
+    "../../agents/wake/README.md"
+  ],
+  "locked": true,
+  "precedence": 0,
+  "notes": ""
+}

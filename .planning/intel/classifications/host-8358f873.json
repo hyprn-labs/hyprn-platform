@@ -1,0 +1,13 @@
+{
+  "source_path": "runbooks/agents/host.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Runbook: agent host",
+  "summary": "Operational runbook for the hyprn-agents-host-01 agent host: start/stop/SSH access, provisioning steps, and dated provisioning record.",
+  "scope": ["agent host", "hyprn-agents-host-01", "hyprn-agents-wake-01", "infra/agents", "GCP IAP SSH", "OS Login", "Cloud NAT", "agent users", "Claude Code", "Docker (rootless)", "GitHub CLI"],
+  "cross_refs": ["../../docs/plans/agent-fleet.md", "../../infra/agents/README.md", "../../docs/adr/0002-agent-host-on-demand.md", "agents/host/apply.sh"],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

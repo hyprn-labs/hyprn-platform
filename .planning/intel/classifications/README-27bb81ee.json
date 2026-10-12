@@ -1,0 +1,13 @@
+{
+  "source_path": "README.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "hyprn-platform",
+  "summary": "Overview of the company cloud platform repository: infrastructure, environments, governance, deployment contract, reconciler, policies and runbooks. Contains no product code.",
+  "scope": ["hyprn-platform", "Terraform", "staging environment", "prod environment", "cloud identities and access", "governance and repository protections", "deployment contract", "host reconciler", "policies", "runbooks", "agent fleet", "HYPRN MVP"],
+  "cross_refs": ["../hyprn-mvp", "docs/specs/", "docs/plans/agent-fleet.md"],
+  "locked": false,
+  "precedence": null,
+  "notes": "Type set by MANIFEST_TYPE (DOC). Content is prose plus a directory tree with no decisions or requirements; consistent with DOC. Referenced ADR-0001 (agent fleet, in the directory tree) is not a file path and was not added to cross_refs. Output filename uses 'nohash' because no shell or hashing tool was available to compute the SHA-256 of the source path; rename to README-<first 8 hex of sha256('README.md')>.json if the orchestrator requires the hashed name."
+}

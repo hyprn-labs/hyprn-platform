@@ -1,6 +1,6 @@
 # Plan: agent fleet
 
-Decision: [ADR-0001](../adr/0001-agent-fleet.md). First agent: Ada (email, Claude seat and Slack app done).
+Decision: [ADR-0001](../../../docs/adr/0001-agent-fleet.md). First agent: Ada (email, Claude seat and Slack app done).
 
 **Owner** steps are run by the platform owner after an explicit go for that step; the exact commands and console steps are prepared in the linked runbook first, and the runbook records what was actually done, without secrets. **Repo** steps are files in this repository, reviewed before use.
 
@@ -12,7 +12,7 @@ Execution order: 0 → A → B → D → E; C waits for the repositories to be p
 |---|---|---|---|
 | 0.1 | Repo | Folders with READMEs, ADR-0001, this plan | Committed; listed in `docs/adr/README.md` |
 
-## A. Project `hyprn-agents` ([runbook](../../runbooks/agents/README.md))
+## A. Project `hyprn-agents` ([runbook](../../../runbooks/agents/README.md))
 
 | # | Who | Task | Done when |
 |---|---|---|---|
@@ -23,12 +23,12 @@ Execution order: 0 → A → B → D → E; C waits for the repositories to be p
 | A5 | Repo + Owner | Isolation check in `tests/agents/`: organization-wide IAM search for project principals | They appear only inside `hyprn-agents`; re-run scheduled for when staging and prod exist |
 | A6 | Repo | Terraform root `infra/agents/`, state in the project's own bucket, import of A3–A4 and B1–B2 | `terraform plan` shows no changes (plan reviewed, nothing applied without a go) |
 
-## B. Agent host ([`agents/host/`](../../agents/host/README.md))
+## B. Agent host ([`agents/host/`](../../../agents/host/README.md))
 
 | # | Who | Task | Done when |
 |---|---|---|---|
 | B1 | Owner | VPC and subnet (no default network); ingress TCP 22 from `35.235.240.0/20` only; Cloud NAT; Private Google Access | Firewall list shows only that ingress rule |
-| B2 | Owner | VM `hyprn-agents-host-01`: `t2d-standard-8` on demand ([ADR-0002](../adr/0002-agent-host-on-demand.md)), 100 GB balanced disk, Debian 12, Shielded VM, no public IP, OS Login, project SSH keys blocked, VM identity `hyprn-agents-host` | `gcloud compute ssh --tunnel-through-iap` works; no external IP exists |
+| B2 | Owner | VM `hyprn-agents-host-01`: `t2d-standard-8` on demand ([ADR-0002](../../../docs/adr/0002-agent-host-on-demand.md)), 100 GB balanced disk, Debian 12, Shielded VM, no public IP, OS Login, project SSH keys blocked, VM identity `hyprn-agents-host` | `gcloud compute ssh --tunnel-through-iap` works; no external IP exists |
 | B3 | Repo | Provisioning: Linux user per agent (private home, no sudo), rootless Docker per user, metadata server blocked for agent users, root-owned secret helper, pinned Claude Code at 2.1.234 or later | As `ada`: metadata request fails, other homes unreadable, `docker run` works rootless |
 | B4 | Owner | Sign in as `ada` with `/login` (emailed code); role instructions from `agents/roles/` installed | `/status` shows Ada's seat; Ada reads the working repository's `AGENTS.md` |
 | B5 | Repo | Persistent session in tmux under a systemd unit | Session returns after a reboot |
@@ -36,7 +36,7 @@ Execution order: 0 → A → B → D → E; C waits for the repositories to be p
 | B8 | Repo | Idle auto-stop on the host (30 minutes without agent work or SSH); wake service in `agents/wake/` on `hyprn-agents-wake-01` | Host stops when idle and keeps its disk; a Slack message from the owner starts it and the agent answers |
 | B7 | Repo | No-production-credentials check | No user cloud credentials, key files, or staging/prod roles on the host |
 
-## D. Slack control ([`agents/marketplace/`](../../agents/marketplace/README.md), [`agents/policy/`](../../agents/policy/README.md))
+## D. Slack control ([`agents/marketplace/`](../../../agents/marketplace/README.md), [`agents/policy/`](../../../agents/policy/README.md))
 
 | # | Who | Task | Done when |
 |---|---|---|---|
@@ -56,7 +56,7 @@ Execution order: 0 → A → B → D → E; C waits for the repositories to be p
 | C4 | Owner | Ruleset on `main`: pull request, code-owner approval (human teams only), stale approvals dismissed, no force push, no App bypass | Ruleset active on every working repository |
 | C5 | Repo + Owner | Acceptance | Merge by the App refused; push to `main` refused; App-only approval does not satisfy the rule |
 
-## E. Measurement, first week with Ada ([`agents/measurement/`](../../agents/measurement/README.md))
+## E. Measurement, first week with Ada ([`agents/measurement/`](../../../agents/measurement/README.md))
 
 | # | Who | Task | Done when |
 |---|---|---|---|
