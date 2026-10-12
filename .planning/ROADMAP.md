@@ -8,7 +8,7 @@ Milestone "Agent fleet operational". The agent fleet is provisioned, Ada answers
 ## Phases
 
 - [ ] **Phase 1: Enforced agent policy** - Claude Code permission rules, sandbox, egress allowlist and deny rules for merge and push to `main` are in force; account safeguards and ADR-0003 are done
-- [ ] **Phase 2: GitHub draft-pull-request workflow** - A Slack task becomes a draft pull request by `hyprn-ada` from its own worktree
+- [ ] **Phase 2: GitHub draft-pull-request workflow** - A Slack task becomes a draft pull request by `ada-agent-hyprn` from its own worktree
 - [ ] **Phase 3: Acceptance and isolation checks** - Permission relay, sender rejection, merge refusal and isolation checks pass as repeatable tests and are recorded
 - [ ] **Phase 4: Measured week and seat decision** - One week of measured work with daily reports ends in a recorded seat decision
 
@@ -27,14 +27,14 @@ Milestone "Agent fleet operational". The agent fleet is provisioned, Ada answers
 **Plans**: TBD
 
 ### Phase 2: GitHub draft-pull-request workflow
-**Goal**: The platform owner gives Ada a task in Slack and receives a reviewable draft pull request by `hyprn-ada`.
+**Goal**: The platform owner gives Ada a task in Slack and receives a reviewable draft pull request by `ada-agent-hyprn`.
 **Depends on**: Phase 1
 **Requirements**: GH-01, GH-02, GH-03
 **Success Criteria** (what must be TRUE):
-  1. After the platform owner sends a small task in Slack, a draft pull request appears on GitHub from branch `agent/ada/<slug>`, authored by `hyprn-ada`, with a description of what changed and how it was verified.
+  1. After the platform owner sends a small task in Slack, a draft pull request appears on GitHub from branch `agent/ada/<slug>`, authored by `ada-agent-hyprn`, with a description of what changed and how it was verified.
   2. The pull request stays a draft and is not merged by Ada; its commits carry the "Ada (AI agent)" identity.
   3. Two tasks run in two worktrees on the host side by side, each with its own branch, port block, Compose project name and test database name.
-  4. Token versions 1 and 2 of `agent-ada-github-token` are disabled, and `runbooks/agents/github.md` shows the current token's expiry and the next rotation date.
+  4. The former `agent-ada-*` secrets and the earlier tokens are deleted, and `runbooks/agents/github.md` shows the current token's expiry and the next rotation date.
 **Plans**: TBD
 
 ### Phase 3: Acceptance and isolation checks

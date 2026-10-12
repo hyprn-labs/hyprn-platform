@@ -4,7 +4,7 @@ The agent fleet ([ADR-0001](../docs/adr/0001-agent-fleet.md)): background coding
 
 | Agent | Role | Claude seat | Slack app | GitHub account | Linux user |
 |---|---|---|---|---|---|
-| Ada | Coding agent | Team Standard | Ada (AI agent) | `hyprn-ada` | `ada` |
+| Ada | Coding agent | Team Standard | Ada (AI agent) | `ada-agent-hyprn` | `ada` |
 
 | Folder | Contents |
 |---|---|

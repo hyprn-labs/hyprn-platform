@@ -76,8 +76,8 @@ class Waker:
     def __init__(self, agent, allowed):
         self.agent = agent
         self.allowed = allowed
-        self.app_token = secret(f"agent-{agent}-slack-app-token")
-        self.bot_token = secret(f"agent-{agent}-slack-bot-token")
+        self.app_token = secret(f"{agent}-agent-slack-app-token")
+        self.bot_token = secret(f"{agent}-agent-slack-bot-token")
         self.ws = None
         self.hold_until = 0.0
 

@@ -4,7 +4,7 @@ Provisioning for the agent host `hyprn-agents-host-01` ([ADR-0001](../../docs/ad
 
 | File | Purpose |
 |---|---|
-| `agents.txt` | Agents: name, UID (20000–20999), GitHub login, display name |
+| `agents.txt` | Agents: name, UID (20000–20999), GitHub login and numeric ID, display name |
 | `provision.sh` | Idempotent, run as root on the host: packages (Docker and GitHub CLI from their signed repositories, signing keys checked), no rootful Docker daemon, unattended security upgrades, private home directories, the files below, and per agent a user without sudo, rootless Docker, Claude Code at a pinned version, its role file, Git identity, the Slack plugin and its session |
 | `apply.sh` | Run from a workstation: ships `agents/host`, `agents/roles`, `agents/marketplace` and `tests/agents` over IAP, runs `provision.sh` and the host checks |
 | `files/egress.nft`, `files/hyprn-agents-egress.service` | Agent users and their containers reach the metadata server for DNS only, never for credentials |
