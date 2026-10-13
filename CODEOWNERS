@@ -1,0 +1,7 @@
+# Human review ownership for hyprn-platform (GHE-01, Phase 1 security baseline).
+#
+# The named team must exist in the hyprn-labs organization at Team-plan apply
+# time; until then this file is review-only (D-01: ruleset enforcement deferred,
+# deny rules are the interim control). The catch-all entry gives the human team
+# code-owner meaning for the ruleset's require_code_owner_review flag.
+* @hyprn-labs/owners
