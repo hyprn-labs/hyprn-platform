@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Mints a one-hour GitHub App installation token for one agent (ADR-0005) and
+# writes it to tmpfs, readable by that agent only. The App's private key is read
+# from Secret Manager with the VM identity, kept in memory and never written to
+# disk. Run as root by hyprn-agent-github-token@<agent>.timer.
+set -euo pipefail
+AGENT="$1"
+PROJECT="${PROJECT:-hyprn-agents}"
+CONF="/etc/hyprn-agents/agents/$AGENT.github"
+MD="http://169.254.169.254/computeMetadata/v1"
+[ -r "$CONF" ] || { echo "hyprn-agent-github-token: no GitHub App configured for $AGENT"; exit 0; }
+# shellcheck disable=SC1090
+. "$CONF"   # APP_ID, INSTALLATION_ID
+
+access=$(curl -sf -H 'Metadata-Flavor: Google' "$MD/instance/service-accounts/default/token" | jq -r .access_token)
+key=$(curl -sf -H "Authorization: Bearer $access" \
+  "https://secretmanager.googleapis.com/v1/projects/$PROJECT/secrets/$AGENT-agent-github-app-key/versions/latest:access" \
+  | jq -r .payload.data | base64 -d)
+
+b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+now=$(date +%s)
+header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)
+claims=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$APP_ID" | b64url)
+signature=$(printf '%s.%s' "$header" "$claims" | openssl dgst -sha256 -binary -sign <(printf '%s\n' "$key") | b64url)
+unset key
+
+token=$(curl -sf -X POST \
+  -H "Authorization: Bearer $header.$claims.$signature" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{"permissions":{"contents":"write","pull_requests":"write","metadata":"read"}}' \
+  "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" | jq -r .token)
+[ -n "$token" ] && [ "$token" != null ] || { echo "hyprn-agent-github-token: minting failed for $AGENT" >&2; exit 1; }
+
+dir="/run/hyprn-agents/secrets/$AGENT"
+install -d -m 0711 /run/hyprn-agents/secrets
+install -d -m 0500 -o "$AGENT" -g "$AGENT" "$dir"
+umask 0377
+tmp="$dir/.github-token.tmp"
+rm -f "$tmp"
+printf '%s\n' "$token" > "$tmp"
+chown "$AGENT:$AGENT" "$tmp"
+mv "$tmp" "$dir/github-token"
+echo "hyprn-agent-github-token: token minted for $AGENT (valid one hour)"

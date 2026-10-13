@@ -1,0 +1,8 @@
+[Unit]
+Description=hyprn agents: mint GitHub App token for %i
+After=network-online.target hyprn-agent-secrets@%i.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/hyprn-agent-github-token %i

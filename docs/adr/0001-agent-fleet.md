@@ -74,7 +74,7 @@ Machine size and always-on operation superseded by [ADR-0002](0002-agent-host-on
 
 ### 5. GitHub
 
-Interim: agents use a GitHub machine account with a fine-grained token until the App exists ([ADR-0004](0004-agent-github-machine-account.md)).
+Implemented by [ADR-0005](0005-agent-github-app.md): one GitHub App per agent, one-hour tokens minted on the host ([ADR-0004](0004-agent-github-machine-account.md), the interim machine account, is superseded).
 
 - GitHub Team plan: draft pull requests, protected branches and enforced code owners on private repositories need it.
 - Each agent App has Contents read/write, Pull requests read/write and Metadata read; no Workflows and no Administration permission; installed on selected repositories only. Its private key is held in the password manager and Secret Manager; the host mints one-hour installation tokens.

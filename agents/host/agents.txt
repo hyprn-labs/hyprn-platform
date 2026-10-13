@@ -1,2 +1,3 @@
-# name  uid    github-login  github-id  display name (one line per agent; UIDs 20000-20999 are agent users)
-ada     20001  ada-agent-hyprn  341672319  Ada (AI agent)
+# name  uid    github-app       app-id   installation-id  bot-user-id  display name
+# One line per agent; UIDs 20000-20999 are agent users; the GitHub App is per agent (ADR-0005).
+ada     20001  ada-agent-hyprn  5299141  170941397        341930344    Ada (AI agent)

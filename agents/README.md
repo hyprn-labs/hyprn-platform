@@ -2,7 +2,7 @@
 
 The agent fleet ([ADR-0001](../docs/adr/0001-agent-fleet.md)): background coding agents that take tasks in Slack, work in their own worktrees and open draft pull requests that humans review and merge.
 
-| Agent | Role | Claude seat | Slack app | GitHub account | Linux user |
+| Agent | Role | Claude seat | Slack app | GitHub App | Linux user |
 |---|---|---|---|---|---|
 | Ada | Coding agent | Team Standard | Ada (AI agent) | `ada-agent-hyprn` | `ada` |
 

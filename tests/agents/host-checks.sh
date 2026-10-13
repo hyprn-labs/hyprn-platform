@@ -26,7 +26,9 @@ while read -r name uid _; do
   check "$name: Claude Code installed" "run 'claude --version'"
   check "$name: Slack tokens private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/slack.env ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/slack.env)\" = $name:400 ]"
   check "$name: GitHub token private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/github-token ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token)\" = $name:400 ]"
-  check "$name: git commits as its GitHub account" "run 'git config --global user.email' | grep -q '@users.noreply.github.com'"
+  check "$name: git commits as its GitHub App bot" "run 'git config --global user.email' | grep -q '\\[bot\\]@users.noreply.github.com'"
+  check "$name: GitHub App token fresh (under 35 minutes)" "find /run/hyprn-agents/secrets/$name/github-token -mmin -35 | grep -q ."
+  check "$name: gh works with the App token" "run 'gh api installation/repositories --jq .total_count' | grep -qE '^[1-9]'"
   check "$name: Slack plugin installed" "run 'claude plugin list' | grep -q slack@hyprn-agents"
   for other in /home/*; do
     [ "$other" = "/home/$name" ] && continue

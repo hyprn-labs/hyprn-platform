@@ -53,7 +53,7 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- ADR-0001 as amended by ADR-0002, ADR-0003 and ADR-0004 is locked.
+- ADR-0001 as amended by ADR-0002, ADR-0003 and ADR-0005 is locked; ADR-0004 (interim machine account) is superseded by ADR-0005.
 - ADR-0003 is accepted (DOC-01 complete): our own Slack channel server is the plugin.
 - Until the organization has a paid GitHub plan, Claude Code deny rules for merge and push to `main` are the enforcing control (POL-04).
 
@@ -67,9 +67,9 @@ Recent decisions affecting current work:
 | Projects | `hyprn-bootstrap` (`398807288756`), `hyprn-agents` (`605123398847`, folder `agents` `86446816109`) |
 | Terraform state | `gs://hyprn-bootstrap-tfstate/bootstrap/`, `gs://hyprn-agents-tfstate/agents/` |
 | VMs | `hyprn-agents-host-01` (`t2d-standard-8`, 10.10.0.3, on demand), `hyprn-agents-wake-01` (`e2-micro`, 10.10.0.2, always on) |
-| Secrets | `ada-agent-slack-app-token`, `ada-agent-slack-bot-token`, `ada-agent-github-token` (v1 each), `agents-slack-allowed-users` (v3) |
+| Secrets | `ada-agent-slack-app-token`, `ada-agent-slack-bot-token`, `ada-agent-github-app-key` (v1 each), `agents-slack-allowed-users` (v3) |
 | Claude Code on host | 2.1.287, plugin `slack@hyprn-agents` 0.1.1 |
-| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; agent account `ada-agent-hyprn` (Write on both) |
+| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; GitHub App `ada-agent-hyprn` (App ID 5299141, installation 170941397, bot `ada-agent-hyprn[bot]`); interim machine account removed |
 
 ### Operational Notes
 
@@ -81,18 +81,17 @@ Gotchas met while building the fleet; read before operating it.
 - Claude Code may replace a channel server a few seconds after start; work done in that first instance is lost. The Slack server therefore repeats its catch-up at 5, 30 and 90 s.
 - The desktop terminal pane does not pass Ctrl-D to a command: load secrets with `pbpaste | gcloud secrets versions add … --data-file=-`, never by typing into standard input. Check values by shape only.
 - A Slack App ID (`A…`) looks like a member ID; allowlist entries must start with `U` (or `W`).
-- A fine-grained GitHub token reaches organization repositories only with resource owner `hyprn-labs`, selected repositories, and organization approval when required; it never exceeds the account's own repository role.
+- A GitHub App installation token never exceeds the App's permissions or its installation's repositories; the broker mints it with an explicit permission set. A token minted just before a secret reload is lost, so the loader mints on every start.
 - Workstation tools default to other identities: use the hyprn gcloud configuration and `GH_CONFIG_DIR`; this repository's `.git/config` resets inherited credential helpers and uses only the hyprn `gh` login. Shell aliases are unavailable in non-interactive shells.
 - Plain `gcloud projects delete` in a shell without the hyprn configuration fails with "no active account"; that is the safeguard working.
 
 ### Pending Todos
 
-- Delete the two earlier tokens in the agent account and record the current token's expiry (Phase 2, GH-03); the former secrets are deleted.
 - Land the branches `feat/ada-github` and `docs/sharpen` on `main` through pull requests.
 
 ### Blockers/Concerns
 
-- The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. `ada-agent-hyprn` has Write on two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
+- The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. Ada's App can write to two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
 - Draft-pull-request test from Slack is not yet done (Phase 2).
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Owner steps (admin console, GitHub settings, Secret Manager changes) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.
@@ -105,7 +104,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | GitHub | Team plan, ruleset on `main`, CODEOWNERS (GHE-01) | Waiting on plan upgrade | 2026-10-12 | Agent fleet operational |
-| GitHub | GitHub App replacing the machine account (GHE-02) | Waiting on GHE-01 | 2026-10-12 | Agent fleet operational |
 | Fleet | Agent #2 (FLEET-01) | Gated on Anthropic's human answer on agent seats | 2026-10-12 | Agent fleet operational |
 | Platform | Staging and prod build-out (PLAT-01) | Follows the product's local edition | 2026-10-12 | Agent fleet operational |
 
