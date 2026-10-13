@@ -34,7 +34,7 @@ while read -r name uid _; do
   check "$name: gh works with the App token" "run 'gh api installation/repositories --jq .total_count' | grep -qE '^[1-9]'"
   check "$name: OpenCode token private to the agent" "[ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token-opencode)\" = $name:400 ]"
   check "$name: OpenCode token limited to one repository" "run 'HYPRN_GITHUB_TOKEN_FILE=/run/hyprn-agents/secrets/$name/github-token-opencode gh api installation/repositories --jq .total_count' | grep -qx 1"
-  check "$name: OpenCode refuses outside hyprn-platform" "run 'cd /tmp && timeout 10 opencode 2>&1' | grep -q 'hyprn-platform'"
+  check "$name: OpenCode refuses outside hyprn-platform" "run 'cd /tmp && timeout 10 opencode 2>&1; true' | grep -q 'hyprn-platform'"
   check "$name: Slack plugin installed" "run 'claude plugin list' | grep -q slack@hyprn-agents"
   for other in /home/*; do
     [ "$other" = "/home/$name" ] && continue
