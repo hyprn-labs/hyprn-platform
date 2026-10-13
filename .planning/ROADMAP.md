@@ -8,7 +8,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 
 ## Milestones
 
-- **M1 — Safe engineering agent** (Phases 1–2)
+- **M1 — Safe engineering agent** (Phases 1–2, covering Codd as well as Ada)
 - **M2 — Boole, the ops agent, with a learning meeting loop** (Phases 3–5)
 - **M3 — Scale the fleet** (Phases 6–7)
 
@@ -25,29 +25,31 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 ## Phase Details
 
 ### Phase 1: Security baseline  (M1)
-**Goal**: `main` is protected by GitHub, Ada runs under enforced policy, outbound traffic is visible, misuse of secrets or IAM raises an alert, and the safety controls are proven by one command.
+**Goal**: `main` is protected by GitHub, Ada runs under enforced policy, outbound traffic is visible, misuse of secrets or IAM raises an alert, and the safety controls are proven by one command. Codd is covered too: its App scope, secret, host provisioning and managed OpenCode config are proven by the same run.
 **Depends on**: Nothing
-**Requirements**: GHE-01, GHE-03, POL-01, POL-02, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08
+**Requirements**: GHE-01, GHE-03, POL-01, POL-02, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08, CODD-01
 **Owner actions**: upgrade `hyprn-labs` to the GitHub Team plan; apply the policy in the Claude admin console; create the break-glass admin; require two-factor authentication in `hyprn-labs`.
 **Success Criteria**:
   1. The ruleset protects `main` in every repository; GitHub refuses a merge or push to `main` by Ada's App.
   2. The admin console policy matches `agents/policy/managed-settings.json`; routine worktree work runs without prompts.
   3. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
   4. The egress proxy logs each agent's destinations; a direct outbound connection is dropped.
-  5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
-  6. `tests/agents/run.sh` passes and writes a dated record.
+5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
+6. `tests/agents/run.sh` passes and writes a dated record.
+7. Codd's App is installed on `hyprn-platform` only, its key lives in Secret Manager, its OpenCode config matches `agents/host/files/opencode.json`, and the check run covers it.
 **Plans**: TBD
 
 ### Phase 2: Engineering workflow  (M1)
 **Goal**: Ada turns Slack tasks into draft pull requests from clean worktrees, and the owner sees every session in one cockpit.
 **Depends on**: Phase 1
-**Requirements**: GH-01, GH-02, GH-03, EFF-01, EFF-02, COK-01, COK-02, OBS-01
+**Requirements**: GH-01, GH-02, GH-03, EFF-01, EFF-02, COK-01, COK-02, OBS-01, CODD-03
 **Success Criteria**:
   1. A Slack task yields a draft pull request by `ada-agent-hyprn[bot]`; Ada does not merge it.
   2. Two worktrees run side by side; merged or closed work leaves nothing behind.
   3. A fresh worktree runs the product's tests without installing toolchains.
   4. herdr on the laptop shows the owner's local sessions and Ada's host sessions side by side; Ada's sessions run under herdr and come back after a reboot.
   5. Ada's daily usage report is posted to Slack.
+  6. Codd works from herdr-controlled sessions; its free-tier model and data terms are re-checked monthly until company terms.
 **Plans**: TBD
 
 ### Phase 3: Control plane core  (M2)
@@ -88,12 +90,13 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 ### Phase 6: Fleet as code and onboarding  (M3)
 **Goal**: Adding or removing an engineering or operations agent is one command.
 **Depends on**: Phase 5
-**Requirements**: FLT-01, FLT-02, FLT-03, FLT-04, FLT-05, FLT-06, FLT-07, FLT-08
+**Requirements**: FLT-01, FLT-02, FLT-03, FLT-04, FLT-05, FLT-06, FLT-07, FLT-08, CODD-02
 **Owner actions**: assign the Workspace user-management admin role to the automation service account; the vendor approvals during the test onboardings.
 **Success Criteria**:
   1. `agents/fleet.yaml` is the only declaration of agents; `agents.txt` and `wake.json` are gone.
   2. A test agent of each kind is onboarded and offboarded within 15 minutes and about 8 human actions (the engineering test stops before the Claude seat invitation).
   3. Ada runs as a Workspace user; the onboarding runbook stands on its own.
+  4. A Codd-pattern coding agent (GitHub App, Linux user, OpenCode, herdr-controlled) is onboarded by the same command.
 **Plans**: TBD
 
 ### Phase 7: Hardening and acceptance  (M3)

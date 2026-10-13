@@ -1,6 +1,6 @@
 # Agent fleet specification
 
-Status: target. In service today: the engineering agent Ada (ADR-0001 to ADR-0005). Delivery order and current position: [`.planning/ROADMAP.md`](../../.planning/ROADMAP.md) — milestone **M1** safe engineering agent, **M2** operations agent Boole with a learning meeting loop, **M3** scaling the fleet. What exists now is described in each folder's README.
+Status: target. In service today: the engineering agent Ada (ADR-0001 to ADR-0005) and Codd (§3 runtimes), the first of the Codd-pattern coding agents. Delivery order and current position: [`.planning/ROADMAP.md`](../../.planning/ROADMAP.md) — milestone **M1** safe engineering agent, **M2** operations agent Boole with a learning meeting loop, **M3** scaling the fleet. What exists now is described in each folder's README.
 
 The agent fleet does HYPRN's engineering and operations work, on request and on its own triggers. This document is the single description of the target; decisions and trade-offs are in [ADR-0001](../adr/0001-agent-fleet.md) to [ADR-0006](../adr/0006-agent-first-operating-model.md).
 
@@ -9,7 +9,7 @@ The agent fleet does HYPRN's engineering and operations work, on request and on 
 ## 1. Operating model
 
 - Recurring work is a **loop**: a trigger, a workflow with agent steps where judgment is needed, declared tools, an output and a human role (ADR-0006).
-- **Human-directed** work — a person steering an agent from Slack or the cockpit — runs on subscription **seats**. **Autonomous** loops run on **API keys** through the model gateway. A seat MUST NOT run an autonomous loop.
+- **Human-directed** work — a person steering an agent from Slack or the cockpit — runs on subscription **seats**. **Autonomous** loops run on **API keys** through the model gateway. A seat MUST NOT run an autonomous loop. Coding agents on the Codd pattern (§3) are human-directed from the terminal or herdr and run on keyless free-tier models for rapid prototyping, moving to protective terms when the work moves under the company.
 - An agent's seat runs only that agent's sessions; people work on their own seats. Using agent seats as personal capacity waits for Anthropic's answer on agent seats.
 - Agents propose; people decide what is irreversible. Code reaches `main` only through a person's merge. Agents MUST NOT move money or sign.
 - The playbook — agents, loops, skills, policies — is code in this repository and changes by pull request.
@@ -19,6 +19,7 @@ The agent fleet does HYPRN's engineering and operations work, on request and on 
 | Kind | Does | Runtime | Agent |
 |---|---|---|---|
 | Engineering | Code changes as draft pull requests | Claude Code on a Claude Team seat, in herdr sessions under its Linux user | Ada |
+| Engineering (Codd pattern) | Code changes as draft pull requests, compute split for long-running tasks | OpenCode on a keyless free-tier model, in herdr-controlled sessions under its Linux user on a dedicated or shared VM | Codd and later coding agents |
 | Operations | Loops over company knowledge and tools | A harness on an API key through the gateway, in a fresh rootless container per run under its Linux user; open models at Fireworks first | Boole |
 
 Engineering agents work one task per branch `agent/<name>/<slug>`, in its own git worktree with its own port block, Docker Compose project and test database, and open a draft pull request from it. The worktree and local branch are removed once the pull request is merged or closed.
@@ -30,9 +31,11 @@ Each agent has one identity per system, named by [`conventions/`](../../conventi
 | Google Workspace | User `<name>@agents.hyprn.ai`; password and second factor in the company password manager. Ada's address is a Google group until its move to a user (M3) |
 | Model access | A Claude Team seat (engineering) or a gateway key (operations) |
 | Slack | Its own app and bot `<Name> (AI agent)`, Socket Mode |
-| GitHub | Its own GitHub App `<name>-agent-hyprn` with one-hour tokens (ADR-0005); never a machine account. Engineering Apps are installed on all `hyprn-labs` repositories; an operations App only on the repositories its loops change (Boole: `hyprn-platform`) |
+| GitHub | Its own GitHub App `<name>-agent-hyprn` with one-hour tokens (ADR-0005); never a machine account. Engineering Apps are installed on all `hyprn-labs` repositories (Codd: `hyprn-platform` only); an operations App only on the repositories its loops change (Boole: `hyprn-platform`) |
 | Notion | Its own integration, limited to the pages it serves |
 | Agent host | Its own Linux user with a private home and rootless Docker |
+
+Codd holds only the GitHub and host identities above — no Slack app, no Workspace user — and is steered from the terminal or herdr (see §3 and the [runbook](../../runbooks/agents/opencode.md)). Later coding agents follow the same setup.
 
 ## 3. Runtimes
 
@@ -43,12 +46,13 @@ A runtime is a **harness × credential × model** binding declared per agent.
 | Claude Code | Claude Team seat | Claude | Human-directed engineering |
 | Codex | ChatGPT Business seat of its named holder | OpenAI | The owner's own work |
 | OpenCode or a workflow script | Fireworks or OpenAI API key through the gateway | Open models, OpenAI | Autonomous loops |
+| OpenCode | OpenCode Zen free tier, keyless (interim) | Muse Spark | Interim engineering (Codd) |
 | Claude Agent SDK or Claude Code headless | Anthropic API key through the gateway | Claude | Autonomous loops needing Claude |
 
 - Claude subscriptions are used only in Anthropic's own applications; third-party harnesses use API keys only.
 - Claude Code is not pointed at non-Claude models.
 - Changing an agent's model or provider MUST be a change of its binding only.
-- Interim, until the gateway: Codd, an engineering agent on OpenCode with OpenCode Zen's free tier, steered by the owner in the terminal, with a GitHub App on `hyprn-platform` only and no Slack app or Workspace user ([runbook](../../runbooks/agents/opencode.md)).
+- Codd pattern, until company terms: Codd, an engineering agent on OpenCode with OpenCode Zen's free tier, steered by the owner in the terminal or herdr, with a GitHub App on `hyprn-platform` only and no Slack app or Workspace user ([runbook](../../runbooks/agents/opencode.md)). Model: Muse Spark; prompts may train Meta (runbook §Data use). Codd is not retired: its model binding moves to protective terms when the work moves under the company.
 - In reserve, outside the fleet's core: Claude Code cloud sessions and Claude Tag for occasional work away from the host; they bill per use.
 
 ## 4. Compute

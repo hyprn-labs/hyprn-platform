@@ -12,7 +12,7 @@ This is the only agent instruction file in the repository.
 | Agent fleet target: agents, loops, control plane, tools, autonomy | `docs/specs/agent-fleet.md` |
 | Product hosting design (staging, prod), MUST requirements, open questions | `docs/specs/cloud-platform.md` |
 | Decisions | `docs/adr/` (MADR; an accepted record is superseded by a new one, never edited) |
-| Current work, requirements, state, inventory, operational notes | the hidden planning directory at the repository root: `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `milestones/` |
+| Current work, requirements, state, inventory, operational notes | the hidden planning directory at the repository root: `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md`, `.planning/STATE.md`, `.planning/milestones/` |
 | Operating a component, and what was done | `runbooks/` |
 
 ## Boundaries

@@ -57,7 +57,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - Run state lives in its own database on the gateway's Cloud SQL instance.
 - The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
 - Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
-- Interim (2026-10-13): Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal. Meta may train on its prompts and completions; accepted for `hyprn-platform` only, enforced by its GitHub App being installed there only and by the Linux user boundary. No Slack app and no Workspace user (exception to spec section 2). Retire or rebind to the gateway in Phase 3 (`runbooks/agents/opencode.md`).
+- Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` only, enforced by its GitHub App being installed there only and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
@@ -91,6 +91,9 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Pending Todos
 
+- Monthly until company terms: re-check Codd's free-tier model, cost and data terms against the Zen list (CODD-03).
+- On the company move: shift Codd's model binding to protective terms by configuration; IP transfers to the company (CODD-03). Codd is not retired.
+- Purchases arrive later (owner, 2026-10-13): GitHub Team plan, revised budget (COST-01), Fireworks/Anthropic/OpenAI keys; phases proceed on deny-rules and prototyping terms until then.
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
 - Phase 1: GitHub Team plan (owner purchase).
@@ -98,7 +101,8 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Blockers/Concerns
 
-- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories, so deny rules are the only control until the Team plan (Phase 1).
+- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories and Codd's to `hyprn-platform`, so deny rules are the only control until the Team plan (purchases arrive later).
+- Prototyping accounts: all current development is under the owner's personal accounts with free-tier training-use terms; IP moves to the future company, then bindings move to protective terms.
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).
 - Vendor limits on automation (checked 2026-10-13): no Claude Team member API; Slack Socket Mode tokens and app installs need a human; GitHub App installation and logo need a human.

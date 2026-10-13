@@ -2,7 +2,7 @@
 
 ## What This Is
 
-hyprn-platform is HYPRN's cloud platform repository: Terraform, cloud identities, governance, runbooks and the agent fleet. Products such as HYPRN MVP live in their own repositories (`hyprn-mvp`). Today the live part of the platform is the engineering agent Ada, steered from Slack, delivering draft pull requests on GitHub. The target is a fleet of engineering and operations agents described in `docs/specs/agent-fleet.md`.
+hyprn-platform is HYPRN's cloud platform repository: Terraform, cloud identities, governance, runbooks and the agent fleet. Products such as HYPRN MVP live in their own repositories (`hyprn-mvp`). Today the live parts of the platform are the engineering agent Ada, steered from Slack, delivering draft pull requests on GitHub, and Codd, an engineering agent on OpenCode steered from the terminal, limited to `hyprn-platform`. The target is a fleet of engineering and operations agents described in `docs/specs/agent-fleet.md`.
 
 ## Core Value
 
@@ -34,9 +34,9 @@ Target: `docs/specs/agent-fleet.md`; decisions in ADR-0001 to ADR-0006 (ADR-0006
 
 Requirement IDs live in `.planning/REQUIREMENTS.md`, grouped by the spec sections they deliver.
 
-- [ ] M1: ruleset, policy, egress observation, detection, safeguards, safety checks (GHE-01, GHE-03, POL, EGR-01, DET, SEC, ACC-01..06, ACC-08); engineering workflow (GH, EFF, COK, OBS).
+- [ ] M1: ruleset, policy, egress observation, detection, safeguards, safety checks (GHE-01, GHE-03, POL, EGR-01, DET, SEC, ACC-01..06, ACC-08, CODD-01); engineering workflow (GH, EFF, COK, OBS, CODD-03).
 - [ ] M2: control plane (CP, RT, EGR-03, OPS-01, COST, ACC-09); Boole and the meeting loop (OPS-02, LOOP, ACC-07); learning (OPS-03, LRN).
-- [ ] M3: fleet as code (FLT); hardening and acceptance (EGR-02, ACC-10).
+- [ ] M3: fleet as code (FLT, CODD-02); hardening and acceptance (EGR-02, ACC-10).
 
 ### Out of Scope
 
@@ -56,6 +56,8 @@ Requirement IDs live in `.planning/REQUIREMENTS.md`, grouped by the spec section
 - The Slack channel plugin is our own audited server (ADR-0003).
 - `docs/specs/cloud-platform.md` defines staging and prod; none of it is provisioned. Its rule that agents get no privileged path and that `hyprn-agents` is tooling, not an environment, applies here.
 - Residual risk accepted: the channel server runs as the agent user, so a compromised agent could alter its installed copy or use its own bot token; the allowlist protects the session from other people's messages and the Linux user boundary limits reach.
+- Rapid prototyping terms accepted (2026-10-13): Codd runs a free Muse Spark model in exchange for Meta's training use of prompts and completions; all current development is under the owner's personal accounts and the IP moves to the future company, at which point model bindings move to protective terms. Codd is not retired: its model changes by configuration.
+- Codd's setup — GitHub App plus Linux user plus OpenCode, controlled through herdr — is the pattern for later coding agents on dedicated or shared VMs, giving compute split for long-running tasks.
 
 ## Constraints
 
@@ -112,7 +114,7 @@ Decisions below are locked unless marked proposed. Do not plan work that reverse
 | Deny rules on merge and push to `main` until the ruleset | Free plan cannot protect private repositories | Phase 1, with the ruleset |
 | Second agent on API keys and open models (Boole) | Tests the whole loop stack without a second seat | M2 (ADR-0006, proposed) |
 | Telemetry and gateway cost instead of a measured week | Continuous data, reviewed monthly | Phases 2–3 |
-| Interim agent Codd on OpenCode with a free Muse Spark model, `hyprn-platform` only | Faster platform build at no cost; own identity so its work is visible and its reach enforced by GitHub and Linux; Meta may train on the prompts | Retired or moved to the gateway in Phase 3 |
+| Codd on OpenCode with a free Muse Spark model, `hyprn-platform` only | Faster platform build at no cost; own identity so its work is visible and its reach enforced by GitHub and Linux; Meta may train on the prompts | Kept; model moves to protective terms on the company move, by configuration |
 
 ---
 *Last updated: 2026-10-13 after the document review*

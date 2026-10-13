@@ -1,10 +1,10 @@
 # Requirements: hyprn-platform
 
-**Defined:** 2026-10-12 (revised 2026-10-13: value-first milestones, review fixes)
+**Defined:** 2026-10-12 (revised 2026-10-13: value-first milestones, review fixes; CODD rows added: Codd in service, no retirement, company-terms swap)
 **Core Value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
 **Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0006. Each group names the spec sections it delivers.
 
-Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent, Boole the operations agent.
+Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` only, free-tier model until company terms).
 
 ## v1 Requirements
 
@@ -42,7 +42,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 - [ ] **ACC-04**: An organization-wide IAM search shows every `hyprn-agents` principal with exactly its declared roles and none outside the project.
 - [ ] **ACC-05**: The host holds no user cloud credentials, no key files and no staging or prod roles or secrets.
 - [ ] **ACC-06**: The wake identity is refused everything but get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across idle stops.
-- [ ] **ACC-07**: Ada and Boole cannot reach each other's homes, secrets, containers, tokens or bots.
+- [ ] **ACC-07**: Ada, Boole and Codd cannot reach each other's homes, secrets, containers, tokens or bots.
 - [ ] **ACC-08**: One command (`tests/agents/run.sh`) runs every check delivered so far and writes a dated record to `runbooks/agents/`; each later phase adds its checks to it.
 - [ ] **ACC-09**: The controller and gateway identities hold exactly their declared roles; the gateway is unreachable from the internet; a run's container holds only its loop's credentials.
 - [ ] **ACC-10**: At the end of M3, the full check run passes with the egress allowlist enforced, and its dated record is kept.
@@ -84,6 +84,12 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 - [ ] **LRN-02**: The meeting loop has an eval set of at least 20 cases from real runs and feedback, and a regression suite; the eval runner runs on the host through the gateway.
 - [ ] **LRN-03**: An improvement run opens a draft pull request with prompt and skill changes; the eval runner posts its result on it; only passing changes reach the owner, who merges.
 - [ ] **LRN-04**: The meeting loop moves from A1 to A2 by a reviewed change once its eval pass rate is at least 90 % over its last 10 runs and owner corrections average fewer than one per meeting.
+
+### Codd-pattern coding agents (CODD) — spec §1, §2, §3
+
+- [ ] **CODD-01**: Codd's identity scope holds: GitHub App `codd-agent-hyprn` installed on `hyprn-platform` only with one-hour tokens; Linux user `codd` with a private home; managed OpenCode config from `agents/host/files/opencode.json`; no Slack app and no Workspace user.
+- [ ] **CODD-02**: The Codd pattern — GitHub App plus Linux user plus OpenCode, herdr-controlled, on a dedicated or shared VM — is the repeatable setup for coding agents and compute split for long-running tasks; it is documented in the runbook and covered by fleet onboarding.
+- [ ] **CODD-03**: Until the work moves under the company, the free-tier model, cost and data terms are checked monthly against the Zen model list (model, price, training-data use); on the move, Codd's model binding changes to protective terms by configuration, without retiring the agent.
 
 ### Fleet as code and onboarding (FLT) — spec §12
 
@@ -138,9 +144,11 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | ACC-05 | Phase 1 | Pending |
 | ACC-06 | Phase 1 | Pending |
 | ACC-08 | Phase 1 | Pending |
+| CODD-01 | Phase 1 | Pending |
 | GH-01 | Phase 2 | Pending |
 | GH-02 | Phase 2 | Pending |
 | GH-03 | Phase 2 | Complete |
+| CODD-03 | Phase 2 | Pending |
 | EFF-01 | Phase 2 | Pending |
 | EFF-02 | Phase 2 | Pending |
 | COK-01 | Phase 2 | Pending |
@@ -175,10 +183,11 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | FLT-06 | Phase 6 | Pending |
 | FLT-07 | Phase 6 | Pending |
 | FLT-08 | Phase 6 | Pending |
+| CODD-02 | Phase 6 | Pending |
 | EGR-02 | Phase 7 | Pending |
 | ACC-10 | Phase 7 | Pending |
 
-**Coverage:** 58 v1 requirements, all mapped.
+**Coverage:** 61 v1 requirements, all mapped.
 
 ---
 *Last updated: 2026-10-13 after the document review*

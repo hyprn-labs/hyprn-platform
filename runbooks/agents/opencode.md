@@ -4,7 +4,7 @@ Codd (AI agent) is an interim engineering agent for `hyprn-platform`. It runs Op
 
 ## Data use
 
-The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything a Codd session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` only (2026-10-13). Codd has no access to product repositories.
+The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything a Codd session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` only (2026-10-13): current development is rapid prototyping under personal accounts, and the IP moves to the future company, at which point the model binding moves to protective terms. Codd has no access to product repositories.
 
 ## Identity and limits
 
@@ -47,9 +47,13 @@ sudo -u codd -H bash -lc "git -C ~/work/hyprn-platform worktree remove ~/work/<t
 
 Set `model` and `small_model` in `agents/host/files/opencode.json` and run `agents/host/apply.sh`. Free Zen models change often; check [the Zen model list](https://opencode.ai/docs/zen/) and its data terms first.
 
-## Retire
+## Model and terms
 
-Remove Codd's line from `agents/host/agents.txt` and `codd` from `var.agents` in `infra/agents/`, uninstall and delete the App `codd-agent-hyprn`, delete `install_opencode`, the OpenCode files and checks, then apply. On the host: `userdel -r codd` and `rm -rf /usr/local/lib/opencode /etc/opencode /usr/local/libexec/hyprn-agent-bin/opencode*`.
+Codd is not retired. When the work moves under the company, change `model` and `small_model` in `agents/host/files/opencode.json` to a binding with protective terms and run `agents/host/apply.sh` (see Change the model above).
+
+## Remove (contingency only)
+
+If an agent is ever removed outright: remove its line from `agents/host/agents.txt` and its name from `var.agents` in `infra/agents/`, uninstall and delete its App, delete `install_opencode`, the OpenCode files and checks, then apply. On the host: `userdel -r <name>` and `rm -rf /usr/local/lib/opencode /etc/opencode /usr/local/libexec/hyprn-agent-bin/opencode*`.
 
 ## Record
 
