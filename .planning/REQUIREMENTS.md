@@ -2,7 +2,7 @@
 
 **Defined:** 2026-10-12 (revised 2026-10-13: value-first milestones, review fixes; CODD rows added: Codd in service, no retirement, company-terms swap)
 **Core Value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
-**Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0006. Each group names the spec sections it delivers.
+**Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0007. Each group names the spec sections it delivers.
 
 Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` only, free-tier model until company terms).
 

@@ -10,7 +10,7 @@ Agents do HYPRN's engineering and operations work — on request and on their ow
 
 ## Milestones
 
-Target: `docs/specs/agent-fleet.md`; decisions in ADR-0001 to ADR-0006 (ADR-0006 proposed). Phases and requirement IDs: `ROADMAP.md`, `REQUIREMENTS.md`.
+Target: `docs/specs/agent-fleet.md`; decisions in ADR-0001 to ADR-0007 (ADR-0006 and ADR-0007 proposed). Phases and requirement IDs: `ROADMAP.md`, `REQUIREMENTS.md`.
 
 - **M1 — Safe engineering agent** (Phases 1–2): GitHub ruleset on `main`, enforced policy, egress observation, alerts, account safeguards, proven safety checks; Slack-to-draft-PR from clean worktrees; herdr as cockpit and host runtime; Ada telemetry.
 - **M2 — Boole, the ops agent, with a learning meeting loop** (Phases 3–5): the second agent, on open models at Fireworks with an API key; gateway, controller, loop registry, credential broker, approvals that wait, budgets, kill switch; Granola → Notion → loop → Slack; egress allowlist for run containers from the first run; feedback, evals and improvement pull requests.

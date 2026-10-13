@@ -2,7 +2,7 @@
 
 Status: target. In service today: the engineering agent Ada (ADR-0001 to ADR-0005) and Codd (§3 runtimes), the first of the Codd-pattern coding agents. Delivery order and current position: [`.planning/ROADMAP.md`](../../.planning/ROADMAP.md) — milestone **M1** safe engineering agent, **M2** operations agent Boole with a learning meeting loop, **M3** scaling the fleet. What exists now is described in each folder's README.
 
-The agent fleet does HYPRN's engineering and operations work, on request and on its own triggers. This document is the single description of the target; decisions and trade-offs are in [ADR-0001](../adr/0001-agent-fleet.md) to [ADR-0006](../adr/0006-agent-first-operating-model.md).
+The agent fleet does HYPRN's engineering and operations work, on request and on its own triggers. This document is the single description of the target; decisions and trade-offs are in [ADR-0001](../adr/0001-agent-fleet.md) to [ADR-0007](../adr/0007-codd-pattern-coding-agents.md).
 
 **MUST** marks an acceptance requirement of the target. Other statements describe the design.
 
