@@ -2,7 +2,7 @@
 gsd_state_version: '1.0'
 status: planning
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -13,17 +13,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-12)
+See: .planning/PROJECT.md (updated 2026-10-13)
 
-**Core value:** The platform owner gives Ada a task in Slack and receives a reviewable draft pull request, and no path exists from the agent fleet to staging or prod credentials.
-**Current focus:** Phase 1 - Enforced agent policy
+**Core value:** The platform owner gives an agent a task in Slack and receives a reviewable draft pull request; no path exists from the agent fleet to staging or prod credentials; adding an agent is one command with a handful of approvals.
+**Current focus:** Phase 1 - Security baseline
 
 ## Current Position
 
-Phase: 1 of 4 (Enforced agent policy)
+Phase: 1 of 5 (Security baseline)
 Plan: 0 of 0 in current phase
 Status: Ready to plan
-Last activity: 2026-10-12 - Roadmap created from ingest of 9 documents; 19 v1 requirements mapped to 4 phases
+Last activity: 2026-10-13 - Roadmap revised to five phases (security, efficiency, onboarding automation); 35 v1 requirements mapped
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -87,13 +87,15 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Pending Todos
 
-- Land the branches `feat/ada-github` and `docs/sharpen` on `main` through pull requests.
+- Phase 3 spikes: channels with a `setup-token` sign-in (FLT-05); Google group settings by script (FLT-02); Slack icon through `apps.icon.set` with a configuration token (FLT-03).
 
 ### Blockers/Concerns
 
 - The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. Ada's App can write to two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
 - Draft-pull-request test from Slack is not yet done (Phase 2).
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
+- Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).
+- Vendor limits on automation (checked 2026-10-13): no Claude Team member API; Slack Socket Mode tokens and app installs need a human; GitHub App installation and logo need a human.
 - Owner steps (admin console, GitHub settings, Secret Manager changes) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.
 - Worktree isolation is complete only once the product reads port, Compose project and database overrides from the environment (product work).
 
@@ -104,11 +106,12 @@ Items acknowledged and deferred at milestone close, most recent first:
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | GitHub | Team plan, ruleset on `main`, CODEOWNERS (GHE-01) | Waiting on plan upgrade | 2026-10-12 | Agent fleet operational |
-| Fleet | Agent #2 (FLEET-01) | Gated on Anthropic's human answer on agent seats | 2026-10-12 | Agent fleet operational |
+| Fleet | Agent #2 (FLEET-01) | Gated on Anthropic's human answer on agent seats; onboard with `agents/fleet add` | 2026-10-12 | Agent fleet operational |
+| Fleet | Overflow, cockpit, GitHub issues intake, Slack plan (FLEET-02..05) | Triggers in REQUIREMENTS.md | 2026-10-13 | Agent fleet operational |
 | Platform | Staging and prod build-out (PLAT-01) | Follows the product's local edition | 2026-10-12 | Agent fleet operational |
 
 ## Session Continuity
 
-Last session: 2026-10-12
-Stopped at: Roadmap and state initialized; ready for `/gsd-plan-phase 1`
+Last session: 2026-10-13
+Stopped at: Five-phase roadmap adopted; ready for `/gsd-plan-phase 1`
 Resume file: None
