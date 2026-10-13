@@ -1,0 +1,19 @@
+# LiteLLM gateway config (Phase 3, CP-01 + RT-01). Provider switch is
+# binding-only: move `model_name: boole-default` to the Claude entry.
+# Secrets come from the environment (Secret Manager at deploy), never values.
+model_list:
+  - model_name: boole-default
+    litellm_params:
+      model: fireworks_ai/accounts/fireworks/models/llama-v3p1-70b-instruct
+      api_key: os.environ/FIREWORKS_AI_API_KEY
+  - model_name: boole-claude
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: boole-openai
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL
