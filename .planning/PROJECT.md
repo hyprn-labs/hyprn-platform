@@ -6,19 +6,20 @@ hyprn-platform is the company's cloud platform repository: Terraform, cloud iden
 
 ## Core Value
 
-The platform owner gives Ada a task in Slack and receives a reviewable draft pull request, and no path exists from the agent fleet to staging or prod credentials.
+The platform owner gives an agent a task in Slack and receives a reviewable draft pull request; no path exists from the agent fleet to staging or prod credentials; adding an agent is one command with a handful of approvals.
 
 ## Current Milestone: Agent fleet operational
 
-**Goal:** Ada works from Slack, opens draft pull requests on GitHub, runs under enforced Claude Code policy, and the first-week usage measurement drives the seat decision.
+**Goal:** Harden the fleet before it grows, make agents efficient at real work, turn onboarding into one command, prove isolation between agents, and decide seats and models from one measured week.
 
-**Success metric:** The platform owner gives Ada a task in Slack and receives a reviewable draft pull request by `ada-agent-hyprn[bot]`, with no path from the agent fleet to staging or prod credentials, and with a recorded seat decision after one measured week.
+**Success metric:** A Slack task yields a draft pull request by the agent's App bot; a test agent is onboarded and offboarded with `agents/fleet` in 15 minutes or less and 8 human actions or fewer (Claude seat steps excepted); all acceptance and isolation checks pass from one command; the seat and model decisions are recorded after one measured week.
 
-**Target work:**
-- Claude Code policy, sandbox and egress allowlist enforced for agents, with deny rules for merge and push to `main`.
-- The Slack-to-draft-pull-request path proven end to end, with the worktree helper.
-- Acceptance and isolation checks run as repeatable tests and recorded.
-- One measured week with Ada and a recorded seat decision.
+**Target work (five phases):**
+1. Security baseline: enforced Claude Code policy, egress proxy in observe mode, alerts on secrets and IAM, account safeguards.
+2. Agent workflow and efficiency: worktree per task with clean-up, pre-installed toolchains and caches, first Slack-to-draft-PR.
+3. Fleet as code and onboarding kit: `agents/fleet.yaml`, `agents/fleet add` and `remove`.
+4. Acceptance and isolation checks, including between two agents, from one command.
+5. Measured week and decisions; egress allowlist enforced.
 
 ## Requirements
 
@@ -36,15 +37,17 @@ The platform owner gives Ada a task in Slack and receives a reviewable draft pul
 
 Requirement IDs and acceptance wording live in `.planning/REQUIREMENTS.md`. Summary:
 
-- [ ] Enforced agent policy: permission rules, sandbox, egress allowlist, `strictKnownMarketplaces`, deny rules for merge and push to `main`, break-glass admin, organization 2FA, ADR-0003.
-- [ ] GitHub workflow: Slack task to draft pull request by `ada-agent-hyprn[bot]`, worktree helper, removal of the interim machine account.
-- [ ] Acceptance: permission relay, other-sender rejection, merge and push refusal, isolation and no-production-credentials checks as repeatable tests.
-- [ ] Measurement: OpenTelemetry export, one week of daily reports, seat decision recorded in an ADR.
+- [ ] Security baseline (POL, EGR-01, DET, SEC).
+- [ ] Agent workflow and efficiency (GH-01, GH-02, EFF).
+- [ ] Fleet as code and onboarding kit (FLT).
+- [ ] Acceptance and isolation, including cross-agent (ACC).
+- [ ] Measured week, decisions, enforced egress (MEAS, EGR-02).
 
 ### Out of Scope
 
 - Staging and prod environments, deployment contract, host reconciler, product delivery pipeline — they follow the product's local edition and are specified in `docs/specs/cloud-platform.md`.
-- Agent #2 — gated on Anthropic's human answer on agent seats (ADR-0001 section 1).
+- Agent #2 — gated on Anthropic's human answer on agent seats (ADR-0001 section 1); onboarded with `agents/fleet add` once allowed.
+- Automating Claude seat invitations — the Team plan has no member API.
 - GitHub Team plan, ruleset on `main` and CODEOWNERS — a paid-plan and owner decision; tracked as deferred requirements. Until then, Claude Code deny rules are the control.
 - Product-side support for per-worktree port, Compose project and database overrides — product work in `hyprn-mvp`.
 - Signed commits — not required for now (ADR-0001 section 5).
