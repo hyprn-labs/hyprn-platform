@@ -4,7 +4,7 @@
 **Core Value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
 **Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0007. Each group names the spec sections it delivers.
 
-Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` only, free-tier model until company terms).
+Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` and `hyprn-mvp`, free-tier model until company terms).
 
 ## v1 Requirements
 
@@ -87,7 +87,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ### Codd-pattern coding agents (CODD) — spec §1, §2, §3
 
-- [ ] **CODD-01**: Codd's identity scope holds: GitHub App `codd-agent-hyprn` installed on `hyprn-platform` only with one-hour tokens; Linux user `codd` with a private home; managed OpenCode config from `agents/host/files/opencode.json`; no Slack app and no Workspace user.
+- [ ] **CODD-01**: Codd's identity scope holds: GitHub App `codd-agent-hyprn` installed on `hyprn-platform` and `hyprn-mvp` with one-hour tokens; Linux user `codd` with a private home; managed OpenCode config from `agents/host/files/opencode.json`; no Slack app and no Workspace user.
 - [ ] **CODD-02**: The Codd pattern — GitHub App plus Linux user plus OpenCode, herdr-controlled, on a dedicated or shared VM — is the repeatable setup for coding agents and compute split for long-running tasks; it is documented in the runbook and covered by fleet onboarding.
 - [ ] **CODD-03**: Until the work moves under the company, the free-tier model, cost and data terms are checked monthly against the Zen model list (model, price, training-data use); on the move, Codd's model binding changes to protective terms by configuration, without retiring the agent.
 

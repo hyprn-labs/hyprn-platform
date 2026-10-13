@@ -57,7 +57,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - Run state lives in its own database on the gateway's Cloud SQL instance.
 - The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
 - Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
-- Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` only, enforced by its GitHub App being installed there only and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
+- Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` and `hyprn-mvp`, enforced by its GitHub App being installed on those two repositories only (installation on `hyprn-mvp` pending, owner step) and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
@@ -72,7 +72,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 | VMs | `hyprn-agents-host-01` (`t2d-standard-8`, 10.10.0.3, on demand), `hyprn-agents-wake-01` (`e2-micro`, 10.10.0.2, always on) |
 | Secrets | `ada-agent-slack-app-token`, `ada-agent-slack-bot-token`, `ada-agent-github-app-key`, `codd-agent-github-app-key` (v1 each), `agents-slack-allowed-users` (v3) |
 | Claude Code on host | 2.1.287, plugin `slack@hyprn-agents` 0.1.1 |
-| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; GitHub Apps `ada-agent-hyprn` (App ID 5299141, installation 170941397, all repositories) and `codd-agent-hyprn` (App ID 5306008, installation 171119571, `hyprn-platform` only); interim machine account removed |
+| GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; GitHub Apps `ada-agent-hyprn` (App ID 5299141, installation 170941397, all repositories) and `codd-agent-hyprn` (App ID 5306008, installation 171119571, `hyprn-platform` and `hyprn-mvp` — mvp installation pending, owner step); interim machine account removed |
 
 ### Operational Notes
 
@@ -101,7 +101,7 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Blockers/Concerns
 
-- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories and Codd's to `hyprn-platform`, so deny rules are the only control until the Team plan (purchases arrive later).
+- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories and Codd's to `hyprn-platform` and `hyprn-mvp`, so deny rules are the only control until the Team plan (purchases arrive later).
 - Prototyping accounts: all current development is under the owner's personal accounts with free-tier training-use terms; IP moves to the future company, then bindings move to protective terms.
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).

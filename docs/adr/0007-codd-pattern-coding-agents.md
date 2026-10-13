@@ -10,7 +10,7 @@ decision-makers: Owner
 
 ADR-0001 put one engineering agent (Ada) on a Claude Team seat, steered from Slack, with one identity per system (Workspace user, Slack app, GitHub App, Linux user). Building the platform that way is slow and seat-bound: long-running tasks share one host and one session model, and every future coding agent would need a Slack app, a Workspace user and a paid seat before doing anything useful.
 
-Codd (built 2026-10-13, `runbooks/agents/opencode.md`) showed a cheaper shape: a GitHub App installed on one repository, a Linux user with a private home, OpenCode under a managed configuration, steered by the owner from the terminal, no Slack app, no Workspace user, no seat. The owner directs that later coding agents follow this setup on dedicated or shared VMs, controlled through herdr, giving compute split for long-running tasks.
+Codd (built 2026-10-13, `runbooks/agents/opencode.md`) showed a cheaper shape: a GitHub App installed on scoped repositories, a Linux user with a private home, OpenCode under a managed configuration, steered by the owner from the terminal, no Slack app, no Workspace user, no seat. The owner directs that later coding agents follow this setup on dedicated or shared VMs, controlled through herdr, giving compute split for long-running tasks.
 
 All current development is rapid prototyping under the owner's personal accounts. Codd runs a free Muse Spark model on OpenCode Zen, whose price is Meta's training use of prompts and completions. The IP moves to the future company, at which point model bindings move to protective terms. Purchases (GitHub Team plan, revised budget, provider keys) arrive later; until then phases proceed on deny-rules and prototyping terms.
 
@@ -45,7 +45,7 @@ Chosen: **O2**. The target is described in the [agent fleet specification](../sp
 
 - **ADR-0001 section 1 (licensing):** one Claude Team seat per engineering agent applies to Slack-steered agents (Ada). Codd-pattern coding agents run keyless free-tier models for prototyping, protective bindings after the company move.
 - **ADR-0001 section 2 (identities):** every agent holds one identity per system it uses; Codd-pattern agents use GitHub and the host only — no Slack app, no Workspace user.
-- **ADR-0005:** an engineering agent's App is installed only on the repositories it changes (Codd: `hyprn-platform` only), not by default on all repositories.
+- **ADR-0005:** an engineering agent's App is installed only on the repositories it changes (Codd: `hyprn-platform` and `hyprn-mvp`), not by default on all repositories.
 - **ADR-0006 decision outcome:** two kinds of agent become three bindings — seat-steered engineering (Ada), Codd-pattern engineering (Codd and later coding agents), operations on API keys (Boole).
 
 ### Consequences
@@ -60,5 +60,5 @@ Chosen: **O2**. The target is described in the [agent fleet specification](../sp
 ### Confirmation
 
 - A second coding agent is onboarded from the Codd pattern and opens a draft pull request from its own branch.
-- Codd's App sees `hyprn-platform` only; its Linux user cannot reach other agents' homes, tokens or processes.
+- Codd's App sees `hyprn-platform` and `hyprn-mvp`; its Linux user cannot reach other agents' homes, tokens or processes.
 - Switching Codd's model binding changes nothing else about the agent.
