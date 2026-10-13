@@ -33,7 +33,7 @@ while read -r name uid harness _; do
   else
     check "$name: OpenCode runs" "run 'opencode --version' | grep -qF $OPENCODE_VERSION"
     check "$name: no Slack tokens" "[ ! -e /run/hyprn-agents/secrets/$name/slack.env ]"
-    check "$name: GitHub App limited to hyprn-platform" "run 'gh api installation/repositories --jq .repositories[].full_name' | grep -qx hyprn-labs/hyprn-platform && [ \"\$(run 'gh api installation/repositories --jq .total_count')\" = 1 ]"
+    check "$name: GitHub App limited to hyprn-platform and hyprn-mvp" "run 'gh api installation/repositories --jq .repositories[].full_name' | sort | diff - <(printf 'hyprn-labs/hyprn-mvp\nhyprn-labs/hyprn-platform\n') >/dev/null && [ \"\$(run 'gh api installation/repositories --jq .total_count')\" = 2 ]"
   fi
   check "$name: Slack tokens private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/slack.env ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/slack.env)\" = $name:400 ]"
   check "$name: GitHub token private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/github-token ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token)\" = $name:400 ]"

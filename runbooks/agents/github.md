@@ -6,7 +6,7 @@ Each agent reaches GitHub through its own GitHub App ([ADR-0005](../../docs/adr/
 
 1. `hyprn-labs` → Settings → Developer settings → GitHub Apps → New GitHub App: name `<name>-agent-hyprn`; homepage `https://github.com/hyprn-labs`; webhook **inactive**; repository permissions Contents and Pull requests **read and write** (Metadata read is automatic); installable only on this account.
 2. Note the App ID; generate a private key; store the `.pem` in the company password manager.
-3. Install the App on `hyprn-labs`: engineering agents on Claude Code on **all repositories**; Codd on `hyprn-platform` only; operations agents on the repositories their loops change.
+3. Install the App on `hyprn-labs`: engineering agents on Claude Code on **all repositories**; Codd on `hyprn-platform` and `hyprn-mvp`; operations agents on the repositories their loops change.
 4. Look up the installation and bot IDs:
 
    ```bash
@@ -29,7 +29,7 @@ Generate a new private key on the App's page, load it as a new secret version, r
 
 ## Repository access
 
-Ada's App is installed on all `hyprn-labs` repositories, Codd's on `hyprn-platform` only (Organization → Settings → GitHub Apps → Configure). Tokens never exceed the App's permissions or its installation's repositories.
+Ada's App is installed on all `hyprn-labs` repositories, Codd's on `hyprn-platform` and `hyprn-mvp` (Organization → Settings → GitHub Apps → Configure). Tokens never exceed the App's permissions or its installation's repositories.
 
 ## Record
 

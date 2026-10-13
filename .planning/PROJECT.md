@@ -2,7 +2,7 @@
 
 ## What This Is
 
-hyprn-platform is HYPRN's cloud platform repository: Terraform, cloud identities, governance, runbooks and the agent fleet. Products such as HYPRN MVP live in their own repositories (`hyprn-mvp`). Today the live parts of the platform are the engineering agent Ada, steered from Slack, delivering draft pull requests on GitHub, and Codd, an engineering agent on OpenCode steered from the terminal, limited to `hyprn-platform`. The target is a fleet of engineering and operations agents described in `docs/specs/agent-fleet.md`.
+hyprn-platform is HYPRN's cloud platform repository: Terraform, cloud identities, governance, runbooks and the agent fleet. Products such as HYPRN MVP live in their own repositories (`hyprn-mvp`). Today the live parts of the platform are the engineering agent Ada, steered from Slack, delivering draft pull requests on GitHub, and Codd, an engineering agent on OpenCode steered from the terminal, installed on `hyprn-platform` and `hyprn-mvp`. The target is a fleet of engineering and operations agents described in `docs/specs/agent-fleet.md`.
 
 ## Core Value
 

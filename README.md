@@ -2,7 +2,7 @@
 
 HYPRN's cloud platform on Google Cloud: the organization and its guardrails, environments and identities, the deployment contract between products and hosts, the host reconciler, the agent fleet, and the runbooks that operate them. Products ship from their own repositories; the first is HYPRN MVP (`hyprn-mvp`).
 
-**In service:** the organization baseline ([`bootstrap/`](bootstrap/README.md)) and the agent fleet ([`infra/agents/`](infra/agents/README.md), [`agents/`](agents/README.md)): Ada, an engineering agent steered from Slack, on an on-demand host with no public address; and Codd, an engineering agent on OpenCode steered from the terminal, limited to `hyprn-platform` ([runbook](runbooks/agents/opencode.md)).
+**In service:** the organization baseline ([`bootstrap/`](bootstrap/README.md)) and the agent fleet ([`infra/agents/`](infra/agents/README.md), [`agents/`](agents/README.md)): Ada, an engineering agent steered from Slack, on an on-demand host with no public address; and Codd, an engineering agent on OpenCode steered from the terminal, installed on `hyprn-platform` and `hyprn-mvp` ([runbook](runbooks/agents/opencode.md)).
 
 **Targets:** the [agent fleet specification](docs/specs/agent-fleet.md) — engineering and operations agents on seats and API keys, loops on schedules and events, a control plane, learning from feedback — and the [platform specification](docs/specs/cloud-platform.md) for staging and prod.
 
