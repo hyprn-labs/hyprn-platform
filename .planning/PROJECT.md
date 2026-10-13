@@ -12,8 +12,8 @@ Agents do HYPRN's engineering and operations work — on request and on their ow
 
 Target: `docs/specs/agent-fleet.md`; decisions in ADR-0001 to ADR-0006 (ADR-0006 proposed). Phases and requirement IDs: `ROADMAP.md`, `REQUIREMENTS.md`.
 
-- **M1 — Safe engineering agent** (Phases 1–2): enforced policy, egress observation, alerts, account safeguards, proven safety checks; Slack-to-draft-PR from clean worktrees; herdr as cockpit and host runtime; Ada telemetry.
-- **M2 — Boole, the ops agent, with a learning meeting loop** (Phases 3–5): the second agent, on open models at Fireworks with an API key; gateway, controller, loop registry, credential broker, approvals that wait, budgets, kill switch; Granola → Notion → loop → Slack; GitHub Team plan ruleset; feedback, evals and improvement pull requests.
+- **M1 — Safe engineering agent** (Phases 1–2): GitHub ruleset on `main`, enforced policy, egress observation, alerts, account safeguards, proven safety checks; Slack-to-draft-PR from clean worktrees; herdr as cockpit and host runtime; Ada telemetry.
+- **M2 — Boole, the ops agent, with a learning meeting loop** (Phases 3–5): the second agent, on open models at Fireworks with an API key; gateway, controller, loop registry, credential broker, approvals that wait, budgets, kill switch; Granola → Notion → loop → Slack; egress allowlist for run containers from the first run; feedback, evals and improvement pull requests scoped to declared paths.
 - **M3 — Scale the fleet** (Phases 6–7): `agents/fleet.yaml`, `fleet add` and `remove` for both kinds of agent, Workspace users per agent, egress allowlist enforced, full acceptance run.
 
 **Success metric:** Ada ships draft pull requests from Slack tasks; Boole's meeting loop handles at least 10 real meetings in two weeks within 30 USD a month and has merged one evidence-backed improvement; a test agent of each kind is onboarded and offboarded with `fleet` within 15 minutes and about 8 human actions (Claude seat steps excepted); `tests/agents/run.sh` passes in full.
@@ -34,8 +34,8 @@ Target: `docs/specs/agent-fleet.md`; decisions in ADR-0001 to ADR-0006 (ADR-0006
 
 Requirement IDs live in `.planning/REQUIREMENTS.md`, grouped by the spec sections they deliver.
 
-- [ ] M1: policy, egress observation, detection, safeguards, safety checks (POL, EGR-01, DET, SEC, ACC-01..06, ACC-08); engineering workflow (GH, EFF, COK, OBS).
-- [ ] M2: control plane (CP, RT, OPS-01, COST, ACC-09); Boole and the meeting loop (OPS-02, LOOP, ACC-07); learning (GHE-01, GHE-03, OPS-03, LRN).
+- [ ] M1: ruleset, policy, egress observation, detection, safeguards, safety checks (GHE-01, GHE-03, POL, EGR-01, DET, SEC, ACC-01..06, ACC-08); engineering workflow (GH, EFF, COK, OBS).
+- [ ] M2: control plane (CP, RT, EGR-03, OPS-01, COST, ACC-09); Boole and the meeting loop (OPS-02, LOOP, ACC-07); learning (OPS-03, LRN).
 - [ ] M3: fleet as code (FLT); hardening and acceptance (EGR-02, ACC-10).
 
 ### Out of Scope
@@ -52,7 +52,7 @@ Requirement IDs live in `.planning/REQUIREMENTS.md`, grouped by the spec section
 
 - Two Claude Team seats cover the platform owner and Ada; extra usage is off so seat-limit hits are visible.
 - The agent host runs on demand (ADR-0002), about 75–80 EUR per month at 8 hours a day on 22 days, inside the 100 EUR budget. M2 adds the gateway, Cloud SQL, Workspace licences and host wake-ups for runs; the owner sets a revised budget in Phase 3 (COST-01).
-- The GitHub organization `hyprn-labs` is on the Free plan: no ruleset on private repositories. Until the Team plan arrives in Phase 5, only Ada, whose Claude Code deny rules block merging and pushing to `main`, holds write access.
+- The GitHub organization `hyprn-labs` is on the Free plan: no ruleset on private repositories. The Team plan and its ruleset come in Phase 1; until then Claude Code deny rules are the only control on Ada's write access.
 - The Slack channel plugin is our own audited server (ADR-0003).
 - `docs/specs/cloud-platform.md` defines staging and prod; none of it is provisioned. Its rule that agents get no privileged path and that `hyprn-agents` is tooling, not an environment, applies here.
 - Residual risk accepted: the channel server runs as the agent user, so a compromised agent could alter its installed copy or use its own bot token; the allowlist protects the session from other people's messages and the Linux user boundary limits reach.
@@ -98,7 +98,7 @@ Decisions below are locked unless marked proposed. Do not plan work that reverse
 
 ### ADR-0006 (proposed): Agent-first operating model
 
-- Seats for human-directed work, API keys for autonomous loops; two kinds of agent (engineering on seats, operations on API keys); registry of agents and loops as code; thin control plane on the always-on VM with run state in the gateway's Cloud SQL; LiteLLM gateway on Cloud Run; polling before webhooks; autonomy levels A0–A3 earned from evals; herdr as host runtime and cockpit; operations agents get repository write access only behind the Team plan ruleset.
+- Seats for human-directed work, API keys for autonomous loops; two kinds of agent (engineering on seats, operations on API keys); registry of agents and loops as code; thin control plane on the always-on VM with run state in the gateway's Cloud SQL; LiteLLM gateway on Cloud Run; polling before webhooks; autonomy levels A0–A3 earned from evals; herdr as host runtime and cockpit; ruleset on `main` from M1; improving agents change only their declared paths; run containers egress-restricted from the first run.
 
 </decisions>
 
@@ -109,7 +109,7 @@ Decisions below are locked unless marked proposed. Do not plan work that reverse
 | Host on demand with always-on wake service | Larger host at about 75–80 EUR per month | Good: wake verified at 50 s |
 | Own Slack channel server with root-written sender allowlist | Community candidates failed the audit | Good: in service (ADR-0003) |
 | GitHub App per agent with one-hour tokens | No long-lived token, seat or second factor; works on the Free plan | Good: host checks pass (ADR-0005) |
-| Deny rules on merge and push to `main` until the ruleset | Free plan cannot protect private repositories | Phase 1; ruleset in Phase 5 |
+| Deny rules on merge and push to `main` until the ruleset | Free plan cannot protect private repositories | Phase 1, with the ruleset |
 | Second agent on API keys and open models (Boole) | Tests the whole loop stack without a second seat | M2 (ADR-0006, proposed) |
 | Telemetry and gateway cost instead of a measured week | Continuous data, reviewed monthly | Phases 2–3 |
 

@@ -48,7 +48,7 @@ Design rules, from the sources below:
 8. Small, focused agents with their own context; several agents only for parallel, high-value work.
 9. Every loop ships with evals; a green run is not proof the work was done.
 10. All metered model traffic goes through one gateway with per-loop keys, budgets and attribution.
-11. Least privilege per loop: its own identity, scoped tools, network allowlist, and — once the GitHub Team plan provides it — a ruleset on `main` as the hard backstop.
+11. Least privilege per loop: its own identity, scoped tools, network allowlist from the first run, and a ruleset on `main` (GitHub Team plan) as the hard backstop.
 
 ## Considered Options
 
@@ -67,9 +67,9 @@ Chosen: **O3**. The target is described in the [agent fleet specification](../sp
 - **Triggers** (spec §5): schedules, polling (first: the Notion meetings database every 5 minutes), Slack and people. A webhook receiver comes only when polling is not enough, under its own ADR.
 - **Model gateway** (spec §6): LiteLLM on Cloud Run, internal ingress only, Cloud SQL; one key and budget per loop; Fireworks, Anthropic and OpenAI behind it.
 - **Tools and credentials** (spec §7): least-privilege grants per agent, a credential broker per run; finance read-only and e-signature prepare-only, permanently; people's own accounts (Granola) never used by agents.
-- **Autonomy levels A0–A3 and learning** (spec §9, §10): levels per action; promotion by reviewed change meeting a declared rule; feedback from Slack becomes eval cases; improvements arrive as pull requests that pass the evals.
+- **Autonomy levels A0–A3 and learning** (spec §9, §10): levels per action; promotion by reviewed change meeting a declared rule; feedback from Slack becomes eval cases; improvements arrive as pull requests that pass the evals and change only the paths the improving agent was given when created, enforced by a required check; the owner reviews and merges.
 - **Session runtime and cockpit** (spec §4, §11): herdr runs engineering agents' sessions on the host and is the owner's cockpit on the laptop over IAP SSH.
-- **`main` protection** (spec §13): until the GitHub Team plan's ruleset exists, only engineering agents on Claude Code hold write access, controlled by Claude Code deny rules; operations agents receive write access only once the ruleset is in place.
+- **`main` protection** (spec §13): the GitHub Team plan's ruleset protects `main` in every repository from the first milestone; Claude Code deny rules remain a second layer for engineering agents.
 
 ### Amends
 
@@ -103,7 +103,7 @@ Chosen: **O3**. The target is described in the [agent fleet specification](../sp
 - Good: provider choice is a binding; cost per loop is visible and capped.
 - Good: a new hire learns the company by reading the playbook and extends it the same way.
 - Bad: the control plane, gateway and database are ours to run; they must stay small.
-- Bad: a Workspace licence per agent; a GitHub Team plan before operations agents write to repositories.
+- Bad: a Workspace licence per agent; the GitHub Team plan from the first milestone.
 - Neutral: hosted runtimes can take over parts of the control plane as they mature, because loops are declared independently of where they run.
 
 ### Confirmation
