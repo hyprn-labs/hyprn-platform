@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Run runner (Phase 3, RT-01 + EGR-03): executes one pending run for its
+# agent in a fresh rootless container as the agent Linux user. Destinations
+# come ONLY from the reviewed loop allowlist plus the gateway host — never
+# from trigger payload (ADR-0006 rule 3). Usage:
+# hyprn-run-runner <agent> <run-id> <loop.yaml>. Run as root. Provider
+# binding is config-only: switching Fireworks to Claude changes the binding
+# value, never this script.
+set -euo pipefail
+AGENT="${1:-}"
+RUN_ID="${2:-}"
+LOOP="${3:-}"
+[ -n "$AGENT" ] && [ -n "$RUN_ID" ] && [ -n "$LOOP" ] || { echo "usage: hyprn-run-runner <agent> <run-id> <loop.yaml>" >&2; exit 2; }
+
+GATEWAY="${GATEWAY:-gateway.internal}"
+BINDING="${BINDING:-fireworks-open-model}"
+PROXY_PORT="${PROXY_PORT:-3128}"
+RUN_DIR="/run/hyprn-agents/runs/$RUN_ID"
+
+# Early-exit guards: kill flags set, or no pending run dir.
+[ -e "/run/hyprn-agents/kill_fleet" ] && exit 0                 # fleet kill flag
+[ -e "/run/hyprn-agents/kill_agent_$AGENT" ] && exit 0          # agent kill flag
+[ -d "$RUN_DIR" ] || exit 0                                    # no pending run
+
+# Register a hold so hyprn-idle-stop treats run containers as activity:
+# running containers block idle-stop.
+touch /run/hyprn-agents/hold
+trap 'hyprn-credential-broker --cleanup "$RUN_ID"; rm -f /run/hyprn-agents/hold' EXIT
+
+# Allowlist translated from the reviewed loop file only.
+ALLOWED_HOSTS=$(python3 -c "
+import yaml
+doc = yaml.safe_load(open('$LOOP'))
+hosts = ['$GATEWAY'] + [str(h) for h in doc.get('egress_allowlist', [])]
+print(','.join(hosts))
+")
+export ALLOWED_HOSTS BINDING
+
+ENV_FILE_ARG=()
+[ -f "$RUN_DIR/env" ] && ENV_FILE_ARG=(--env-file "$RUN_DIR/env")
+
+runuser -l "$AGENT" -c "docker run --rm --read-only --network=hyprn-run \
+  --env HTTPS_PROXY=http://host.containers.internal:$PROXY_PORT \
+  --env https_proxy=http://host.containers.internal:$PROXY_PORT \
+  --env ALLOWED_HOSTS='$ALLOWED_HOSTS' \
+  --env MODEL_BINDING='$BINDING' \
+  ${ENV_FILE_ARG[*]:-} \
+  -v '$RUN_DIR:/run/secrets:ro' \
+  ghcr.io/hyprn/runner:latest /workflow/run.sh" </dev/null
