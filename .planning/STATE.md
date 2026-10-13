@@ -123,6 +123,7 @@ Gotchas met while building the fleet; read before operating it.
 | Phase | State | Resume |
 |-------|-------|--------|
 | 1 | verification_deferred_human | /gsd-verify-work 1 |
+| 2 | verification_deferred_human | /gsd-verify-work 2 |
 
 ## Session Continuity
 
