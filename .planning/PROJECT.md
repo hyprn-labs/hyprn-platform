@@ -85,7 +85,7 @@ Decisions below are locked unless marked proposed. Do not plan work that reverse
 
 ### ADR-0002: Agent host on demand, woken from Slack
 
-- Host `t2d-standard-8`, stops after 30 minutes without work or SSH; sessions resume on boot.
+- Host `t2d-standard-8`, stops after 30 minutes without agent activity, terminal input or a running SSH command; sessions resume on boot.
 - Wake service on `hyprn-agents-wake-01` connects to an agent's Slack app only while the host is stopped and starts it on the allowlisted sender's message; its identity can only get, start and stop the host.
 
 ### ADR-0003: Our own Slack channel server for agents
