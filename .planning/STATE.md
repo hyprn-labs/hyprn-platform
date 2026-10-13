@@ -67,7 +67,7 @@ Recent decisions affecting current work:
 | Projects | `hyprn-bootstrap` (`398807288756`), `hyprn-agents` (`605123398847`, folder `agents` `86446816109`) |
 | Terraform state | `gs://hyprn-bootstrap-tfstate/bootstrap/`, `gs://hyprn-agents-tfstate/agents/` |
 | VMs | `hyprn-agents-host-01` (`t2d-standard-8`, 10.10.0.3, on demand), `hyprn-agents-wake-01` (`e2-micro`, 10.10.0.2, always on) |
-| Secrets | `ada-agent-slack-app-token`, `ada-agent-slack-bot-token`, `ada-agent-github-app-key` (v1 each), `agents-slack-allowed-users` (v3); `ada-agent-github-token` pending deletion |
+| Secrets | `ada-agent-slack-app-token`, `ada-agent-slack-bot-token`, `ada-agent-github-app-key` (v1 each), `agents-slack-allowed-users` (v3) |
 | Claude Code on host | 2.1.287, plugin `slack@hyprn-agents` 0.1.1 |
 | GitHub | organization `hyprn-labs` (Free plan); repositories `hyprn-platform`, `hyprn-mvp`; GitHub App `ada-agent-hyprn` (App ID 5299141, installation 170941397, bot `ada-agent-hyprn[bot]`); interim machine account removed |
 
@@ -87,7 +87,6 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Pending Todos
 
-- Delete the secret `ada-agent-github-token` (GH-03); the token is revoked and the account removed from `hyprn-labs`.
 - Land the branches `feat/ada-github` and `docs/sharpen` on `main` through pull requests.
 
 ### Blockers/Concerns

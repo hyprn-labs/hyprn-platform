@@ -25,7 +25,7 @@ No PRD exists for this milestone. These requirements are derived from the remain
 
 - [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-agent-hyprn[bot]`. The description states what changed and how it was verified, and Ada does not merge it.
 - [ ] **GH-02**: A worktree helper creates one worktree per task on branch `agent/<name>/<slug>` and sets its own port block, Compose project name and test database name as environment variables. Two worktrees run side by side without collisions.
-- [ ] **GH-03**: The interim machine account is removed: its fine-grained token revoked, the account removed from `hyprn-labs`, the secret `ada-agent-github-token` deleted, and the removal recorded in `runbooks/agents/github.md`.
+- [x] **GH-03**: The interim machine account is removed: its fine-grained token revoked, the account removed from `hyprn-labs`, the secret `ada-agent-github-token` deleted, and the removal recorded in `runbooks/agents/github.md`.
 
 ### Acceptance and isolation (ACC)
 
@@ -83,7 +83,7 @@ No PRD exists for this milestone. These requirements are derived from the remain
 | DOC-01 | Phase 1 | Complete |
 | GH-01 | Phase 2 | Pending |
 | GH-02 | Phase 2 | Pending |
-| GH-03 | Phase 2 | Pending |
+| GH-03 | Phase 2 | Complete |
 | ACC-01 | Phase 3 | Pending |
 | ACC-02 | Phase 3 | Pending |
 | ACC-03 | Phase 3 | Pending |
