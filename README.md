@@ -2,7 +2,9 @@
 
 HYPRN's cloud platform on Google Cloud: the organization and its guardrails, environments and identities, the deployment contract between products and hosts, the host reconciler, the agent fleet, and the runbooks that operate them. Products ship from their own repositories; the first is HYPRN MVP (`hyprn-mvp`).
 
-**In service:** the organization baseline ([`bootstrap/`](bootstrap/README.md)) and the agent fleet ([`infra/agents/`](infra/agents/README.md), [`agents/`](agents/README.md)): Ada, a coding agent steered from Slack, on an on-demand host with no public address. Staging and prod follow the [platform specification](docs/specs/cloud-platform.md).
+**In service:** the organization baseline ([`bootstrap/`](bootstrap/README.md)) and the agent fleet ([`infra/agents/`](infra/agents/README.md), [`agents/`](agents/README.md)): Ada, an engineering agent steered from Slack, on an on-demand host with no public address.
+
+**Targets:** the [agent fleet specification](docs/specs/agent-fleet.md) — engineering and operations agents on seats and API keys, loops on schedules and events, a control plane, learning from feedback — and the [platform specification](docs/specs/cloud-platform.md) for staging and prod.
 
 ## Ownership
 
@@ -18,14 +20,14 @@ Products own their scientific and API contracts, data schema migrations, health 
 | [`environments/`](environments/staging/README.md) | Runtime bindings and desired release per environment |
 | [`contracts/v1/`](contracts/v1/README.md) | Deployment schemas: workload, runtime, desired state |
 | [`host/`](host/README.md) | Host reconciler, renderer, systemd units and firewall templates |
-| [`agents/`](agents/README.md) | Agent fleet: roster, roles, host provisioning, Slack channel plugin, wake service, measurement |
+| [`agents/`](agents/README.md) | Agent fleet: roster, roles, host provisioning, Slack channel plugin, wake service (the future fleet controller), measurement |
 | [`governance/`](governance/README.md) | Groups, IAM bindings, repository protections, workload identity federation |
 | [`policies/`](policies/README.md) | Policy checks on rendered configuration |
 | [`conventions/`](conventions/README.md) | Naming and ownership rules |
 | [`catalog/`](catalog/README.md) | Inventory of environments, components and owners |
 | [`tests/`](tests/README.md) | Schema, render, policy, IAM, lifecycle and host checks |
 | [`runbooks/`](runbooks/README.md) | Operating procedures and records of what was done |
-| [`docs/`](docs/README.md) | Platform specification and decision records |
+| [`docs/`](docs/README.md) | Platform and agent fleet specifications, decision records |
 
 ## Working here
 

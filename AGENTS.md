@@ -9,7 +9,8 @@ This is the only agent instruction file in the repository.
 | Need | Read |
 |---|---|
 | What is here and where | `README.md`, then the folder's README |
-| Platform design, MUST requirements, open questions | `docs/specs/cloud-platform.md` |
+| Agent fleet target: agents, loops, control plane, tools, autonomy | `docs/specs/agent-fleet.md` |
+| Product hosting design (staging, prod), MUST requirements, open questions | `docs/specs/cloud-platform.md` |
 | Decisions | `docs/adr/` (MADR; an accepted record is superseded by a new one, never edited) |
 | Current work, requirements, state, inventory, operational notes | the hidden planning directory at the repository root: `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, `milestones/` |
 | Operating a component, and what was done | `runbooks/` |

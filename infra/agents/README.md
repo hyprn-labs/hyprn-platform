@@ -7,6 +7,7 @@ Contents of the `hyprn-agents` project ([ADR-0001](../../docs/adr/0001-agent-fle
 - Wake VM `hyprn-agents-wake-01`: `e2-micro`, always on; its identity can only get, start and stop the host.
 - Identities: `hyprn-agents-host` (logs, metrics, named secrets) and `hyprn-agents-wake` (logs, metrics, host power, Slack secrets). `gcp-admins` holds IAP tunnel access, OS Admin Login and use of both identities.
 - Secrets per agent: `<name>-agent-slack-app-token`, `<name>-agent-slack-bot-token`, `<name>-agent-github-app-key` (host only); shared: `agents-slack-allowed-users`; values are added from the password manager ([runbook](../../runbooks/agents/slack.md)).
+- Planned (milestone M2): the model gateway (Cloud Run, Cloud SQL), the queue and scheduler, and the run-state store ([agent fleet specification](../../docs/specs/agent-fleet.md), sections 5–6).
 - The boot image is pinned; updating it is a reviewed change that replaces the VM. Provisioning on the VMs comes from [`agents/host/`](../../agents/host/README.md) and [`agents/wake/`](../../agents/wake/README.md).
 
 ## Run
