@@ -1,104 +1,114 @@
 # Requirements: hyprn-platform
 
-**Defined:** 2026-10-12 (revised 2026-10-13: security baseline, efficiency and onboarding automation)
-**Milestone:** Agent fleet operational
-**Core Value:** The platform owner gives an agent a task in Slack and receives a reviewable draft pull request; no path exists from the agent fleet to staging or prod credentials; adding an agent is one command with a handful of approvals.
+**Defined:** 2026-10-12 (revised 2026-10-13: value-first milestones, review fixes)
+**Core Value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
+**Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0006. Each group names the spec sections it delivers.
 
-Derived from ADR-0001 (as amended by ADR-0002, ADR-0003, ADR-0005), the agent fleet foundation plan (`milestones/agent-fleet-foundation/PLAN.md`) and the vendor capabilities checked on 2026-10-13. Each requirement is verifiable by the platform owner.
+Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent, Boole the operations agent.
 
 ## v1 Requirements
 
-### Agent policy (POL)
+### Agent policy (POL) — spec §13
 
-- [ ] **POL-01**: The Claude Code permission rules and sandbox settings for agents are reviewed in `agents/policy/`, applied organization-wide by the Team Owner in the admin console, and recorded in `runbooks/agents/`. Routine work runs without prompts; only risky actions are relayed to Slack for approval.
-- [ ] **POL-02**: The Claude Code sandbox network allowlist for agent shell commands is reviewed in `agents/policy/`; a request to any other host fails inside the sandbox.
-- [ ] **POL-03**: `strictKnownMarketplaces` is set organization-wide so only the `hyprn-agents` marketplace is accepted; an agent cannot add another marketplace.
-- [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in every `hyprn-labs` repository. These rules are the enforcing control until a ruleset exists (ADR-0005).
+- [ ] **POL-01**: The Claude Code organization policy lives in `agents/policy/managed-settings.json` with explicit allow, ask and deny lists (routine work allowed, risky actions asked, merging and pushing to `main` denied) and the pinned herdr hooks allowed; the Team Owner applies it in the admin console and `runbooks/agents/claude.md` records each change.
+- [ ] **POL-02**: The sandbox network allowlist for agent shell commands is part of that policy; a request to any other host fails inside the sandbox.
+- [ ] **POL-03**: `strictKnownMarketplaces` accepts only the `hyprn-agents` marketplace.
+- [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in every `hyprn-labs` repository.
 
-### Egress control (EGR)
+### Egress control (EGR) — spec §13
 
-- [ ] **EGR-01**: Agent users and their containers reach the internet only through a filtering proxy on the host (DNS stays allowed); host rules make the proxy the only path. In observe mode it logs every destination per agent without blocking.
-- [ ] **EGR-02**: After the measured week, the proxy enforces a domain allowlist reviewed in `agents/policy/` (GitHub, Anthropic, Slack, the product's package registries); a request to any other domain is refused and logged.
+- [ ] **EGR-01**: A filtering forward proxy (Squid) on the agent host is the only way out for agent users and their containers: host firewall rules by Linux user send their traffic to it and drop direct outbound connections; DNS stays allowed; each destination is logged per agent to Cloud Logging without blocking (observe mode).
+- [ ] **EGR-02**: The proxy enforces a domain allowlist reviewed in `agents/policy/egress-allowlist.txt`, built from observed traffic; any other domain is refused and logged.
 
-### Detection (DET)
+### Detection and account safeguards (DET, SEC, DOC) — spec §13
 
-- [ ] **DET-01**: An alert reaches `gcp-admins` when any principal other than the host or wake identity reads a secret in `hyprn-agents`, or when a secret is created, deleted or given a new reader.
-- [ ] **DET-02**: An alert reaches `gcp-admins` on any IAM policy change in `hyprn-agents` or on its folder.
+- [ ] **DET-01**: Data Access audit logs are on for Secret Manager in `hyprn-agents`; a Cloud Monitoring alert emails `gcp-admins@hyprn.ai` when a secret is read by any principal other than `hyprn-agents-host` and `hyprn-agents-wake` (and the controller and gateway identities once they exist), or when a secret is created, deleted or given a new reader.
+- [ ] **DET-02**: A Cloud Monitoring alert emails `gcp-admins@hyprn.ai` on any IAM policy change in `hyprn-agents`; folder-level changes on `agents` reach the same alert through a log sink into `hyprn-agents`. The group accepts mail from Google Cloud.
+- [ ] **SEC-01**: A break-glass super admin exists with its own hardware security key and printed backup codes, both stored offline away from the owner's daily keys; it holds no standing Google Cloud role; `runbooks/agents/gcp.md` describes its use.
+- [ ] **SEC-02**: `hyprn-labs` requires two-factor authentication for all members.
+- [x] **DOC-01**: ADR-0003 records our own Slack channel server.
 
-### Account safeguards (SEC, DOC)
+### Acceptance and isolation (ACC) — spec §13
 
-- [ ] **SEC-01**: A break-glass super admin exists with an offline key, holds no standing Google Cloud role, and its use procedure is written in `runbooks/agents/gcp.md` without secrets.
-- [ ] **SEC-02**: The `hyprn-labs` GitHub organization requires two-factor authentication for all members.
-- [x] **DOC-01**: ADR-0003 is accepted and linked from `docs/adr/README.md`: our own Slack channel server is the plugin.
+- [ ] **ACC-01**: Permission relay works in Slack: a risky action in Ada's session asks the owner; `yes <id>` lets it proceed, `no <id>` stops it, and a reply from anyone else is rejected.
+- [ ] **ACC-02**: Messages from non-allowlisted Slack senders get no reaction, never reach a session and do not wake the host.
+- [ ] **ACC-03**: Merge, push to `main`, force push and bypass mode are refused in Ada's session.
+- [ ] **ACC-04**: An organization-wide IAM search shows every `hyprn-agents` principal with exactly its declared roles and none outside the project.
+- [ ] **ACC-05**: The host holds no user cloud credentials, no key files and no staging or prod roles or secrets.
+- [ ] **ACC-06**: The wake identity is refused everything but get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across idle stops.
+- [ ] **ACC-07**: Ada and Boole cannot reach each other's homes, secrets, containers, tokens or bots.
+- [ ] **ACC-08**: One command (`tests/agents/run.sh`) runs every check delivered so far and writes a dated record to `runbooks/agents/`; each later phase adds its checks to it.
+- [ ] **ACC-09**: The controller and gateway identities hold exactly their declared roles; the gateway is unreachable from the internet; a run's container holds only its loop's credentials.
+- [ ] **ACC-10**: At the end of M3, the full check run passes with the egress allowlist enforced, and its dated record is kept.
 
-### GitHub workflow (GH)
+### Engineering workflow (GH, EFF, COK, OBS) — spec §2, §4, §11
 
-- [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-agent-hyprn[bot]`. The description states what changed and how it was verified, and Ada does not merge it.
-- [ ] **GH-02**: A worktree helper creates one worktree per task on branch `agent/<name>/<slug>` with its own port block, Compose project name and test database name as environment variables, and removes the worktree and local branch once the pull request is merged or closed. Two worktrees run side by side without collisions.
-- [x] **GH-03**: The interim machine account is removed: token revoked, account removed from `hyprn-labs`, secret `ada-agent-github-token` deleted, recorded in `runbooks/agents/github.md`.
+- [ ] **GH-01**: From a Slack task, Ada creates `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-agent-hyprn[bot]` that states what changed and how it was verified; Ada does not merge it.
+- [ ] **GH-02**: A worktree helper creates one worktree per task with its own port block, Compose project and test database, and removes the worktree and local branch once the pull request is merged or closed.
+- [x] **GH-03**: The interim machine account is removed and its secret deleted.
+- [ ] **EFF-01**: Host provisioning installs the toolchains the product repositories pin, so a task starts without installing tools.
+- [ ] **EFF-02**: Package and Docker layer caches persist per agent across tasks and host stops.
+- [ ] **COK-01**: The owner's laptop runs herdr as the cockpit: local panes for the owner's seats (Claude Code, and Codex on the ChatGPT seat), one Claude Code configuration directory per seat, and the agent host added as a herdr machine over IAP SSH. Remote Control is enabled for the owner's own seat.
+- [ ] **COK-02**: On the agent host, herdr replaces the tmux wrapper as each engineering agent's session runtime: pinned release with checksum, started by systemd under the agent's Linux user, resumed after boot, its hooks allowed by POL-01, agent-to-agent prompting off; Slack, the wake service and the checks keep working.
+- [ ] **OBS-01**: Ada's Claude Code telemetry reaches a collector on the host; a daily report (tokens, estimated cost, seat-limit hits) is posted to Slack.
 
-### Efficiency (EFF)
+### Control plane (CP, RT, COST) — spec §4, §5, §6, §7
 
-- [ ] **EFF-01**: Host provisioning installs the toolchains the product repositories pin (Python with uv, Node, and their exact versions), so an agent starts a task without installing tools.
-- [ ] **EFF-02**: Package and Docker layer caches persist per agent across tasks and host stops; a second run of the product's test setup in a fresh worktree is measurably faster than the first.
+- [ ] **CP-01**: The model gateway (LiteLLM on Cloud Run, internal ingress, Cloud SQL) serves Fireworks, Anthropic and OpenAI to the host and the controller, with one virtual key and dollar budget per loop and cost logs per run.
+- [ ] **CP-02**: The fleet controller runs a queue and dispatcher with run state (its own database on the gateway's Cloud SQL), idempotency keys and a run log; it starts the host when runs are pending.
+- [ ] **CP-03**: A run can request approval as a tool call, be parked for hours without holding compute, and resume on the owner's answer to the agent's Slack bot; the controller holds the operations agents' Socket Mode connections.
+- [ ] **CP-04**: Budgets stop runs over their limit; a kill switch per loop, per agent and fleet-wide takes effect within a minute.
+- [ ] **CP-05**: Loops are declared in `agents/loops/<name>.yaml` (trigger, steps, agent steps, tools, autonomy per action, budget, eval set, promotion rule, owner); the dispatcher runs only registered loops.
+- [ ] **CP-06**: A credential broker gives each run only the credentials its loop declares, short-lived where the tool allows, from Secret Manager.
+- [ ] **RT-01**: A run runner on the host pulls pending runs and executes each as the agent's Linux user in a fresh rootless container behind the egress proxy, on an open model at Fireworks through the gateway; switching to Claude or OpenAI changes the binding only; running containers keep the host from idling off.
+- [ ] **OPS-01**: Boole's runtime identities exist: Linux user `boole`, Slack app `Boole (AI agent)` with its tokens in Secret Manager, gateway key; declared in Terraform where the vendor allows.
+- [ ] **COST-01**: The owner sets a revised monthly budget for `hyprn-agents` covering the gateway, Cloud SQL, Workspace licences and host wake-ups.
 
-### Fleet as code and onboarding (FLT)
+### Boole and the meeting loop (OPS, LOOP) — spec §2, §5, §7
 
-- [ ] **FLT-01**: `agents/fleet.yaml` is the single source for the fleet (name, display name, role, seat tier, Linux UID, Slack app ID, GitHub App slug, App ID, installation ID, bot user ID). Terraform, host provisioning, the wake service and the host checks read it; `agents.txt` and `wake.json` are generated or removed.
-- [ ] **FLT-02**: Each agent's Google group `<name>@agents.hyprn.ai` and its membership are Terraform resources; its posting and moderation settings (external senders such as Anthropic's sign-in mail accepted, conversations visible to members only, joining by invitation) are applied by script or recorded as a single manual step.
-- [ ] **FLT-03**: The agent's Slack app is created from the reviewed manifest through the manifest API, with an icon generated from the agent's initial on brand orange; the install approval is captured locally and the bot token goes straight into Secret Manager; the Socket Mode token is the one documented manual step.
-- [ ] **FLT-04**: The agent's GitHub App is created through the GitHub App manifest flow (one confirmation), its private key goes straight into Secret Manager without touching disk, and the installation and bot IDs are discovered by API after the owner installs it.
-- [ ] **FLT-05**: The agent's Claude Code sign-in can come from a `claude setup-token` token stored in Secret Manager instead of an interactive login on the host, if channels work with it; otherwise the interactive login stays and the finding is recorded.
-- [ ] **FLT-06**: `agents/fleet add <name>` runs the whole onboarding: fleet entry, Google group, Slack app, GitHub App, Terraform plan for the owner's go, provisioning, host checks and a Slack test message. A throwaway test agent is onboarded in 15 minutes or less with 8 human actions or fewer, the Claude seat steps excepted.
-- [ ] **FLT-07**: `agents/fleet remove <name>` offboards an agent: GitHub App uninstalled, Slack app deleted, secrets and Google group removed through Terraform, Linux user removed with its home archived; the remaining manual steps (Claude seat, App registration deletion) are printed. The test agent from FLT-06 is offboarded this way.
-- [ ] **FLT-08**: `runbooks/agents/onboarding.md` describes adding and removing an agent, the human actions and the one-time prerequisites (Slack configuration token, allowed email domain, channels setting).
+- [ ] **OPS-02**: Boole's remaining identities exist: Workspace user `boole@agents.hyprn.ai` (created by hand, automated later by FLT-02) and a Notion integration limited to the meetings database, its token in Secret Manager.
+- [ ] **LOOP-01**: Meeting notes reach the Notion meetings database from Granola; the controller polls it every 5 minutes and queues one run per new meeting page.
+- [ ] **LOOP-02**: The meeting loop extracts decisions and actions, proposes Notion updates and posts a summary in Slack; Notion writes need the owner's approval (A1).
+- [ ] **LOOP-03**: The loop handles at least 10 real meetings in two weeks within a budget of 30 USD a month, with cost per run visible.
 
-### Acceptance and isolation (ACC)
+### Learning (GHE, OPS, LRN) — spec §9, §10, §13
 
-- [ ] **ACC-01**: Permission relay works in Slack: a risky action produces a prompt in the platform owner's conversation; `yes <id>` from the platform owner lets it proceed and `no <id>` stops it.
-- [ ] **ACC-02**: A message from a non-allowlisted Slack sender gets no reaction, does not wake a stopped host and never reaches the session; an approval from a non-allowlisted sender is rejected.
-- [ ] **ACC-03**: An agent's attempts to merge a pull request or push to `main` are refused, and `--dangerously-skip-permissions` is refused.
-- [ ] **ACC-04**: An isolation check searches IAM organization-wide and passes only if `hyprn-agents` principals hold roles inside `hyprn-agents` alone, no staging or prod principal holds a role inside it, and the host and wake identities hold exactly their declared roles.
-- [ ] **ACC-05**: A no-production-credentials check passes only if the host holds no user cloud credentials, no key files, no staging or prod roles and no staging or prod secrets.
-- [ ] **ACC-06**: The ADR-0002 confirmations are recorded: the wake identity is refused any action other than get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across an idle stop.
-- [ ] **ACC-07**: With two agents on the host, neither can read the other's home, secrets, transcripts or Docker, nor use the other's GitHub App token or Slack app.
-- [ ] **ACC-08**: One command runs every acceptance and isolation check and records the result in `runbooks/agents/`; it runs after each host or project change.
+- [ ] **GHE-01**: `hyprn-labs` is on the GitHub Team plan with `CODEOWNERS` and a ruleset on `main` in each repository: pull request required, human code-owner approval, stale approvals dismissed, no force push, no bypass for any App.
+- [ ] **GHE-03**: GitHub refuses a merge or push to `main` by any agent App, and an agent's approval does not satisfy the rule.
+- [ ] **OPS-03**: Boole's GitHub App `boole-agent-hyprn` is installed on `hyprn-platform` only, with contents and pull-request access; its tokens come from the credential broker.
+- [ ] **LRN-01**: Reactions, replies and approval decisions in Slack are stored with their run as feedback.
+- [ ] **LRN-02**: The meeting loop has an eval set of at least 20 cases from real runs and feedback, and a regression suite; the eval runner runs on the host through the gateway.
+- [ ] **LRN-03**: An improvement run opens a draft pull request with prompt and skill changes; the eval runner posts its result on it; only passing changes reach the owner, who merges.
+- [ ] **LRN-04**: The meeting loop moves from A1 to A2 by a reviewed change once its eval pass rate is at least 90 % over its last 10 runs and owner corrections average fewer than one per meeting.
 
-### Measurement (MEAS)
+### Fleet as code and onboarding (FLT) — spec §12
 
-- [ ] **MEAS-01**: Claude Code OpenTelemetry export from the agent host reaches a collector on the host, and a daily report shows tokens, estimated API-equivalent cost, seat-limit hits, Slack approvals and time from task to pull request. The day-one report exists.
-- [ ] **MEAS-02**: One week of real tasks given by the platform owner runs with extra usage off, with the Team admin analytics and spend report read daily; the proxy runs in observe mode the same week. Seven consecutive daily reports exist.
-- [ ] **MEAS-03**: A weekly summary reports limit hits per day and window, API-equivalent cost against the seat price, approvals per task, queue wait, pull-request counts and the destinations seen by the proxy. The platform owner records the decisions on default model, Standard versus Premium seats, seats versus API keys, and when to add agent #2 in a follow-up ADR.
+- [ ] **FLT-01**: `agents/fleet.yaml` declares every agent and replaces `agents/host/agents.txt` and `agents/wake/wake.json`; Terraform, provisioning, the controller and the checks read it.
+- [ ] **FLT-02**: Workspace users `<name>@agents.hyprn.ai` are created and configured by a service account holding the Workspace user-management admin role; Ada's address moves from a group to a user.
+- [ ] **FLT-03**: The agent's Slack app is created from the reviewed manifest with a generated icon; the bot token goes straight into Secret Manager; the Socket Mode token is a documented manual step.
+- [ ] **FLT-04**: The agent's GitHub App is created through the manifest flow; its key goes straight into Secret Manager; installation and bot IDs are discovered by API.
+- [ ] **FLT-05**: An engineering agent's Claude Code sign-in can come from a `setup-token` token in Secret Manager if channels work with it; otherwise the interactive sign-in stays and the finding is recorded.
+- [ ] **FLT-06**: `agents/fleet add <name> --kind engineering|operations` onboards a test agent of each kind within 15 minutes and about 8 human actions; the engineering test stops before the Claude seat invitation.
+- [ ] **FLT-07**: `agents/fleet remove <name>` offboards an agent and prints the remaining manual steps.
+- [ ] **FLT-08**: `runbooks/agents/onboarding.md` describes adding and removing agents and the one-time prerequisites.
 
-## Deferred Requirements (after this milestone)
+## Deferred Requirements
 
-### GitHub enforcement (GHE)
-
-- **GHE-01**: GitHub Team plan, a human team for code owners, `CODEOWNERS` in each repository, and a ruleset on `main` requiring a pull request, human code-owner approval, stale-approval dismissal, no force push and no bypass. Trigger: the platform owner upgrades the organization plan (recommended: it is the only hard lock on `main`). POL-04 remains as defense in depth.
-- [x] **GHE-02**: GitHub App per agent with one-hour tokens (ADR-0005). Done 2026-10-13.
-- **GHE-03**: Acceptance for GHE-01: merge and push to `main` by an agent refused by GitHub; an agent's approval does not satisfy the rule.
-
-### Fleet growth (FLEET)
-
-- **FLEET-01**: Agent #2 onboarded with `agents/fleet add`. Trigger: Anthropic's human answer on agent seats and the MEAS-03 decision.
-- **FLEET-02**: Overflow through API keys or an open-weight low-cost tier. Trigger: MEAS-03 finds seat limits binding.
-- **FLEET-03**: A cockpit showing every agent's state across hosts (for example herdr) replaces per-agent tmux sessions. Trigger: two or more agents in daily use.
-- **FLEET-04**: GitHub issues assigned to an agent as a second task intake beside Slack. Trigger: the platform owner wants asynchronous task queues.
-- **FLEET-05**: Slack plan with no app limit. Trigger: the fleet approaches the Free plan's 10 apps.
-
-### Platform build-out (PLAT)
-
-- **PLAT-01**: Staging and prod projects, hosts, buckets, reconciler, deployment contract, CI identities and the product delivery pipeline as defined in `docs/specs/cloud-platform.md`. Trigger: the product's local edition is ready.
-- **PLAT-02**: Re-run the ACC-04 isolation check when staging and prod are created.
+- [x] **GHE-02**: GitHub App per agent with one-hour tokens (ADR-0005).
+- **FLEET-01**: Further engineering agents on Claude seats. Trigger: Anthropic's answer on agent seats.
+- **FLEET-04**: GitHub Issues as a task intake beside Slack. Trigger: queued work across agents.
+- **FLEET-05**: Slack plan without the 10-app limit. Trigger: the fleet nears 10 apps.
+- **TOOL-01**: Finance and banking (read-only) and e-signature (prepare-only) in `fleet add`. Trigger: the first loop that needs them.
+- **WEB-01**: Webhook receiver for event triggers, with its own ADR. Trigger: polling no longer enough.
+- **PLAT-01**: Staging and prod build-out per `docs/specs/cloud-platform.md`. Trigger: the product's local edition.
+- **PLAT-02**: Re-run ACC-04 when staging and prod exist.
 
 ## Out of Scope
 
 | Item | Reason |
 |------|--------|
-| Staging and prod environments, deployment contract, host reconciler, delivery pipeline | Follow the product's local edition; specified in the platform specification |
-| Automating Claude seat invitations | The Team plan has no member API (Enterprise and Console only) |
-| Product support for per-worktree overrides | Product work in `hyprn-mvp` |
-| Signed commits | Not required for now (ADR-0001 section 5) |
+| Automating Claude seat invitations | No member API on the Team plan |
+| Agents moving money or signing | Never delegated (spec §1, §7) |
 | Product code in this repository | Belongs in `hyprn-mvp` |
 
 ## Traceability
@@ -115,37 +125,55 @@ Derived from ADR-0001 (as amended by ADR-0002, ADR-0003, ADR-0005), the agent fl
 | SEC-01 | Phase 1 | Pending |
 | SEC-02 | Phase 1 | Pending |
 | DOC-01 | Phase 1 | Complete |
+| ACC-01 | Phase 1 | Pending |
+| ACC-02 | Phase 1 | Pending |
+| ACC-03 | Phase 1 | Pending |
+| ACC-04 | Phase 1 | Pending |
+| ACC-05 | Phase 1 | Pending |
+| ACC-06 | Phase 1 | Pending |
+| ACC-08 | Phase 1 | Pending |
 | GH-01 | Phase 2 | Pending |
 | GH-02 | Phase 2 | Pending |
 | GH-03 | Phase 2 | Complete |
 | EFF-01 | Phase 2 | Pending |
 | EFF-02 | Phase 2 | Pending |
-| FLT-01 | Phase 3 | Pending |
-| FLT-02 | Phase 3 | Pending |
-| FLT-03 | Phase 3 | Pending |
-| FLT-04 | Phase 3 | Pending |
-| FLT-05 | Phase 3 | Pending |
-| FLT-06 | Phase 3 | Pending |
-| FLT-07 | Phase 3 | Pending |
-| FLT-08 | Phase 3 | Pending |
-| ACC-01 | Phase 4 | Pending |
-| ACC-02 | Phase 4 | Pending |
-| ACC-03 | Phase 4 | Pending |
-| ACC-04 | Phase 4 | Pending |
-| ACC-05 | Phase 4 | Pending |
-| ACC-06 | Phase 4 | Pending |
+| COK-01 | Phase 2 | Pending |
+| COK-02 | Phase 2 | Pending |
+| OBS-01 | Phase 2 | Pending |
+| ACC-09 | Phase 3 | Pending |
+| CP-01 | Phase 3 | Pending |
+| CP-02 | Phase 3 | Pending |
+| CP-03 | Phase 3 | Pending |
+| CP-04 | Phase 3 | Pending |
+| CP-05 | Phase 3 | Pending |
+| CP-06 | Phase 3 | Pending |
+| RT-01 | Phase 3 | Pending |
+| OPS-01 | Phase 3 | Pending |
+| COST-01 | Phase 3 | Pending |
 | ACC-07 | Phase 4 | Pending |
-| ACC-08 | Phase 4 | Pending |
-| MEAS-01 | Phase 5 | Pending |
-| MEAS-02 | Phase 5 | Pending |
-| MEAS-03 | Phase 5 | Pending |
-| EGR-02 | Phase 5 | Pending |
+| OPS-02 | Phase 4 | Pending |
+| LOOP-01 | Phase 4 | Pending |
+| LOOP-02 | Phase 4 | Pending |
+| LOOP-03 | Phase 4 | Pending |
+| GHE-01 | Phase 5 | Pending |
+| GHE-03 | Phase 5 | Pending |
+| OPS-03 | Phase 5 | Pending |
+| LRN-01 | Phase 5 | Pending |
+| LRN-02 | Phase 5 | Pending |
+| LRN-03 | Phase 5 | Pending |
+| LRN-04 | Phase 5 | Pending |
+| FLT-01 | Phase 6 | Pending |
+| FLT-02 | Phase 6 | Pending |
+| FLT-03 | Phase 6 | Pending |
+| FLT-04 | Phase 6 | Pending |
+| FLT-05 | Phase 6 | Pending |
+| FLT-06 | Phase 6 | Pending |
+| FLT-07 | Phase 6 | Pending |
+| FLT-08 | Phase 6 | Pending |
+| EGR-02 | Phase 7 | Pending |
+| ACC-10 | Phase 7 | Pending |
 
-**Coverage:**
-- v1 requirements: 35 total
-- Mapped to phases: 35
-- Unmapped: 0
+**Coverage:** 57 v1 requirements, all mapped.
 
 ---
-*Requirements defined: 2026-10-12*
-*Last updated: 2026-10-13 after adopting the five-phase roadmap*
+*Last updated: 2026-10-13 after the document review*

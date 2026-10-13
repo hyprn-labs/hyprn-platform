@@ -9,3 +9,4 @@ Decision records for this repository (MADR 4). Decisions spanning product and pl
 | [0003](0003-own-slack-channel-server.md) | Our own Slack channel server for agents | Accepted |
 | [0004](0004-agent-github-machine-account.md) | Agent GitHub access through a machine account until the GitHub App | Superseded by 0005 |
 | [0005](0005-agent-github-app.md) | Agent GitHub access through a GitHub App with one-hour tokens | Accepted |
+| [0006](0006-agent-first-operating-model.md) | Agent-first operating model — loops, runtimes and the fleet control plane | Proposed |

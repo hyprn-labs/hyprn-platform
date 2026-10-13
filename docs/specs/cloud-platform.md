@@ -192,7 +192,7 @@ Terraform identities and host root are privileged trust boundaries (an IAM admin
 
 ### 6.4 Agents
 
-Engineering agents use the same CLI and short-lived identities as engineers: read-only inspect and validate, plan and render showing concrete changes, explicit apply bound to a reviewed plan or artifact; no agent-only privileged path. The in-app assistant is an application principal acting for a user and has no platform, cloud or host authority.
+Engineering agents use the same CLI and short-lived identities as engineers: read-only inspect and validate, plan and render showing concrete changes, explicit apply bound to a reviewed plan or artifact; no agent-only privileged path. The agent fleet itself is specified in [`agent-fleet.md`](agent-fleet.md); it holds no authority in staging or prod. The in-app assistant is an application principal acting for a user and has no platform, cloud or host authority.
 
 ## 7. Secrets
 

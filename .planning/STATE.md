@@ -2,7 +2,7 @@
 gsd_state_version: '1.0'
 status: planning
 progress:
-  total_phases: 5
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -15,15 +15,15 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-10-13)
 
-**Core value:** The platform owner gives an agent a task in Slack and receives a reviewable draft pull request; no path exists from the agent fleet to staging or prod credentials; adding an agent is one command with a handful of approvals.
+**Core value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
 **Current focus:** Phase 1 - Security baseline
 
 ## Current Position
 
-Phase: 1 of 5 (Security baseline)
+Phase: 1 of 7 (Security baseline, M1)
 Plan: 0 of 0 in current phase
 Status: Ready to plan
-Last activity: 2026-10-13 - Roadmap revised to five phases (security, efficiency, onboarding automation); 35 v1 requirements mapped
+Last activity: 2026-10-13 - Documents reviewed: spec, ADR-0006, requirements (57) and roadmap aligned; Boole named as the operations agent
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -50,12 +50,13 @@ Progress: [░░░░░░░░░░] 0%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting current work:
 
-- ADR-0001 as amended by ADR-0002, ADR-0003 and ADR-0005 is locked; ADR-0004 (interim machine account) is superseded by ADR-0005.
-- ADR-0003 is accepted (DOC-01 complete): our own Slack channel server is the plugin.
-- Until the organization has a paid GitHub plan, Claude Code deny rules for merge and push to `main` are the enforcing control (POL-04).
+- ADR-0001 as amended by ADR-0002, ADR-0003 and ADR-0005 is locked; ADR-0004 is superseded by ADR-0005; ADR-0006 is proposed and must be accepted before Phase 3.
+- Milestones in value order: M1 safe engineering agent, M2 Boole (operations agent on open models at Fireworks) with a learning meeting loop, M3 scale the fleet.
+- Run state lives in its own database on the gateway's Cloud SQL instance.
+- Boole receives repository write access only after the GitHub Team plan ruleset (Phase 5); until then only Ada writes, behind Claude Code deny rules (POL-04).
+- Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
 
@@ -87,31 +88,31 @@ Gotchas met while building the fleet; read before operating it.
 
 ### Pending Todos
 
-- Phase 3 spikes: channels with a `setup-token` sign-in (FLT-05); Google group settings by script (FLT-02); Slack icon through `apps.icon.set` with a configuration token (FLT-03).
+- Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
+- Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
+- Before Phase 5: GitHub Team plan.
+- Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 
 ### Blockers/Concerns
 
-- The GitHub organization is on the Free plan: no ruleset or branch protection on private repositories. Ada's App can write to two repositories, so Phase 1 deny rules are the only control until the plan is upgraded (deferred GHE-01).
-- Draft-pull-request test from Slack is not yet done (Phase 2).
+- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories, so Phase 1 deny rules are the only control until Phase 5.
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).
 - Vendor limits on automation (checked 2026-10-13): no Claude Team member API; Slack Socket Mode tokens and app installs need a human; GitHub App installation and logo need a human.
-- Owner steps (admin console, GitHub settings, Secret Manager changes) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.
+- Owner steps (admin console, GitHub settings, Secret Manager values) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.
 - Worktree isolation is complete only once the product reads port, Compose project and database overrides from the environment (product work).
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close, most recent first:
-
-| Category | Item | Status | Deferred At | Milestone |
-|----------|------|--------|-------------|-----------|
-| GitHub | Team plan, ruleset on `main`, CODEOWNERS (GHE-01) | Waiting on plan upgrade | 2026-10-12 | Agent fleet operational |
-| Fleet | Agent #2 (FLEET-01) | Gated on Anthropic's human answer on agent seats; onboard with `agents/fleet add` | 2026-10-12 | Agent fleet operational |
-| Fleet | Overflow, cockpit, GitHub issues intake, Slack plan (FLEET-02..05) | Triggers in REQUIREMENTS.md | 2026-10-13 | Agent fleet operational |
-| Platform | Staging and prod build-out (PLAT-01) | Follows the product's local edition | 2026-10-12 | Agent fleet operational |
+| Category | Item | Trigger | Recorded |
+|----------|------|---------|----------|
+| Fleet | Further engineering agents on Claude seats (FLEET-01) | Anthropic's answer on agent seats | 2026-10-12 |
+| Fleet | GitHub Issues intake, Slack plan (FLEET-04, FLEET-05) | Queued work across agents; nearing 10 Slack apps | 2026-10-13 |
+| Tools | Finance and e-signature (TOOL-01); webhook receiver (WEB-01) | First loop that needs them; polling not enough | 2026-10-13 |
+| Platform | Staging and prod build-out (PLAT-01, PLAT-02) | The product's local edition | 2026-10-12 |
 
 ## Session Continuity
 
 Last session: 2026-10-13
-Stopped at: Five-phase roadmap adopted; ready for `/gsd-plan-phase 1`
+Stopped at: Value-first milestones and agent fleet specification reviewed; ready for `/gsd-plan-phase 1`
 Resume file: None

@@ -1,3 +1,3 @@
 # agents/measurement
 
-Usage and cost per agent: Claude Code's OpenTelemetry export to a collector on the agent host, a daily report (tokens, estimated API-equivalent cost, seat-limit hits) and a weekly summary for seat and fleet-size decisions.
+Usage telemetry for seat sessions: Claude Code's OpenTelemetry export to a collector on the agent host and a daily report per agent (tokens, estimated cost, seat-limit hits). Cost per loop run comes from the model gateway ([agent fleet specification](../../docs/specs/agent-fleet.md), section 6).
