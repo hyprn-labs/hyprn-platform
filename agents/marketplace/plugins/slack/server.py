@@ -33,6 +33,10 @@ SEEN_FILE = os.path.join(STATE_DIR, "seen.json")
 LOG_FILE = os.path.join(STATE_DIR, "server.log")
 PROTOCOL_VERSION = "2025-06-18"  # older revision: channels are not registered under the 2026 one
 VERDICT = re.compile(r"^\s*(y|yes|n|no)\s+([a-km-z]{5})\s*$", re.IGNORECASE)
+# Owner task intake: `task: <slug> <goal>` with optional `--repo mvp` suffix
+# (default repo is platform). The slug group is character-identical to the
+# ada-task regex so intake and the helper never disagree on valid slugs.
+TASK_TAG = re.compile(r"^\s*task:\s*([a-z0-9][a-z0-9-]{0,40})\s+(.+)$", re.IGNORECASE | re.DOTALL)
 CATCH_UP_SECONDS = 900
 CATCH_UP_DELAYS = (5, 30, 90)  # repeated: harmless, delivered messages are skipped
 
@@ -214,6 +218,29 @@ class SlackChannel:
 
         thread_ts = event.get("thread_ts") or (ts if event.get("type") == "app_mention" else "")
         self.last_chat = (channel, thread_ts)
+        # Task intake: stateless parse of the message only, after the allowlist
+        # plus seen.json dedupe above, so catch-up and dedupe apply unchanged.
+        # Emits a structured task notification alongside the channel notify;
+        # transport, scopes and catch-up are untouched. No text reply here: the
+        # eyes reaction above is the acknowledgment, and the task params carry
+        # slug and branch only, never tokens.
+        task = TASK_TAG.match(text)
+        if task:
+            slug = task.group(1).lower()
+            goal = task.group(2).strip()
+            repo = "platform"
+            suffix = re.search(r"\s--repo\s+mvp\s*$", goal, re.IGNORECASE)
+            if suffix:
+                goal = goal[:suffix.start()].strip()
+                repo = "mvp"
+            notify("notifications/hyprn/task", {
+                "slug": slug,
+                "goal": goal,
+                "repo": repo,
+                "branch": f"agent/{AGENT}/{slug}",
+                "channel": channel,
+                "thread_ts": thread_ts,
+            })
         slack_api("reactions.add", self.bot_token, {"channel": channel, "timestamp": ts, "name": "eyes"})
         meta = {"chat_id": channel, "user": user, "ts": ts}
         if thread_ts:

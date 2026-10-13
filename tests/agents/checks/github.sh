@@ -32,6 +32,41 @@ check "pull-request requires last-push approval" "jq -e '.rules[] | select(.type
 check "CODEOWNERS exists with a catch-all human-team entry" "grep -qE '^\\* @hyprn-labs/' '$CODEOWNERS'"
 check "no ruleset write/apply call in this plan's files" "! grep -rqE 'gh api .*repos/.*rule""sets.*(--method|-X) *(POST|PUT|PATCH)|rule""sets --input' '$REPO_ROOT/agents/github' '$HERE/github.sh'"
 
+HELPER="$REPO_ROOT/agents/host/files/bin/ada-task"
+SERVER="$REPO_ROOT/agents/marketplace/plugins/slack/server.py"
+POLICY="$REPO_ROOT/agents/policy/managed-settings.json"
+
+# GH-01 draft-PR contract (static): the helper emits it, intake agrees on slugs.
+check "GH-01: ada-task carries the What-changed heading" "grep -qF '## What changed' '$HELPER'"
+check "GH-01: ada-task carries the How-verified heading" "grep -qF '## How verified' '$HELPER'"
+check "GH-01: ada-task creates agent/<name>/<slug> branches" "grep -qF 'branch=\"agent/\$(id -un)/\$task\"' '$HELPER'"
+check "GH-01: intake slug group matches the helper regex" "grep -qF '[a-z0-9][a-z0-9-]{0,40}' '$HELPER' && grep -qF '([a-z0-9][a-z0-9-]{0,40})' '$SERVER'"
+check "GH-01: no self-merge path in helper or intake" "! grep -rq 'gh pr merge' '$REPO_ROOT/agents/host/files/bin/' '$SERVER'"
+check "GH-01: merge-refusal backstop entries intact (until Team ruleset)" "[ \"\$(grep -c 'gh pr merge' '$POLICY')\" = 2 ]"
+
+# GH-03 machine-account guard: the removed account and its secret must never
+# silently return. The historical removal record in runbooks/agents/github.md
+# is the only allowed mention (outside the agents/ and tests/ trees scanned here).
+# The guard file itself is excluded: it necessarily names the strings it guards.
+check "GH-03: hyprn-ada machine account not referenced in code" "! grep -rn 'hyprn-ada' '$REPO_ROOT/agents' '$REPO_ROOT/tests' --include='*.py' --include='*.sh' --include='*.json' --exclude='github.sh'"
+check "GH-03: ada-agent-github-token secret not referenced in code" "! grep -rn 'ada-agent-github-token' '$REPO_ROOT/agents' '$REPO_ROOT/tests' --include='*.py' --include='*.sh' --include='*.json' --exclude='github.sh'"
+
+# GH-01 live bot-author proof: needs a real probe draft PR (GH01_PROBE_PR=<n>)
+# created after the Phase 1 green run proves the deny backstop. Until then
+# SKIP with the gate named. Live merge refusal is covered by the Phase 1 D-08
+# refuse markers (checks/session.sh), not by attempting a merge here.
+if [ -z "${GH01_PROBE_PR:-}" ]; then
+  skip "live: probe draft PR is bot-authored and a draft" "no probe PR yet (gated on Phase 1 green run)"
+  skip "live: probe draft PR carries the contract headings" "no probe PR yet (gated on Phase 1 green run)"
+elif ! id ada >/dev/null 2>&1; then
+  skip "live: probe draft PR checks" "not on agent host"
+else
+  ada() { runuser -l ada -c "$1" </dev/null; }
+  check "live: probe PR author is ada-agent-hyprn[bot]" "[ \"\$(ada 'gh pr view $GH01_PROBE_PR --jq .author.login')\" = 'ada-agent-hyprn[bot]' ]"
+  check "live: probe PR is a draft" "[ \"\$(ada 'gh pr view $GH01_PROBE_PR --jq .isDraft')\" = 'true' ]"
+  check "live: probe PR carries the contract headings" "ada 'gh pr view $GH01_PROBE_PR --jq .body' | grep -qF '## What changed' && ada 'gh pr view $GH01_PROBE_PR --jq .body' | grep -qF '## How verified'"
+fi
+
 # Live per-agent installation assertions (agent host only): each agent row from
 # agents.txt must resolve its App installation to exactly the two repositories.
 # Off-host (no such local user) the checks SKIP so the script stays runnable
