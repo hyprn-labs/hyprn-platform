@@ -18,7 +18,7 @@ check "OpenCode at the pinned version" "/usr/local/lib/opencode/opencode --versi
 check "OpenCode policy root-owned, opencode provider only" "[ \"\$(stat -c %U:%a /etc/opencode/opencode.json)\" = root:644 ] && jq -e '.enabled_providers == [\"opencode\"]' /etc/opencode/opencode.json"
 check "no service-account key files on host" "! grep -rlsq '\"private_key\"' /home /root /etc"
 
-while read -r name uid _; do
+while read -r name uid harness _; do
   run() { runuser -l "$name" -c "$1" </dev/null; }
   check "$name: home is private" "[ \"\$(stat -c %a /home/$name)\" = 700 ]"
   check "$name: no sudo or docker group" "! id -nG $name | grep -qwE 'sudo|docker|adm'"
@@ -26,16 +26,20 @@ while read -r name uid _; do
   check "$name: outbound HTTPS" "run 'curl -sf -m 10 -o /dev/null https://api.github.com'"
   check "$name: metadata unreachable" "! run 'curl -sf -m 5 -H Metadata-Flavor:Google $md'"
   check "$name: rootless Docker" "run 'docker info --format {{.SecurityOptions}}' | grep -q rootless"
-  check "$name: Claude Code installed" "run 'claude --version'"
+  if [ "$harness" = claude ]; then
+    check "$name: Claude Code installed" "run 'claude --version'"
+    check "$name: Slack plugin installed" "run 'claude plugin list' | grep -q slack@hyprn-agents"
+    check "$name: OpenCode refused" "run 'opencode --version 2>&1; true' | grep -q 'not $name'"
+  else
+    check "$name: OpenCode runs" "run 'opencode --version' | grep -qF $OPENCODE_VERSION"
+    check "$name: no Slack tokens" "[ ! -e /run/hyprn-agents/secrets/$name/slack.env ]"
+    check "$name: GitHub App limited to hyprn-platform" "run 'gh api installation/repositories --jq .repositories[].full_name' | grep -qx hyprn-labs/hyprn-platform && [ \"\$(run 'gh api installation/repositories --jq .total_count')\" = 1 ]"
+  fi
   check "$name: Slack tokens private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/slack.env ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/slack.env)\" = $name:400 ]"
   check "$name: GitHub token private to the agent" "[ ! -e /run/hyprn-agents/secrets/$name/github-token ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token)\" = $name:400 ]"
   check "$name: git commits as its GitHub App bot" "run 'git config --global user.email' | grep -q '\\[bot\\]@users.noreply.github.com'"
   check "$name: GitHub App token fresh (under 35 minutes)" "find /run/hyprn-agents/secrets/$name/github-token -mmin -35 | grep -q ."
   check "$name: gh works with the App token" "run 'gh api installation/repositories --jq .total_count' | grep -qE '^[1-9]'"
-  check "$name: OpenCode token private to the agent" "[ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token-opencode)\" = $name:400 ]"
-  check "$name: OpenCode token limited to one repository" "run 'HYPRN_GITHUB_TOKEN_FILE=/run/hyprn-agents/secrets/$name/github-token-opencode gh api installation/repositories --jq .total_count' | grep -qx 1"
-  check "$name: OpenCode refuses outside hyprn-platform" "run 'cd /tmp && timeout 10 opencode 2>&1' | grep -q 'hyprn-platform'"
-  check "$name: Slack plugin installed" "run 'claude plugin list' | grep -q slack@hyprn-agents"
   for other in /home/*; do
     [ "$other" = "/home/$name" ] && continue
     check "$name: cannot read $other" "! run 'ls $other'"

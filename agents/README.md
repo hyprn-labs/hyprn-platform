@@ -5,6 +5,7 @@ The agent fleet ([ADR-0001](../docs/adr/0001-agent-fleet.md)): engineering agent
 | Agent | Kind | Runtime | Slack app | GitHub App | Linux user | Status |
 |---|---|---|---|---|---|---|
 | Ada | Engineering | Claude Code, Claude Team Standard seat | Ada (AI agent) | `ada-agent-hyprn` | `ada` | In service |
+| Codd | Engineering, interim | OpenCode, free Muse Spark model at OpenCode Zen; steered in the terminal | None | `codd-agent-hyprn`, on `hyprn-platform` only | `codd` | In service until the gateway (M2) |
 | Boole | Operations | Open models at Fireworks, API key through the gateway; a fresh rootless container per run | Boole (AI agent), M2 | `boole-agent-hyprn`, after the ruleset (M2) | `boole` | Milestone M2 |
 
 | Folder | Contents |

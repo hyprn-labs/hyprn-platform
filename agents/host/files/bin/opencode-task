@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# One task = one branch agent/<agent>/<task> = one worktree ~/work/<task>:
+# creates them from the latest hyprn-platform main if needed, then starts OpenCode there.
+set -euo pipefail
+task="${1:?usage: opencode-task <task-name>}"
+[[ "$task" =~ ^[a-z0-9][a-z0-9-]{0,40}$ ]] && [ "$task" != hyprn-platform ] \
+  || { echo "opencode-task: use lowercase letters, digits and dashes" >&2; exit 1; }
+base="$HOME/work/hyprn-platform"
+branch="agent/$(id -un)/$task"
+dir="$HOME/work/$task"
+[ -d "$base" ] || git clone -q https://github.com/hyprn-labs/hyprn-platform "$base"
+git -C "$base" fetch -q --prune origin
+if [ ! -d "$dir" ]; then
+  if git -C "$base" show-ref --quiet --verify "refs/heads/$branch"; then
+    git -C "$base" worktree add -q "$dir" "$branch"
+  else
+    git -C "$base" worktree add -q "$dir" -b "$branch" origin/main
+  fi
+fi
+cd "$dir"
+exec opencode

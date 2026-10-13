@@ -7,7 +7,7 @@
 # Slack tokens for the host and the wake service.
 locals {
   agent_slack_secrets = {
-    for pair in setproduct(var.agents, ["slack-app-token", "slack-bot-token"]) :
+    for pair in setproduct(var.slack_agents, ["slack-app-token", "slack-bot-token"]) :
     "${pair[0]}-agent-${pair[1]}" => pair[0]
   }
 }
