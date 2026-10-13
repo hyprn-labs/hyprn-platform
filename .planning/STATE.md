@@ -118,6 +118,12 @@ Gotchas met while building the fleet; read before operating it.
 | Tools | Finance and e-signature (TOOL-01); webhook receiver (WEB-01) | First loop that needs them; polling not enough | 2026-10-13 |
 | Platform | Staging and prod build-out (PLAT-01, PLAT-02) | The product's local edition | 2026-10-12 |
 
+## Deferred Verification
+
+| Phase | State | Resume |
+|-------|-------|--------|
+| 1 | verification_deferred_human | /gsd-verify-work 1 |
+
 ## Session Continuity
 
 Last session: 2026-10-13
