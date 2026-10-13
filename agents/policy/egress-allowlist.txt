@@ -1,0 +1,11 @@
+# Egress allowlist placeholder (D-02, EGR-01 observe mode).
+#
+# Seeded from the hosts routine work needs; the proxy observes (logs) in
+# Phase 1 and enforcement arrives in M3 (EGR-02, Phase 7). Until then every
+# proxied destination is logged per agent with no blocking (D-05/D-06).
+# One domain per line; comment lines start with '#'.
+
+github.com
+api.github.com
+api.anthropic.com
+registry.npmjs.org

@@ -1,0 +1,52 @@
+{
+  "$comment": "Claude Code organization policy, reviewed copy (D-02). The Team Owner applies this file verbatim in the admin console; the console enforces it. Deny rules are the interim main-branch control until the Team-plan ruleset (D-01). Bash patterns match command text literally, so every refusal family carries spelling variants plus live refusal tests (D-08).",
+  "permissions": {
+    "deny": [
+      "Bash(git push *main*)",
+      "Bash(git push *:main*)",
+      "Bash(git push *+*)",
+      "Bash(git push *--force*)",
+      "Bash(git push * -f*)",
+      "Bash(git -C * push *)",
+      "Bash(gh pr merge*)",
+      "Bash(gh pr merge *--admin*)",
+      "Bash(gh api repos/*/branches/main/protection*)",
+      "Bash(gh api *merge*)"
+    ],
+    "ask": [
+      "Bash(gh api *)"
+    ],
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git checkout -b *)",
+      "Bash(npm test *)",
+      "Bash(npm run build *)"
+    ],
+    "disableBypassPermissionsMode": "disable"
+  },
+  "allowManagedPermissionRulesOnly": true,
+  "strictKnownMarketplaces": [
+    {
+      "source": "github",
+      "repo": "hyprn-labs/hyprn-agents"
+    }
+  ],
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "api.anthropic.com",
+        "registry.npmjs.org"
+      ],
+      "allowManagedDomainsOnly": true
+    }
+  },
+  "requiredMinimumVersion": "2.1.282"
+}
