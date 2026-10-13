@@ -1,6 +1,18 @@
 # Agent users (UIDs 20000-20999) and their rootless containers cannot reach the
 # metadata server, so they cannot use the VM identity (ADR-0001 section 4).
 # The same address is the VPC DNS resolver; DNS (port 53) stays allowed.
+#
+# Egress observation, observe mode (D-05/D-06, Phase 1 EGR-01): agent login
+# UIDs and their rootless-container subordinate ranges (ada 100000-165535,
+# codd 165536-231071, from the host /etc/subuid allocation) may leave only
+# through the per-agent Squid proxy ports; direct outbound HTTP/HTTPS is
+# dropped. DNS stays allowed and first. No blocking anywhere: proxied
+# destinations are logged per agent and shipped to Cloud Logging.
+#
+# Wake-placement finding: the wake service runs on hyprn-agents-wake-01, a
+# separate always-on VM (ADR-0002, agents/wake/README.md) — its traffic never
+# traverses the agent host, so no rule here covers it. Wake-side observation
+# (controller-side proxy or VPC flow logs) is a follow-up outside this file.
 table inet hyprn_agents
 delete table inet hyprn_agents
 
@@ -11,5 +23,11 @@ table inet hyprn_agents {
     meta skuid 20000-20999 ip daddr 169.254.169.254 tcp dport 53 accept
     meta skuid 20000-20999 ip daddr 169.254.169.254 counter reject
     meta skuid 20000-20999 ip6 daddr fd20:ce::254 counter reject
+    # Per-agent proxy ports stay reachable for login UIDs and containers.
+    meta skuid 20000-20999 tcp dport {3128, 3129} accept
+    meta skuid 100000-231071 tcp dport {3128, 3129} accept
+    # Observe mode: drop direct outbound HTTP/HTTPS (proxy is the only way out).
+    meta skuid 20000-20999 tcp dport {80, 443} counter drop
+    meta skuid 100000-231071 tcp dport {80, 443} counter drop
   }
 }
