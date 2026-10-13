@@ -7,6 +7,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROLES="$HERE/../roles"
 CLAUDE_CODE_VERSION="2.1.287"
 DOCKER_KEY_FPR="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
+OPENCODE_VERSION="1.19.0"
+OPENCODE_SHA256="7bb9e61ad6feacf2e89c10a6a2c1840e3de4220bb50ba1fc7110f31806076aec"  # opencode-linux-x64.tar.gz
+OPENCODE_REPOS="hyprn-platform"  # repositories OpenCode sessions may change
 GH_KEY_FPRS="2C6106201985B60E6C7AC87323F3D4EA75716059 7F38BBB59D064DBCB3D84D725612B36462313325"
 
 [ "$(id -u)" -eq 0 ] || { echo "provision.sh must run as root" >&2; exit 1; }
@@ -83,6 +86,26 @@ install_host_files() {
   systemctl restart hyprn-agents-egress.service
 }
 
+# OpenCode (runbooks/agents/opencode.md): pinned release, root-owned binary and
+# managed configuration, started through the wrapper in hyprn-agent-bin.
+install_opencode() {
+  log "OpenCode $OPENCODE_VERSION"
+  local dest=/usr/local/lib/opencode tmp
+  if ! "$dest/opencode" --version 2>/dev/null | grep -qF "$OPENCODE_VERSION"; then
+    tmp="$(mktemp -d)"
+    curl -fsSL -o "$tmp/opencode.tar.gz" \
+      "https://github.com/anomalyco/opencode/releases/download/v$OPENCODE_VERSION/opencode-linux-x64.tar.gz"
+    echo "$OPENCODE_SHA256  $tmp/opencode.tar.gz" | sha256sum -c --quiet
+    tar -xzf "$tmp/opencode.tar.gz" -C "$tmp"
+    install -d -m 0755 "$dest"
+    install -m 0755 -o root -g root "$(find "$tmp" -type f -name opencode | head -1)" "$dest/opencode"
+    rm -rf "$tmp"
+  fi
+  install -d -m 0755 /etc/opencode
+  install -m 0644 "$HERE/files/opencode.json" /etc/opencode/opencode.json
+  install -m 0755 "$HERE/files/bin/opencode" /usr/local/libexec/hyprn-agent-bin/opencode
+}
+
 add_agent() {
   local name="$1" uid="$2" app_slug="$3" app_id="$4" installation_id="$5" bot_id="$6" display="$7"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
@@ -118,7 +141,8 @@ add_agent() {
     install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.claude/CLAUDE.md"
   fi
   # GitHub App (ADR-0005): token broker configuration and the App bot's Git identity.
-  printf 'APP_ID=%s\nINSTALLATION_ID=%s\n' "$app_id" "$installation_id" > "/etc/hyprn-agents/agents/$name.github"
+  printf 'APP_ID=%s\nINSTALLATION_ID=%s\nOPENCODE_REPOS="%s"\n' "$app_id" "$installation_id" "$OPENCODE_REPOS" \
+    > "/etc/hyprn-agents/agents/$name.github"
   chmod 0644 "/etc/hyprn-agents/agents/$name.github"
   systemctl enable "hyprn-agent-github-token@$name.timer" >/dev/null
   systemctl start "hyprn-agent-github-token@$name.service"
@@ -154,6 +178,7 @@ add_agent() {
 
 install_base
 install_host_files
+install_opencode
 grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid app_slug app_id installation_id bot_id display; do
   add_agent "$name" "$uid" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
 done

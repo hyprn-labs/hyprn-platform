@@ -57,6 +57,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - Run state lives in its own database on the gateway's Cloud SQL instance.
 - The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
 - Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
+- Interim (2026-10-13): OpenCode 1.19.0 on the host as Ada, owner-steered, default model Muse Spark 1.3 Contributor Free on OpenCode Zen. Meta may train on its prompts and completions; accepted for `hyprn-platform` only. Wrapper, managed configuration and a repository-scoped token enforce it (`runbooks/agents/opencode.md`). Retire or rebind it to the gateway in Phase 3.
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
