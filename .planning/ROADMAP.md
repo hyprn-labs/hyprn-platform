@@ -78,7 +78,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 **Goal**: The meeting loop gets better from the owner's feedback, with every change tested and merged by the owner.
 **Depends on**: Phase 4
 **Requirements**: OPS-03, LRN-01, LRN-02, LRN-03, LRN-04, LRN-05
-**Owner actions**: create Boole's GitHub App; name the paths each improving agent may change.
+**Owner actions**: choose where agent-improvable prompts and skills live (folders here or a separate playbook repository, spec §10); create Boole's GitHub App; name the paths each improving agent may change.
 **Success Criteria**:
   1. A pull request by an improving agent that changes a file outside its declared paths fails the required scope check and cannot be merged.
   2. Feedback is stored with each run; the eval set holds at least 20 real cases.

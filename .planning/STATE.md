@@ -92,6 +92,7 @@ Gotchas met while building the fleet; read before operating it.
 
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
+- Before Phase 5: choose where agent-improvable prompts and skills live, folders here or a separate playbook repository (LRN-05, spec §10).
 - Phase 1: GitHub Team plan (owner purchase).
 - Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 

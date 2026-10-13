@@ -79,12 +79,12 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ### Learning (OPS, LRN) — spec §9, §10, §13
 
-- [ ] **OPS-03**: Boole's GitHub App `boole-agent-hyprn` is installed on `hyprn-platform` only, with contents and pull-request access; its tokens come from the credential broker.
+- [ ] **OPS-03**: Boole's GitHub App `boole-agent-hyprn` is installed only on the repository holding its writable content (LRN-05), with contents and pull-request access; its tokens come from the credential broker.
 - [ ] **LRN-01**: Reactions, replies and approval decisions in Slack are stored with their run as feedback.
 - [ ] **LRN-02**: The meeting loop has an eval set of at least 20 cases from real runs and feedback, and a regression suite; the eval runner runs on the host through the gateway.
 - [ ] **LRN-03**: An improvement run opens a draft pull request with prompt and skill changes; the eval runner posts its result on it; only passing changes reach the owner, who merges.
 - [ ] **LRN-04**: The meeting loop moves from A1 to A2 by a reviewed change once its eval pass rate is at least 90 % over its last 10 runs and owner corrections average fewer than one per meeting.
-- [ ] **LRN-05**: An agent whose loop improves another loop declares, when it is created, the paths it may change (`writable_paths` in its loop definition). A required status check fails any pull request by its App that changes a file outside them; its own definition, `agents/policy/`, `.github/` and the check are never writable. The owner reviews and merges.
+- [ ] **LRN-05**: An agent whose loop improves another loop declares, when it is created, the content it may change (`writable_paths` in its loop definition): prompts and skills, never policies, agent or loop definitions, eval sets, provisioning, infrastructure or CI. GitHub enforces the scope, never code the agent's pull request can change: a required check evaluated from `main` if the content stays in folders here, or an App installed only on a separate playbook repository (spec §10). The owner chooses before Phase 5, reviews and merges.
 
 ### Fleet as code and onboarding (FLT) — spec §12
 

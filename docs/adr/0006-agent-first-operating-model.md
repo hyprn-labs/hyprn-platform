@@ -136,3 +136,4 @@ Open questions before the dependent work:
 
 - Finance, banking and e-signature providers, and the read-only access each offers (before those tools join a loop).
 - How meeting notes reach Notion from Granola (before Boole's meeting loop).
+- Whether the prompts and skills that agents improve stay in folders of this repository or move to a separate playbook repository (spec §10; before the first improving agent gets write access).

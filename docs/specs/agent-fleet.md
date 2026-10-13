@@ -12,7 +12,7 @@ The agent fleet does HYPRN's engineering and operations work, on request and on 
 - **Human-directed** work — a person steering an agent from Slack or the cockpit — runs on subscription **seats**. **Autonomous** loops run on **API keys** through the model gateway. A seat MUST NOT run an autonomous loop.
 - An agent's seat runs only that agent's sessions; people work on their own seats. Using agent seats as personal capacity waits for Anthropic's answer on agent seats.
 - Agents propose; people decide what is irreversible. Code reaches `main` only through a person's merge. Agents MUST NOT move money or sign.
-- The playbook — agents, loops, skills, policies — is code in this repository and changes by pull request.
+- The playbook — agents, loops, skills, policies — is code and changes by pull request. Its authority (policies, agent and loop definitions with their autonomy, tools, budgets and scopes, eval sets) lives in this repository; the prompts and skills agents may improve live in declared folders here or in a separate playbook repository (section 10).
 
 ## 2. Agents
 
@@ -134,7 +134,11 @@ Each loop declares its level per action. A loop moves up one level only by a rev
 - Feedback in Slack — reactions, replies, approvals and refusals — is stored with its run and turned into eval cases.
 - The eval runner runs on the host through the gateway and posts its result on the pull request it checks.
 - An improvement run proposes changes to the loop's prompts and skills as a draft pull request; the change MUST pass the loop's eval set before the owner reviews it, and only the owner merges.
-- An agent that improves another loop changes only the paths named when it is created (`writable_paths` in its loop definition). A required status check fails any of its pull requests that changes a file outside them; its own definition, `agents/policy/`, `.github/` and the check itself MUST NOT be writable. The owner reviews and merges.
+- **Scope of improvement.** An agent that improves another loop changes only the content named when it is created (`writable_paths` in its loop definition): prompts and skills. It MUST NOT change what defines or judges it: policies, agent and loop definitions (autonomy, tools, budgets, scopes), eval sets, provisioning, infrastructure and CI. The scope MUST be enforced by GitHub, never by code the agent's own pull request can change. The owner reviews and merges.
+- **Where that content lives** is decided before the first improving agent gets write access (Phase 5):
+  - *Folders in this repository:* one pull request can change a loop and its prompts together. GitHub permissions are per repository, so the App can write everywhere here and the scope rests on a required check, which MUST be evaluated from `main`, not from the pull request, plus the owner's review.
+  - *A separate playbook repository:* the improving agent's App is installed there only and cannot write to this repository at all; the scope is a token boundary. Runs load prompts and skills from a pinned commit of it, and this repository's eval sets gate its pull requests. A new loop then takes two pull requests.
+  - The separate repository is the default once an improving agent is not an engineering agent behind Claude Code policy, or once there is more than one improving agent.
 
 ## 11. Interfaces and telemetry
 
