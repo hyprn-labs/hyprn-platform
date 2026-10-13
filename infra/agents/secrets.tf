@@ -4,8 +4,7 @@
 # root-owned loader) and the wake service.
 
 # Per-agent secrets named <name>-agent-<purpose> (conventions/README.md):
-# Slack tokens for the host and the wake service, the GitHub token
-# (ADR-0004) for the host only.
+# Slack tokens for the host and the wake service.
 locals {
   agent_slack_secrets = {
     for pair in setproduct(var.agents, ["slack-app-token", "slack-bot-token"]) :
@@ -42,9 +41,11 @@ resource "google_secret_manager_secret_iam_member" "agent_slack" {
   member    = "serviceAccount:${each.value.reader == "host" ? google_service_account.host.email : google_service_account.wake.email}"
 }
 
-resource "google_secret_manager_secret" "agent_github_token" {
+# GitHub App private key per agent (ADR-0005); read by the root token broker on
+# the host only, never by the agent.
+resource "google_secret_manager_secret" "agent_github_app_key" {
   for_each  = toset(var.agents)
-  secret_id = "${each.key}-agent-github-token"
+  secret_id = "${each.key}-agent-github-app-key"
 
   replication {
     user_managed {
@@ -61,8 +62,8 @@ resource "google_secret_manager_secret" "agent_github_token" {
   }
 }
 
-resource "google_secret_manager_secret_iam_member" "agent_github_token" {
-  for_each  = google_secret_manager_secret.agent_github_token
+resource "google_secret_manager_secret_iam_member" "agent_github_app_key" {
+  for_each  = google_secret_manager_secret.agent_github_app_key
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.host.email}"
@@ -95,32 +96,4 @@ resource "google_secret_manager_secret_iam_member" "allowed_users" {
   secret_id = google_secret_manager_secret.slack_allowed_users.id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${each.value}"
-}
-
-# GitHub App private key per agent (ADR-0005); read by the root token broker on
-# the host only, never by the agent.
-resource "google_secret_manager_secret" "agent_github_app_key" {
-  for_each  = toset(var.agents)
-  secret_id = "${each.key}-agent-github-app-key"
-
-  replication {
-    user_managed {
-      replicas {
-        location = var.region
-      }
-    }
-  }
-
-  labels = {
-    component  = "agents"
-    agent      = each.key
-    managed_by = "terraform"
-  }
-}
-
-resource "google_secret_manager_secret_iam_member" "agent_github_app_key" {
-  for_each  = google_secret_manager_secret.agent_github_app_key
-  secret_id = each.value.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.host.email}"
 }

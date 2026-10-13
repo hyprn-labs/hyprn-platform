@@ -13,19 +13,19 @@ No PRD exists for this milestone. These requirements are derived from the remain
 - [ ] **POL-01**: The Claude Code permission rules and sandbox settings for agents are reviewed in `agents/policy/`, applied organization-wide by the Team Owner in the admin console, and recorded in `runbooks/agents/`. Risky actions are relayed to Slack for approval.
 - [ ] **POL-02**: Agent shell commands can reach only an explicit egress allowlist reviewed in `agents/policy/`; a request to any other host fails.
 - [ ] **POL-03**: `strictKnownMarketplaces` is set organization-wide so only the `hyprn-agents` marketplace is accepted; an agent cannot add another marketplace.
-- [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in `hyprn-platform` and `hyprn-mvp`. These rules are the enforcing control until a ruleset exists (ADR-0004).
+- [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in `hyprn-platform` and `hyprn-mvp`. These rules are the enforcing control until a ruleset exists (ADR-0005).
 
 ### Account safeguards (SEC, DOC)
 
 - [ ] **SEC-01**: A break-glass super admin exists with an offline key, holds no standing Google Cloud role, and its use procedure is written in `runbooks/agents/gcp.md` without secrets.
-- [ ] **SEC-02**: The `hyprn-labs` GitHub organization requires two-factor authentication for all members, including the machine account.
+- [ ] **SEC-02**: The `hyprn-labs` GitHub organization requires two-factor authentication for all members.
 - [x] **DOC-01**: ADR-0003 is accepted and linked from `docs/adr/README.md`. It states that our own Slack channel server is the plugin and supersedes the "vendored community plugin" wording of ADR-0001 section 6. Plan task D1 and `agents/marketplace/README.md` match.
 
 ### GitHub workflow (GH)
 
-- [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-agent-hyprn`. The description states what changed and how it was verified. Commits carry "Ada (AI agent)".
+- [ ] **GH-01**: From a Slack task given by the platform owner, Ada creates branch `agent/ada/<slug>`, pushes it and opens a draft pull request authored by `ada-agent-hyprn[bot]`. The description states what changed and how it was verified, and Ada does not merge it.
 - [ ] **GH-02**: A worktree helper creates one worktree per task on branch `agent/<name>/<slug>` and sets its own port block, Compose project name and test database name as environment variables. Two worktrees run side by side without collisions.
-- [ ] **GH-03**: The secrets with the former names (`agent-ada-*`) are deleted after the switch to `<name>-agent-<purpose>`, the earlier tokens are deleted in the agent account, and `runbooks/agents/github.md` records the token's expiry date and the next rotation date.
+- [ ] **GH-03**: The interim machine account is removed: its fine-grained token revoked, the account removed from `hyprn-labs`, the secret `ada-agent-github-token` deleted, and the removal recorded in `runbooks/agents/github.md`.
 
 ### Acceptance and isolation (ACC)
 
@@ -47,7 +47,7 @@ No PRD exists for this milestone. These requirements are derived from the remain
 ### GitHub enforcement (GHE)
 
 - **GHE-01**: GitHub Team plan active, a human team for code owners, `CODEOWNERS` in each working repository, and a ruleset on `main` requiring a pull request, human code-owner approval, stale-approval dismissal, no force push and no bypass. Trigger: the platform owner upgrades the organization plan. Claude Code deny rules (POL-04) remain as defense in depth.
-- **GHE-02**: A GitHub App `hyprn-ada` replaces the machine account: Contents and Pull requests read/write, Metadata read, no Workflows or Administration, selected repositories, one-hour installation tokens from a token helper, commits as the App. Trigger: GHE-01 done (ADR-0001 section 5).
+- [x] **GHE-02**: A GitHub App `ada-agent-hyprn` replaces the machine account: Contents and Pull requests read/write, Metadata read, no webhook, one-hour installation tokens minted on the host (ADR-0005). Done 2026-10-13.
 - **GHE-03**: Acceptance for GHE-01 and GHE-02: merge by the agent refused by GitHub, push to `main` refused by GitHub, approval by an agent identity does not satisfy the rule.
 
 ### Fleet growth (FLEET)

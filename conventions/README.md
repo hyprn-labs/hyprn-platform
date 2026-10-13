@@ -8,7 +8,7 @@ Agent personas (for example Ada) appear in per-agent identities only, never in c
 |---|---|---|
 | Email (Google Group) | `<name>@agents.hyprn.ai` | `ada@agents.hyprn.ai` |
 | Display name (Claude, Slack, GitHub, Git) | `<Name> (AI agent)` | Ada (AI agent) |
-| GitHub machine account | `<name>-agent-hyprn` | `ada-agent-hyprn` |
+| GitHub App (bot `<app>[bot]`) | `<name>-agent-hyprn` | `ada-agent-hyprn` |
 | Linux user on the agent host | `<name>` | `ada` |
 | Secrets | `<name>-agent-<purpose>` | `ada-agent-github-token` |
 | Git branches | `agent/<name>/<slug>` | `agent/ada/fix-readme` |

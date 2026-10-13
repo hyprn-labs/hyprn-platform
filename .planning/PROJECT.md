@@ -12,7 +12,7 @@ The platform owner gives Ada a task in Slack and receives a reviewable draft pul
 
 **Goal:** Ada works from Slack, opens draft pull requests on GitHub, runs under enforced Claude Code policy, and the first-week usage measurement drives the seat decision.
 
-**Success metric:** The platform owner gives Ada a task in Slack and receives a reviewable draft pull request by `ada-agent-hyprn`, with no path from the agent fleet to staging or prod credentials, and with a recorded seat decision after one measured week.
+**Success metric:** The platform owner gives Ada a task in Slack and receives a reviewable draft pull request by `ada-agent-hyprn[bot]`, with no path from the agent fleet to staging or prod credentials, and with a recorded seat decision after one measured week.
 
 **Target work:**
 - Claude Code policy, sandbox and egress allowlist enforced for agents, with deny rules for merge and push to `main`.
@@ -30,14 +30,14 @@ The platform owner gives Ada a task in Slack and receives a reviewable draft pul
 - Ada signed in with a Claude Team seat; role instructions in `agents/roles/`.
 - Slack control: own channel server in `agents/marketplace/plugins/slack/`, plugin `slack@hyprn-agents` installed from the root-owned local marketplace, secrets in Secret Manager, sender allowlist, organization settings `channelsEnabled`, `allowedChannelPlugins` and `disableBypassPermissionsMode` set.
 - Wake from Slack verified: a message to a stopped host reaches Ada 50 s after the start request.
-- GitHub access (ADR-0004): machine account `ada-agent-hyprn` with a fine-grained token (Contents and Pull requests read/write), Write on `hyprn-platform` and `hyprn-mvp`, token in Secret Manager as `ada-agent-github-token` loaded to tmpfs, Git identity "Ada (AI agent)". Repository published to GitHub as `hyprn-labs/hyprn-platform` (private).
+- GitHub access (ADR-0005): GitHub App `ada-agent-hyprn` on `hyprn-platform` and `hyprn-mvp`; a root broker mints one-hour installation tokens from the App key in Secret Manager; Ada commits as `ada-agent-hyprn[bot]`. Repository published to GitHub as `hyprn-labs/hyprn-platform` (private).
 
 ### Active
 
 Requirement IDs and acceptance wording live in `.planning/REQUIREMENTS.md`. Summary:
 
 - [ ] Enforced agent policy: permission rules, sandbox, egress allowlist, `strictKnownMarketplaces`, deny rules for merge and push to `main`, break-glass admin, organization 2FA, ADR-0003.
-- [ ] GitHub workflow: Slack task to draft pull request by `ada-agent-hyprn`, worktree helper, token hygiene.
+- [ ] GitHub workflow: Slack task to draft pull request by `ada-agent-hyprn[bot]`, worktree helper, removal of the interim machine account.
 - [ ] Acceptance: permission relay, other-sender rejection, merge and push refusal, isolation and no-production-credentials checks as repeatable tests.
 - [ ] Measurement: OpenTelemetry export, one week of daily reports, seat decision recorded in an ADR.
 
@@ -45,7 +45,7 @@ Requirement IDs and acceptance wording live in `.planning/REQUIREMENTS.md`. Summ
 
 - Staging and prod environments, deployment contract, host reconciler, product delivery pipeline — they follow the product's local edition and are specified in `docs/specs/cloud-platform.md`.
 - Agent #2 — gated on Anthropic's human answer on agent seats (ADR-0001 section 1).
-- GitHub Team plan, ruleset on `main`, CODEOWNERS, and the GitHub App — a paid-plan and owner decision; tracked as deferred requirements. Until then, Claude Code deny rules are the control.
+- GitHub Team plan, ruleset on `main` and CODEOWNERS — a paid-plan and owner decision; tracked as deferred requirements. Until then, Claude Code deny rules are the control.
 - Product-side support for per-worktree port, Compose project and database overrides — product work in `hyprn-mvp`.
 - Signed commits — not required for now (ADR-0001 section 5).
 - Product code in this repository — it belongs in `hyprn-mvp`.
@@ -54,7 +54,7 @@ Requirement IDs and acceptance wording live in `.planning/REQUIREMENTS.md`. Summ
 
 - Two Claude Team seats cover the platform owner and Ada; extra usage is off at first so seat-limit hits are visible.
 - The agent host runs on demand (ADR-0002) and costs about 75-80 EUR per month at 8 hours a day on 22 days, inside the 100 EUR budget.
-- The GitHub organization `hyprn-labs` is on the Free plan: no ruleset or branch protection on private repositories, and the organization-wide 2FA requirement is not enabled. `ada-agent-hyprn` has Write on `hyprn-platform` and `hyprn-mvp`, so until a ruleset exists the only control against pushing to `main` is Claude Code policy.
+- The GitHub organization `hyprn-labs` is on the Free plan: no ruleset or branch protection on private repositories, and the organization-wide 2FA requirement is not enabled. Ada's App can write to `hyprn-platform` and `hyprn-mvp`, so until a ruleset exists the only control against pushing to `main` is Claude Code policy.
 - The Slack channel plugin is our own audited server, not a vendored community plugin. Both community candidates were rejected in the audit (ADR-0003).
 - The platform specification (`docs/specs/cloud-platform.md`) defines the staging and prod build-out; none of it is provisioned. Its rule that agents get no privileged path and that `hyprn-agents` is engineering tooling, not an environment, applies here.
 - Residual risk accepted: the channel server runs as the agent user, so a compromised agent could alter its installed copy or use its own bot token; the allowlist protects the session from other people's messages and the Linux user boundary limits reach.
@@ -76,7 +76,7 @@ Decisions below are locked. Do not plan work that reverses them.
 
 <decisions>
 
-### ADR-0001: Agent fleet on Claude Team seats in a separate project (as amended by ADR-0002, ADR-0003 and ADR-0004)
+### ADR-0001: Agent fleet on Claude Team seats in a separate project (as amended by ADR-0002, ADR-0003 and ADR-0005)
 
 - **Licensing (L1):** One Claude Team seat per agent, unmodified Claude Code CLI signed in with that seat. No OpenAI seats for agents. Third-party harnesses use API keys only. A seat is an identity plus quota, not a role; roles come from `agents/roles/`. The platform owner is Team Owner and holds a seat. A second agent is added only after Anthropic's human answer confirms seat assignment to an agent identity.
 - **Identities:** Every agent display name ends with "(AI agent)". Per agent: email in the agents domain, Claude Team seat, Slack app on Socket Mode, GitHub identity, one Linux user on the host.
@@ -94,12 +94,11 @@ Decisions below are locked. Do not plan work that reverses them.
 - Wake identity `hyprn-agents-wake` holds a custom role limited to get, start and stop on the host instance, plus log and metric writing.
 - Confirmation: allowlisted sender wakes the host and the agent answers, others do not; wake service holds no Slack connection while the host runs; wake identity is refused any other action; the host keeps its disk across stops.
 
-### ADR-0004: Agent GitHub access through a machine account until the GitHub App (amends ADR-0001 section 5 as an interim step)
+### ADR-0005: Agent GitHub access through a GitHub App with one-hour tokens (supersedes ADR-0004, completes ADR-0001 section 5)
 
-- Ada uses the machine account `ada-agent-hyprn` (display name "Ada (AI agent)"), a member of `hyprn-labs` with Write on `hyprn-platform` and `hyprn-mvp`.
-- Fine-grained token: resource owner `hyprn-labs`, selected repositories only, Contents and Pull requests read/write, Metadata read, no Workflows, Administration or Secrets, expiry 90 days or less.
-- Token lives in the password manager and in Secret Manager as `ada-agent-github-token`, readable by the host identity only; the root loader writes it to tmpfs for `ada` only. Git identity "Ada (AI agent)" with the account's no-reply address.
-- Agents never merge or deploy. Until the organization's plan enforces a ruleset on `main`, Claude Code permission rules deny merging and pushing to `main`. Replacing the machine account with the GitHub App changes only the secret and the credential helper.
+- One GitHub App per agent, installed on selected `hyprn-labs` repositories; Contents and Pull requests read/write, Metadata read, no webhook.
+- The App key is in the password manager and in Secret Manager (`<name>-agent-github-app-key`, host only). A root broker signs a JWT in memory and mints a one-hour installation token every 30 minutes and on each secret reload; Git and `gh` read the current token.
+- Agents never merge or deploy. Until a ruleset protects `main`, Claude Code permission rules deny merging and pushing to `main`.
 
 ### ADR-0003: Our own Slack channel server for agents (supersedes the plugin choice in ADR-0001 section 6)
 
@@ -113,7 +112,7 @@ Decisions below are locked. Do not plan work that reverses them.
 | Separate project `hyprn-agents`, no role outside it | Agents hold no path to staging or prod | Pending: acceptance check in Phase 3 |
 | Host on demand with always-on wake service | Larger host at about 75-80 EUR per month instead of always-on cost | Good: wake verified at 50 s |
 | Own Slack channel server with root-written sender allowlist | Community candidates failed the audit | Good: deployed and working; recorded in ADR-0003 |
-| Machine account with fine-grained token as interim GitHub access | Ada can open draft pull requests now; Team plan and App not yet available | Pending: draft-pull-request test in Phase 2 |
+| GitHub App per agent with one-hour tokens (ADR-0005), superseding the interim machine account (ADR-0004) | No long-lived token, seat, email or second factor; Apps work on the Free plan | Good: host checks pass; draft-pull-request test in Phase 2 |
 | Claude Code deny rules on merge and push to `main` until a ruleset exists | Free plan cannot enforce rules on private repositories | Pending: Phase 1 |
 | No preset thresholds for the seat decision | Measure first, then decide | Pending: Phase 4 |
 
