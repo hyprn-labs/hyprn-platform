@@ -55,6 +55,79 @@ gcloud projects remove-iam-policy-binding <project> --member="user:<account>" --
 
 Check: organization, billing and project IAM list `gcp-admins` and Google service agents only.
 
+## Phase 1 safeguards (owner-go checklists, 2026-10-13)
+
+Every item below is an owner-hand step per D-08: requested here, executed by
+the owner with owner credentials, never automated. Each carries its console
+path, expected end-state, and sign-off row.
+
+### 1. Review and apply detect.tf
+
+- Review the exact file revision of `infra/agents/detect.tf` (audit config,
+  two alert policies, one email channel, one folder sink; no secret values).
+- Console path: terminal with the HYPRN gcloud configuration
+  (`CLOUDSDK_CONFIG`, `GOOGLE_APPLICATION_CREDENTIALS`).
+- Commands (owner runs after explicit go for this exact plan):
+  ```bash
+  terraform -chdir=infra/agents plan   # reviewed; expect only the detect.tf additions
+  terraform -chdir=infra/agents apply  # the reviewed plan, nothing else
+  ```
+- Expected end-state: apply succeeds; a fresh plan shows no changes.
+- Reversibility: reversible (plan-reviewed, destroyable).
+
+### 2. Break-glass admin confirmation (SEC-01)
+
+- Console path: Workspace admin console → Users → the role-named super
+  admin; security keys and printed backup codes stored offline, away from
+  daily keys.
+- Expected end-state: the account exists with its own hardware key plus
+  offline backup codes, holds no standing Google Cloud role, and its use is
+  documented here. No key material is ever printed or pasted.
+
+### 3. Organization-wide 2FA requirement (SEC-02) — decision gate
+
+- Console path: GitHub org `hyprn-labs` → Settings → Authentication
+  security → require two-factor authentication.
+- **Decision (one-way): members without 2FA lose access until enrolled —
+  the owner approves the member notice before toggling.** Send the notice
+  first, then enable.
+- Expected end-state: 2FA required for all members; notice sent beforehand.
+
+### 4. Canary secret read → admin email (DET-01 live test)
+
+- Action (owner go): read a canary secret version as an unexpected
+  principal (not the host or wake identity).
+- Expected end-state: an alert email arrives at `gcp-admins@hyprn.ai`
+  from the unexpected-access policy.
+
+### 5. Canary IAM change → admin email (DET-02 live test)
+
+- Action (owner go): make a canary IAM grant change in `hyprn-agents`
+  (reverted afterwards under its own go).
+- Expected end-state: an alert email arrives at `gcp-admins@hyprn.ai`
+  from the IAM-change policy.
+
+### 6. Org-wide IAM search with owner credentials (ACC-04)
+
+- Command (owner runs):
+  ```bash
+  gcloud organizations get-iam-policy 1071176223527
+  ```
+- Expected end-state: exactly the declared roles — `gcp-admins@hyprn.ai`
+  holds the admin roles, no person or domain holds roles directly, and
+  nothing exists outside the projects the access model names.
+
+## Safeguard sign-off
+
+| Date | Item | Result |
+|---|---|---|
+| 2026-10-13 | detect.tf apply (§1) | Awaiting owner go |
+| 2026-10-13 | Break-glass (§2) | Awaiting owner confirmation |
+| 2026-10-13 | 2FA + member notice (§3) | Awaiting owner decision + go |
+| 2026-10-13 | Canary secret read (§4) | Awaiting owner go + mail arrival |
+| 2026-10-13 | Canary IAM change (§5) | Awaiting owner go + mail arrival |
+| 2026-10-13 | Org-wide IAM search (§6) | Awaiting owner run + role match |
+
 ## Record
 
 | Date | Step | Result |
