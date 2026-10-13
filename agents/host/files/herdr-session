@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Long-lived herdr server for one agent, run by herdr@<name>.service.
+# Mirrors hyprn-agent-session (strict mode, profile sourcing, restart loop
+# with backoff); the tmux/claude resume body is swapped for a headless herdr
+# server start under the agent UID. hyprn-agent-session stays installed as the
+# disabled tmux fallback.
+#
+# Deliberate structural difference: `herdr server` takes no harness arguments,
+# so there is no ARGS_FILE here. The seat harness (Claude Code with its
+# channel args from /etc/hyprn-agents/agents/<name>.args) runs inside a herdr
+# pane, and herdr resumes agent panes automatically after a server restart
+# (resume_agents_on_restore); the one-time pane creation is an owner step in
+# runbooks/agents/engineering-workflow.md, validated at the 02-03 checkpoint.
+#
+# Agent-to-agent prompting stays off (locked, waits on Anthropic). Herdr's own
+# skill gate requires HERDR_ENV=1 inside a Herdr-managed pane before any
+# control command (notably `herdr agent prompt`) is honored, so this launcher
+# unsets it and never installs the skill file: seat panes cannot prompt each
+# other. Belt and braces: the managed policy denies `herdr agent prompt*`.
+set -uo pipefail
+. /etc/profile.d/hyprn-agents.sh
+export DISABLE_AUTOUPDATER=1
+# Channel servers must use the pre-2026 MCP handshake (channels reference).
+export MCP_PROTOCOL_NEGOTIATION=legacy
+# Locked: agent-to-agent prompting off (see header).
+unset HERDR_ENV
+cd "$HOME/work"
+
+HERDR=/usr/local/lib/herdr/herdr
+
+while true; do
+  # Heartbeat: a running herdr server counts as agent activity for idle-stop,
+  # so the host is not stopped under live seat sessions (RESEARCH Pitfall 5).
+  touch /run/hyprn-agents/activity-"$(id -un)" 2>/dev/null || true
+  "$HERDR" server
+  sleep 10
+done

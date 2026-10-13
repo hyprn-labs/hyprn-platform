@@ -1,5 +1,5 @@
 {
-  "$comment": "Claude Code organization policy, reviewed copy (D-02). The Team Owner applies this file verbatim in the admin console; the console enforces it. Deny rules are the interim main-branch control until the Team-plan ruleset (D-01). Bash patterns match command text literally, so every refusal family carries spelling variants plus live refusal tests (D-08).",
+  "$comment": "Claude Code organization policy, reviewed copy (D-02). The Team Owner applies this file verbatim in the admin console; the console enforces it. Deny rules are the interim main-branch control until the Team-plan ruleset (D-01). Bash patterns match command text literally, so every refusal family carries spelling variants plus live refusal tests (D-08). Phase 2 COK-02: seat panes report their lifecycle to the host herdr server (report-agent family, allowlisted); agent-to-agent prompting via `herdr agent prompt` is denied (locked, waits on Anthropic).",
   "permissions": {
     "deny": [
       "Bash(git push *main*)",
@@ -11,7 +11,8 @@
       "Bash(gh pr merge*)",
       "Bash(gh pr merge *--admin*)",
       "Bash(gh api repos/*/branches/main/protection*)",
-      "Bash(gh api *merge*)"
+      "Bash(gh api *merge*)",
+      "Bash(herdr agent prompt*)"
     ],
     "ask": [
       "Bash(gh api *)"
@@ -23,7 +24,11 @@
       "Bash(git show *)",
       "Bash(git checkout -b *)",
       "Bash(npm test *)",
-      "Bash(npm run build *)"
+      "Bash(npm run build *)",
+      "Bash(herdr pane report-agent*)",
+      "Bash(herdr pane report-agent-session*)",
+      "Bash(herdr pane release-agent*)",
+      "Bash(herdr status*)"
     ],
     "disableBypassPermissionsMode": "disable"
   },
