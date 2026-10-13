@@ -8,6 +8,11 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ## v1 Requirements
 
+### Repository protection (GHE) — spec §13
+
+- [ ] **GHE-01**: `hyprn-labs` is on the GitHub Team plan with `CODEOWNERS` and a ruleset on `main` in each repository: pull request required, human code-owner approval, stale approvals dismissed, no force push, no bypass for any App.
+- [ ] **GHE-03**: GitHub refuses a merge or push to `main` by any agent App, and an agent's approval does not satisfy the rule.
+
 ### Agent policy (POL) — spec §13
 
 - [ ] **POL-01**: The Claude Code organization policy lives in `agents/policy/managed-settings.json` with explicit allow, ask and deny lists (routine work allowed, risky actions asked, merging and pushing to `main` denied) and the pinned herdr hooks allowed; the Team Owner applies it in the admin console and `runbooks/agents/claude.md` records each change.
@@ -19,6 +24,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 - [ ] **EGR-01**: A filtering forward proxy (Squid) on the agent host is the only way out for agent users and their containers: host firewall rules by Linux user send their traffic to it and drop direct outbound connections; DNS stays allowed; each destination is logged per agent to Cloud Logging without blocking (observe mode).
 - [ ] **EGR-02**: The proxy enforces a domain allowlist reviewed in `agents/policy/egress-allowlist.txt`, built from observed traffic; any other domain is refused and logged.
+- [ ] **EGR-03**: Operations run containers are enforced from their first run: each reaches only the gateway and the hosts of its loop's declared tools, from an allowlist in the loop definition; any other destination is refused and logged.
 
 ### Detection and account safeguards (DET, SEC, DOC) — spec §13
 
@@ -71,10 +77,8 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 - [ ] **LOOP-02**: The meeting loop extracts decisions and actions, proposes Notion updates and posts a summary in Slack; Notion writes need the owner's approval (A1).
 - [ ] **LOOP-03**: The loop handles at least 10 real meetings in two weeks within a budget of 30 USD a month, with cost per run visible.
 
-### Learning (GHE, OPS, LRN) — spec §9, §10, §13
+### Learning (OPS, LRN) — spec §9, §10
 
-- [ ] **GHE-01**: `hyprn-labs` is on the GitHub Team plan with `CODEOWNERS` and a ruleset on `main` in each repository: pull request required, human code-owner approval, stale approvals dismissed, no force push, no bypass for any App.
-- [ ] **GHE-03**: GitHub refuses a merge or push to `main` by any agent App, and an agent's approval does not satisfy the rule.
 - [ ] **OPS-03**: Boole's GitHub App `boole-agent-hyprn` is installed on `hyprn-platform` only, with contents and pull-request access; its tokens come from the credential broker.
 - [ ] **LRN-01**: Reactions, replies and approval decisions in Slack are stored with their run as feedback.
 - [ ] **LRN-02**: The meeting loop has an eval set of at least 20 cases from real runs and feedback, and a regression suite; the eval runner runs on the host through the gateway.
@@ -119,6 +123,8 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | POL-02 | Phase 1 | Pending |
 | POL-03 | Phase 1 | Pending |
 | POL-04 | Phase 1 | Pending |
+| GHE-01 | Phase 1 | Pending |
+| GHE-03 | Phase 1 | Pending |
 | EGR-01 | Phase 1 | Pending |
 | DET-01 | Phase 1 | Pending |
 | DET-02 | Phase 1 | Pending |
@@ -148,6 +154,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | CP-05 | Phase 3 | Pending |
 | CP-06 | Phase 3 | Pending |
 | RT-01 | Phase 3 | Pending |
+| EGR-03 | Phase 3 | Pending |
 | OPS-01 | Phase 3 | Pending |
 | COST-01 | Phase 3 | Pending |
 | ACC-07 | Phase 4 | Pending |
@@ -155,8 +162,6 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | LOOP-01 | Phase 4 | Pending |
 | LOOP-02 | Phase 4 | Pending |
 | LOOP-03 | Phase 4 | Pending |
-| GHE-01 | Phase 5 | Pending |
-| GHE-03 | Phase 5 | Pending |
 | OPS-03 | Phase 5 | Pending |
 | LRN-01 | Phase 5 | Pending |
 | LRN-02 | Phase 5 | Pending |
@@ -173,7 +178,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | EGR-02 | Phase 7 | Pending |
 | ACC-10 | Phase 7 | Pending |
 
-**Coverage:** 57 v1 requirements, all mapped.
+**Coverage:** 58 v1 requirements, all mapped.
 
 ---
 *Last updated: 2026-10-13 after the document review*

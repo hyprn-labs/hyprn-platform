@@ -14,27 +14,28 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 
 ## Phases
 
-- [ ] **Phase 1: Security baseline** - Enforced Claude Code policy, egress observation, alerts, account safeguards, and the first proven checks
+- [ ] **Phase 1: Security baseline** - GitHub ruleset on `main`, enforced Claude Code policy, egress observation, alerts, account safeguards, and the first proven checks
 - [ ] **Phase 2: Engineering workflow** - Slack-to-draft-PR, worktree per task, toolchains and caches, herdr as cockpit and host runtime, telemetry
 - [ ] **Phase 3: Control plane core** - Gateway, controller, loop registry, credential broker, run runner, approvals, budgets, kill switch; Boole's runtime identities
 - [ ] **Phase 4: Boole and the meeting loop** - Granola → Notion → loop → Slack with approved writes; isolation between Ada and Boole
-- [ ] **Phase 5: Learning** - GitHub ruleset, Boole's App, feedback, evals, improvement pull requests, first promotion
+- [ ] **Phase 5: Learning** - Boole's App, feedback, evals, improvement pull requests, first promotion
 - [ ] **Phase 6: Fleet as code and onboarding** - `fleet.yaml`, `fleet add` and `remove` for both kinds, Workspace users
 - [ ] **Phase 7: Hardening and acceptance** - Egress allowlist enforced, full acceptance run
 
 ## Phase Details
 
 ### Phase 1: Security baseline  (M1)
-**Goal**: Ada runs under enforced policy, outbound traffic is visible, misuse of secrets or IAM raises an alert, and the safety controls are proven by one command.
+**Goal**: `main` is protected by GitHub, Ada runs under enforced policy, outbound traffic is visible, misuse of secrets or IAM raises an alert, and the safety controls are proven by one command.
 **Depends on**: Nothing
-**Requirements**: POL-01, POL-02, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08
-**Owner actions**: apply the policy in the Claude admin console; create the break-glass admin; require two-factor authentication in `hyprn-labs`.
+**Requirements**: GHE-01, GHE-03, POL-01, POL-02, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08
+**Owner actions**: upgrade `hyprn-labs` to the GitHub Team plan; apply the policy in the Claude admin console; create the break-glass admin; require two-factor authentication in `hyprn-labs`.
 **Success Criteria**:
-  1. The admin console policy matches `agents/policy/managed-settings.json`; routine worktree work runs without prompts.
-  2. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
-  3. The egress proxy logs each agent's destinations; a direct outbound connection is dropped.
-  4. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
-  5. `tests/agents/run.sh` passes and writes a dated record.
+  1. The ruleset protects `main` in every repository; GitHub refuses a merge or push to `main` by Ada's App.
+  2. The admin console policy matches `agents/policy/managed-settings.json`; routine worktree work runs without prompts.
+  3. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
+  4. The egress proxy logs each agent's destinations; a direct outbound connection is dropped.
+  5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
+  6. `tests/agents/run.sh` passes and writes a dated record.
 **Plans**: TBD
 
 ### Phase 2: Engineering workflow  (M1)
@@ -52,10 +53,10 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 ### Phase 3: Control plane core  (M2)
 **Goal**: Autonomous runs have a safe, metered path end to end, ready for Boole's first loop.
 **Depends on**: Phase 2; ADR-0006 accepted.
-**Requirements**: CP-01, CP-02, CP-03, CP-04, CP-05, CP-06, RT-01, OPS-01, COST-01, ACC-09
+**Requirements**: CP-01, CP-02, CP-03, CP-04, CP-05, CP-06, RT-01, EGR-03, OPS-01, COST-01, ACC-09
 **Owner actions**: open a Fireworks account and key; link the Anthropic Console organization to the Team plan (API credits) and create its key; create an OpenAI API key; create Boole's Slack app; set the revised budget.
 **Success Criteria**:
-  1. A test loop declared in `agents/loops/` runs on an open model at Fireworks, through the gateway, in a fresh container under `boole` with only its declared credentials; its cost is logged.
+  1. A test loop declared in `agents/loops/` runs on an open model at Fireworks, through the gateway, in a fresh container under `boole` with only its declared credentials, and reaches only the destinations on its loop's allowlist; its cost is logged.
   2. A run waits hours for an approval to Boole's Slack bot and resumes; a run over budget is refused; the kill switch stops a run within a minute.
   3. Switching the test loop to Claude changes its binding only.
   4. The controller and gateway checks pass and are part of `tests/agents/run.sh`.
@@ -75,14 +76,13 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 
 ### Phase 5: Learning  (M2)
 **Goal**: The meeting loop gets better from the owner's feedback, with every change tested and merged by the owner.
-**Depends on**: Phase 4; the GitHub Team plan (owner purchase).
-**Requirements**: GHE-01, GHE-03, OPS-03, LRN-01, LRN-02, LRN-03, LRN-04
-**Owner actions**: upgrade `hyprn-labs` to the Team plan; create Boole's GitHub App.
+**Depends on**: Phase 4
+**Requirements**: OPS-03, LRN-01, LRN-02, LRN-03, LRN-04
+**Owner actions**: create Boole's GitHub App.
 **Success Criteria**:
-  1. The ruleset protects `main` in every repository; GitHub refuses agent merges and pushes.
-  2. Feedback is stored with each run; the eval set holds at least 20 real cases.
-  3. An improvement pull request by `boole-agent-hyprn[bot]` passes the evals and is merged by the owner.
-  4. The loop reaches its promotion rule and moves to A2 by a reviewed change.
+  1. Feedback is stored with each run; the eval set holds at least 20 real cases.
+  2. An improvement pull request by `boole-agent-hyprn[bot]` passes the evals and is merged by the owner.
+  3. The loop reaches its promotion rule and moves to A2 by a reviewed change.
 **Plans**: TBD
 
 ### Phase 6: Fleet as code and onboarding  (M3)

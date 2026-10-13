@@ -55,7 +55,8 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - ADR-0001 as amended by ADR-0002, ADR-0003 and ADR-0005 is locked; ADR-0004 is superseded by ADR-0005; ADR-0006 is proposed and must be accepted before Phase 3.
 - Milestones in value order: M1 safe engineering agent, M2 Boole (operations agent on open models at Fireworks) with a learning meeting loop, M3 scale the fleet.
 - Run state lives in its own database on the gateway's Cloud SQL instance.
-- Boole receives repository write access only after the GitHub Team plan ruleset (Phase 5); until then only Ada writes, behind Claude Code deny rules (POL-04).
+- The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
+- Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
@@ -90,12 +91,12 @@ Gotchas met while building the fleet; read before operating it.
 
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
-- Before Phase 5: GitHub Team plan.
+- Phase 1: GitHub Team plan (owner purchase).
 - Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 
 ### Blockers/Concerns
 
-- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories, so Phase 1 deny rules are the only control until Phase 5.
+- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories, so deny rules are the only control until the Team plan (Phase 1).
 - `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).
 - Vendor limits on automation (checked 2026-10-13): no Claude Team member API; Slack Socket Mode tokens and app installs need a human; GitHub App installation and logo need a human.

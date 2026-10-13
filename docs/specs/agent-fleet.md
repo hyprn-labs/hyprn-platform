@@ -169,7 +169,7 @@ Each loop declares its level per action. A loop moves up one level only by a rev
 - One identity per agent per system; no shared or personal accounts.
 - Secrets live in the company password manager and Secret Manager, never in Git; an agent MUST NOT read another agent's secrets.
 - The Claude Code organization policy, reviewed in `agents/policy/managed-settings.json`, denies merging, pushing to `main` and force pushing, requires the sandbox, accepts only the `hyprn-agents` plugin marketplace, disables bypass mode and allows the pinned herdr hooks.
-- `main` MUST be changed only by people. Until a ruleset protects it, Claude Code deny rules are the only control, so only engineering agents on Claude Code hold write access; operations agents receive write access only once the GitHub Team plan's ruleset is in place, and their Apps MUST NOT bypass it.
-- All outbound traffic from agent users and their containers MUST pass the egress proxy; its allowlist is enforced from observed traffic.
+- `main` MUST be changed only by people. A ruleset on `main` in every repository (GitHub Team plan) is the control, in place before any agent beyond Ada writes; no agent App bypasses it. Claude Code deny rules are a second layer for engineering agents.
+- All outbound traffic from agent users and their containers MUST pass the egress proxy. Operations run containers MUST reach only their loop's allowlist from their first run; the agent users' allowlist is enforced from observed traffic.
 - Alerts reach `gcp-admins` on unexpected secret access and on IAM changes.
 - Acceptance and isolation checks run from one command after every host or project change.
