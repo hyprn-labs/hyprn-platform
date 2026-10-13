@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# ada-digest: daily per-agent usage post (OBS-01) plus monthly terms re-check
+# (CODD-03). Aggregates tokens plus seat-limit hits per agent, posts through
+# the agent bot token via the same chat.postMessage call the Slack channel
+# server's reply() makes, states the lower-bound caveat in every post, holds
+# the host against idle-stop while running, and checks Codd's model/price/terms
+# against the Zen model list monthly until the company move.
+#
+# Data honesty: without the host collector the telemetry file is absent and
+# seat logs may be unreadable; the digest then reports zeros WITH the caveat
+# rather than inventing numbers. Cost is attributed, not estimated: Ada runs on
+# a Team seat subscription and Codd on the free tier, so there is no metered
+# price table to multiply tokens by — the digest says exactly that.
+#
+# Usage: ada-digest [--dry-run] [--post] [--zen-check]
+#   --dry-run   print the digest to stdout, post nothing (default)
+#   --post      post to Slack (holds the host, needs the bot token on the host)
+#   --zen-check print the CODD-03 terms verdict (owner records the dated row)
+set -euo pipefail
+
+MODE=dry-run
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) MODE=dry-run ;;
+    --post) MODE=post ;;
+    --zen-check) MODE=zen-check ;;
+    *) echo "usage: ada-digest [--dry-run] [--post] [--zen-check]" >&2; exit 1 ;;
+  esac
+done
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$HERE/../../../.." && pwd)"
+AGENTS_FILE="$REPO_ROOT/agents/host/agents.txt"
+MANAGED_OPENCODE="$REPO_ROOT/agents/host/files/opencode.json"
+TELEMETRY_FILE="/var/lib/hyprn-agents/telemetry/batches.jsonl"
+HOLD_FILE="/run/hyprn-agents/hold"
+# Lower-bound caveat, stated in every post (RESEARCH Pitfall 4: export-batch
+# loss means the collector can undercount; fallback mode has no data at all).
+CAVEAT="Lower-bound totals: export batches can be lost before they land, and fallback mode has no collector data — treat these numbers as a floor, not a census."
+ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}"
+
+today="$(date +%F)"
+
+agent_tokens() {
+  local name="$1" total=0
+  if [ -r "$TELEMETRY_FILE" ]; then
+    total="$(grep -o "\"agent\":\"$name\"[^}]*\"claude_code.token.usage\":[0-9]*" "$TELEMETRY_FILE" 2>/dev/null \
+      | grep -o '[0-9]*$' | awk '{s+=$1} END {print s+0}')"
+  fi
+  printf '%s' "$total"
+}
+
+agent_limit_hits() {
+  local name="$1" hits=0 home="/home/$name"
+  # 429/error-event inference (RESEARCH A5): count rate-limit signals in the
+  # seat's Claude logs when readable; otherwise 0 with the caveat above.
+  if [ -d "$home/.claude" ] && [ -r "$home" ]; then
+    hits="$(grep -rhoE '429|rate_limit|rate limit exceeded' "$home/.claude" 2>/dev/null | wc -l)"
+  fi
+  printf '%s' "$hits"
+}
+
+build_digest() {
+  printf ':bar_chart: *Daily agent usage — %s*\n' "$today"
+  while read -r name _uid harness _rest; do
+    tokens="$(agent_tokens "$name")"
+    hits="$(agent_limit_hits "$name")"
+    case "$harness" in
+      claude) cost="covered by Team seat subscription" ;;
+      opencode) cost="\$0.00 (free tier)" ;;
+      *) cost="unknown harness" ;;
+    esac
+    printf '• *%s* (%s): %s tokens, %s seat-limit hits, cost: %s\n' "$name" "$harness" "$tokens" "$hits" "$cost"
+  done < <(grep -vE '^\s*(#|$)' "$AGENTS_FILE")
+  printf '_%s_\n' "$CAVEAT"
+  printf 'Collector endpoint: %s\n' "$ENDPOINT"
+}
+
+zen_check() {
+  local model small
+  model="$(jq -r '.model' "$MANAGED_OPENCODE")"
+  small="$(jq -r '.small_model' "$MANAGED_OPENCODE")"
+  printf 'CODD-03 monthly check (%s)\n' "$today"
+  printf 'Configured model: %s\nConfigured small_model: %s\n' "$model" "$small"
+  # The Zen page names bare model IDs (provider prefix is ours, not theirs).
+  # Fetched to a file first: under `set -o pipefail` a `curl | grep -q` pipe
+  # misreports, because grep -q closes the pipe on first match and curl then
+  # exits non-zero on SIGPIPE.
+  bare="${model#*/}"
+  page="$(mktemp)"
+  if curl -fsSL --max-time 15 https://opencode.ai/docs/zen/ -o "$page" 2>/dev/null && grep -qF "$bare" "$page"; then
+    printf 'Verdict: model still listed on the Zen page; free-tier data terms (prompts/completions train future models, accepted 2026-10-13) still apply — reconfirm they remain acceptable.\n'
+  else
+    printf 'Verdict: UNCONFIRMED — model not found on the Zen page or page unreachable; owner must review the Zen model list and data terms manually before recording the dated row.\n'
+  fi
+  rm -f "$page"
+  printf 'Company move: swap model/small_model to a protective-terms binding via apply.sh (configuration, never retirement).\n'
+}
+
+hold() { touch "$HOLD_FILE" 2>/dev/null || true; }
+unhold() { rm -f "$HOLD_FILE" 2>/dev/null || true; }
+
+case "$MODE" in
+  dry-run)
+    build_digest
+    ;;
+  zen-check)
+    zen_check
+    ;;
+  post)
+    hold
+    trap unhold EXIT
+    body="$(build_digest)"
+    # Same post path as the channel server's reply(): chat.postMessage with
+    # the agent bot token (server.py reply lines). Token shape checked, never
+    # printed.
+    token_file="/run/hyprn-agents/secrets/ada/slack.env"
+    [ -r "$token_file" ] || { echo "ada-digest: no bot token at $token_file" >&2; exit 1; }
+    bot_token="$(grep '^SLACK_BOT_TOKEN=' "$token_file" | cut -d= -f2-)"
+    [ -n "$bot_token" ] || { echo "ada-digest: empty bot token" >&2; exit 1; }
+    allowed="$(cat /run/hyprn-agents/slack-allowed-users.json)"
+    owner="$(printf '%s' "$allowed" | jq -r '.[0]')"
+    channel="$(curl -fsSL --max-time 20 -X POST https://slack.com/api/conversations.open \
+      -H "Authorization: Bearer $bot_token" -H 'Content-Type: application/json; charset=utf-8' \
+      --data "$(jq -nc --arg u "$owner" '{users: $u}')" | jq -r '.channel.id')"
+    [ -n "$channel" ] && [ "$channel" != null ] || { echo "ada-digest: could not open owner DM" >&2; exit 1; }
+    curl -fsSL --max-time 20 -X POST https://slack.com/api/chat.postMessage \
+      -H "Authorization: Bearer $bot_token" -H 'Content-Type: application/json; charset=utf-8' \
+      --data "$(jq -nc --arg c "$channel" --arg t "$body" '{channel: $c, text: $t, unfurl_links: false, unfurl_media: false}')" \
+      | jq -e '.ok' >/dev/null || { echo "ada-digest: post failed" >&2; exit 1; }
+    echo "ada-digest: posted digest for $today"
+    ;;
+esac
