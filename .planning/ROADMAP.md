@@ -50,7 +50,12 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
   4. herdr on the laptop shows the owner's local sessions and Ada's host sessions side by side; Ada's sessions run under herdr and come back after a reboot.
   5. Ada's daily usage report is posted to Slack.
   6. Codd works from herdr-controlled sessions; its free-tier model and data terms are re-checked monthly until company terms.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 02-01-PLAN.md — Tracer: ada-task worktree helper with index-derived isolation, PR body contract, checks/worktree.sh
+- [ ] 02-02-PLAN.md — Slack task-tag intake in server.py; github.sh GH-01 contract plus GH-03 guard plus gated live proof
+- [ ] 02-03-PLAN.md — Host herdr runtime plus laptop cockpit checklist; owner-go apply and reboot proof
+- [ ] 02-04-PLAN.md — Toolchains, per-agent caches, telemetry collector plus daily digest, CODD-03 cycle; owner-go apply
 
 ### Phase 3: Control plane core  (M2)
 **Goal**: Autonomous runs have a safe, metered path end to end, ready for Boole's first loop.
@@ -62,7 +67,13 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
   2. A run waits hours for an approval to Boole's Slack bot and resumes; a run over budget is refused; the kill switch stops a run within a minute.
   3. Switching the test loop to Claude changes its binding only.
   4. The controller and gateway checks pass and are part of `tests/agents/run.sh`.
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 03-01-PLAN.md — Tracer: loop registry validator plus idempotent registry-gated queue slice with loops check
+- [ ] 03-02-PLAN.md — Parked approvals with owner-only resume, budgets, kill switches, cost ledger, controller check
+- [ ] 03-03-PLAN.md — Per-run credential broker plus rootless runner with first-run allowlist and runner check
+- [ ] 03-04-PLAN.md — Gateway plus controller plus Boole Terraform reviewed-not-applied, budget placeholder, go-runbook
+- [ ] 03-05-PLAN.md — Owner-go gates: keys-plus-vendor, exact-plan apply, live test-loop run (blocking-human)
 
 ### Phase 4: Boole and the meeting loop  (M2)
 **Goal**: Each meeting becomes decisions, actions and Notion updates without the owner starting anything.
