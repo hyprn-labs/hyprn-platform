@@ -6,6 +6,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 AGENTS="$HERE/../../agents/host/agents.txt"
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
+OPENCODE_VERSION="$(sed -n 's/^OPENCODE_VERSION="\(.*\)"/\1/p' "$HERE/../../agents/host/provision.sh")"
 md="http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/email"
 
 check "root reaches metadata (control)" "curl -sf -m 5 -H Metadata-Flavor:Google $md"
@@ -13,6 +14,8 @@ check "no rootful Docker daemon" "! systemctl is-active --quiet docker.service"
 check "metadata block loaded" "nft list table inet hyprn_agents"
 check "idle-stop timer active" "systemctl is-active --quiet hyprn-idle-stop.timer"
 check "Slack allowlist root-owned, not agent-writable" "[ ! -e /run/hyprn-agents/slack-allowed-users.json ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/slack-allowed-users.json)\" = root:644 ]"
+check "OpenCode at the pinned version" "/usr/local/lib/opencode/opencode --version | grep -qF $OPENCODE_VERSION"
+check "OpenCode policy root-owned, opencode provider only" "[ \"\$(stat -c %U:%a /etc/opencode/opencode.json)\" = root:644 ] && jq -e '.enabled_providers == [\"opencode\"]' /etc/opencode/opencode.json"
 check "no service-account key files on host" "! grep -rlsq '\"private_key\"' /home /root /etc"
 
 while read -r name uid _; do
@@ -29,6 +32,9 @@ while read -r name uid _; do
   check "$name: git commits as its GitHub App bot" "run 'git config --global user.email' | grep -q '\\[bot\\]@users.noreply.github.com'"
   check "$name: GitHub App token fresh (under 35 minutes)" "find /run/hyprn-agents/secrets/$name/github-token -mmin -35 | grep -q ."
   check "$name: gh works with the App token" "run 'gh api installation/repositories --jq .total_count' | grep -qE '^[1-9]'"
+  check "$name: OpenCode token private to the agent" "[ \"\$(stat -c %U:%a /run/hyprn-agents/secrets/$name/github-token-opencode)\" = $name:400 ]"
+  check "$name: OpenCode token limited to one repository" "run 'HYPRN_GITHUB_TOKEN_FILE=/run/hyprn-agents/secrets/$name/github-token-opencode gh api installation/repositories --jq .total_count' | grep -qx 1"
+  check "$name: OpenCode refuses outside hyprn-platform" "run 'cd /tmp && timeout 10 opencode 2>&1' | grep -q 'hyprn-platform'"
   check "$name: Slack plugin installed" "run 'claude plugin list' | grep -q slack@hyprn-agents"
   for other in /home/*; do
     [ "$other" = "/home/$name" ] && continue
