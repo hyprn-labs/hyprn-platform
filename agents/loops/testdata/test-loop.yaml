@@ -1,0 +1,33 @@
+name: meeting-test
+owner: platform-owner
+trigger:
+  type: poll
+  source: notion-meetings
+  interval: 5m
+steps:
+  - fetch-page
+  - extract
+  - propose
+agent_steps:
+  - extract
+tools:
+  - notion-read
+  - slack-post
+autonomy:
+  notion-write: A1
+  slack-post: A2
+budget:
+  amount_usd: 30
+  period: 30d
+egress_allowlist:
+  - gateway.internal
+  - api.notion.com
+  - slack.com
+runtime:
+  binding: fireworks-open-model
+  agent_user: boole
+eval_set: agents/loops/meeting-test-eval.jsonl
+promotion_rule:
+  min_pass_rate: 0.9
+  last_runs: 10
+  max_corrections_per_run: 1
