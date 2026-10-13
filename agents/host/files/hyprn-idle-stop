@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
-# Powers off the host after IDLE_MINUTES without agent activity or an SSH
-# session (ADR-0002). The disk is kept; the wake service starts the host again.
+# Powers off the host after IDLE_MINUTES without agent activity, terminal input
+# or a running SSH command (ADR-0002). The disk is kept; the wake service starts
+# the host again.
 set -euo pipefail
 IDLE_MINUTES="${IDLE_MINUTES:-30}"
 
 up=$(cut -d. -f1 /proc/uptime)
 [ "$up" -ge $((IDLE_MINUTES * 60)) ] || exit 0          # grace period after boot
 [ -e /run/hyprn-agents/hold ] && exit 0                 # manual hold
-ss -Htn state established '( sport = :22 )' | grep -q . && exit 0   # SSH, incl. IAP
+# Terminal input (SSH sessions and the tmux panes inside them) in the period;
+# an open but untouched terminal does not count.
+find /dev/pts -name '[0-9]*' -amin -"$IDLE_MINUTES" -print -quit | grep -q . && exit 0
+# SSH without a terminal (provisioning, one-off commands) while a command runs.
+for pid in $(pgrep -f '^sshd(-session)?: [^ ]+@notty' || true); do
+  pgrep -P "$pid" >/dev/null && exit 0
+done
 awk '{ exit !($2 > 0.5) }' /proc/loadavg && exit 0       # builds or tests running
 # Agent conversation activity (transcript files written by Claude Code).
 find /home -mindepth 5 -maxdepth 7 -path '*/.claude/projects/*' -name '*.jsonl' \
+  -mmin -"$IDLE_MINUTES" -print -quit 2>/dev/null | grep -q . && exit 0
+# OpenCode activity (its session database, written on every message).
+find /home -mindepth 5 -maxdepth 5 -path '*/.local/share/opencode/opencode.db*' \
   -mmin -"$IDLE_MINUTES" -print -quit 2>/dev/null | grep -q . && exit 0
 
 logger -t hyprn-idle-stop "idle for ${IDLE_MINUTES} minutes; powering off"

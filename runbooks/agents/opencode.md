@@ -33,7 +33,9 @@ From the laptop, one terminal or herdr pane per task (lowercase task name, lette
 CLOUDSDK_CONFIG=$HOME/.config/gcloud-hyprn gcloud compute ssh hyprn-agents-host-01 --zone=europe-west1-b --project=hyprn-agents --tunnel-through-iap -- -t 'sudo -u codd -H bash -lc "opencode-task <task>"'
 ```
 
-`opencode-task` clones `hyprn-platform` on first use, fetches, creates the worktree `~/work/<task>` on branch `agent/codd/<task>` from the latest `main` (or reopens it), and starts OpenCode there. Running it again with the same name reopens the task. Codd opens a draft pull request; the owner reviews and merges.
+`opencode-task` clones `hyprn-platform` on first use, fetches, creates the worktree `~/work/<task>` on branch `agent/codd/<task>` from the latest `main` (or reopens it), and runs OpenCode there in a tmux session named after the task. Codd keeps working when the connection drops; detach on purpose with Ctrl-b d. Running the same command again reattaches. Codd opens a draft pull request; the owner reviews and merges.
+
+The host stays on while Codd writes to its session, while a terminal has input, or while an SSH command runs; it powers off 30 minutes after all three stop. An idle Codd at its prompt does not keep it on; `sudo touch /run/hyprn-agents/hold` does.
 
 After merge, remove the worktree:
 

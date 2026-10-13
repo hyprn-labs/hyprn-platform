@@ -86,6 +86,7 @@ Gotchas met while building the fleet; read before operating it.
 - A Slack App ID (`A…`) looks like a member ID; allowlist entries must start with `U` (or `W`).
 - A GitHub App installation token never exceeds the App's permissions or its installation's repositories; the broker mints it with an explicit permission set. A token minted just before a secret reload is lost, so the loader mints on every start.
 - Workstation tools default to other identities: use the hyprn gcloud configuration and `GH_CONFIG_DIR`; this repository's `.git/config` resets inherited credential helpers and uses only the hyprn `gh` login. Shell aliases are unavailable in non-interactive shells.
+- Idle stop: an open SSH terminal keeps the host on only while it gets input (`/dev/pts` access time); SSH connections without a terminal count only while a command runs, because a laptop's SSH tooling may hold idle connections open.
 - Plain `gcloud projects delete` in a shell without the hyprn configuration fails with "no active account"; that is the safeguard working.
 
 ### Pending Todos

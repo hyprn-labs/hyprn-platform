@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # One task = one branch agent/<agent>/<task> = one worktree ~/work/<task>:
-# creates them from the latest hyprn-platform main if needed, then starts OpenCode there.
+# creates them from the latest hyprn-platform main if needed, then runs OpenCode
+# there in a tmux session named after the task, which survives disconnects and is
+# reattached by running the same command again.
 set -euo pipefail
 task="${1:?usage: opencode-task <task-name>}"
 [[ "$task" =~ ^[a-z0-9][a-z0-9-]{0,40}$ ]] && [ "$task" != hyprn-platform ] \
@@ -17,5 +19,4 @@ if [ ! -d "$dir" ]; then
     git -C "$base" worktree add -q "$dir" -b "$branch" origin/main
   fi
 fi
-cd "$dir"
-exec opencode
+exec tmux new-session -A -s "$task" -c "$dir" opencode
