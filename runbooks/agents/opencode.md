@@ -52,4 +52,4 @@ Delete `install_opencode`, `OPENCODE_*`, `files/opencode.json`, `files/bin/openc
 
 | Date | Action | Result |
 |---|---|---|
-| 2026-10-13 | OpenCode 1.19.0 and its policy prepared | Awaiting the owner's go for `apply.sh` |
+| 2026-10-13 | OpenCode 1.19.0 and its policy installed by `apply.sh` | Host checks: 26 pass. As `ada` in `~/work/hyprn-platform`, the default model answers without an API key; outside a `hyprn-platform` checkout the wrapper refuses; the OpenCode token sees one repository |
