@@ -47,7 +47,7 @@ No PRD exists for this milestone. These requirements are derived from the remain
 ### GitHub enforcement (GHE)
 
 - **GHE-01**: GitHub Team plan active, a human team for code owners, `CODEOWNERS` in each working repository, and a ruleset on `main` requiring a pull request, human code-owner approval, stale-approval dismissal, no force push and no bypass. Trigger: the platform owner upgrades the organization plan. Claude Code deny rules (POL-04) remain as defense in depth.
-- [x] **GHE-02**: A GitHub App `ada-agent-hyprn` replaces the machine account: Contents and Pull requests read/write, Metadata read, no webhook, one-hour installation tokens minted on the host (ADR-0005). Done 2026-10-13.
+- [x] **GHE-02**: A GitHub App `ada-agent-hyprn`, installed on all `hyprn-labs` repositories, replaces the machine account: Contents and Pull requests read/write, Metadata read, no webhook, one-hour installation tokens minted on the host (ADR-0005). Done 2026-10-13.
 - **GHE-03**: Acceptance for GHE-01 and GHE-02: merge by the agent refused by GitHub, push to `main` refused by GitHub, approval by an agent identity does not satisfy the rule.
 
 ### Fleet growth (FLEET)

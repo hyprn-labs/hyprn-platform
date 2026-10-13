@@ -6,7 +6,7 @@ Each agent reaches GitHub through its own GitHub App ([ADR-0005](../../docs/adr/
 
 1. `hyprn-labs` → Settings → Developer settings → GitHub Apps → New GitHub App: name `<name>-agent-hyprn`; homepage `https://github.com/hyprn-labs`; webhook **inactive**; repository permissions Contents and Pull requests **read and write** (Metadata read is automatic); installable only on this account.
 2. Note the App ID; generate a private key; store the `.pem` in the company password manager.
-3. Install the App on `hyprn-labs`, **selected repositories** only.
+3. Install the App on `hyprn-labs`, **all repositories**.
 4. Look up the installation and bot IDs:
 
    ```bash
@@ -29,7 +29,7 @@ Generate a new private key on the App's page, load it as a new secret version, r
 
 ## Repository access
 
-Repositories are chosen on the App's installation (Organization → Settings → GitHub Apps → Configure). Tokens never exceed the App's permissions.
+Agents' Apps are installed on all `hyprn-labs` repositories (Organization → Settings → GitHub Apps → Configure). Tokens never exceed the App's permissions.
 
 ## Record
 
@@ -40,3 +40,4 @@ Repositories are chosen on the App's installation (Organization → Settings →
 | 2026-10-13 | Rename | Account renamed from `hyprn-ada` to `ada-hyprn` (numeric ID `341672319`). Token, organization membership and Write access unchanged. Git identity switched to the ID-based no-reply address, which survives renames; host re-provisioned, 18 checks pass, `gh` authenticates as `ada-hyprn`. |
 | 2026-10-13 | Rename | Account renamed from `ada-hyprn` to `ada-agent-hyprn` (same numeric ID). Token, membership and Write access unchanged; commits stay attributed through the ID-based address; host re-provisioned, 18 checks pass. |
 | 2026-10-13 | GitHub App | App `ada-agent-hyprn` (App ID 5299141, installation 170941397, bot user 341930344) created and installed; key loaded as `ada-agent-github-app-key` v1 and deleted from the download folder. Broker deployed; first run lost the token to a secret reload (fixed: the loader now mints on every start). Host: 20 checks pass; Ada commits as `ada-agent-hyprn[bot]`, reaches `hyprn-platform` and `hyprn-mvp`. |
+| 2026-10-13 | Machine account removed | Owner revoked the fine-grained token and removed `ada-agent-hyprn` (account) from `hyprn-labs`; the organization's only member is the owner. The App stays installed on all repositories; Ada reaches `hyprn-platform` and `hyprn-mvp` and authenticates with Git. |

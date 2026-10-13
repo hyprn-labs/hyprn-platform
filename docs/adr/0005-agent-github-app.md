@@ -25,7 +25,7 @@ decision-makers: Owner
 
 Chosen: **A2**. This supersedes ADR-0004 and completes ADR-0001 section 5.
 
-- One GitHub App per agent, owned by `hyprn-labs`, installed on selected repositories only; Contents and Pull requests read/write, Metadata read; no webhook. Ada's App is `ada-agent-hyprn`; its bot commits as `ada-agent-hyprn[bot]`. App and installation IDs are in `agents/host/agents.txt`.
+- One GitHub App per agent, owned by `hyprn-labs` and installed on all of its repositories, so agents work across the company's code; Contents and Pull requests read/write, Metadata read; no webhook. Ada's App is `ada-agent-hyprn`; its bot commits as `ada-agent-hyprn[bot]`. App and installation IDs are in `agents/host/agents.txt`.
 - The App's private key lives in the company password manager and in Secret Manager as `<name>-agent-github-app-key`, readable by the host identity only.
 - A root-only broker on the host signs a JWT with that key, held in memory only, and mints a one-hour installation token limited to those permissions. It runs every 30 minutes and on every secret reload, and writes the token to tmpfs, readable by the agent only. Git reads it through the credential helper; `gh` through a wrapper that always takes the current token.
 - The agent never sees the private key; a leaked installation token expires within an hour.
