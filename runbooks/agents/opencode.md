@@ -54,4 +54,5 @@ Remove Codd's line from `agents/host/agents.txt` and `codd` from `var.agents` in
 | Date | Action | Result |
 |---|---|---|
 | 2026-10-13 | OpenCode 1.19.0 and its policy installed for Ada by `apply.sh` | Host checks: 26 pass; the default model answers without an API key |
-| 2026-10-13 | Codd prepared: Linux user, policy relaxed to the Linux user boundary; OpenCode removed from Ada | App `codd-agent-hyprn` (App 5306008, installation 171119571, bot 342187193) created by the owner, installed on selected repositories. `infra/agents/` applied: secret `codd-agent-github-app-key` and the host's read access (2 added). Awaiting the key and `apply.sh` |
+| 2026-10-13 | Codd prepared: Linux user, policy relaxed to the Linux user boundary; OpenCode removed from Ada | App `codd-agent-hyprn` (App 5306008, installation 171119571, bot 342187193) created by the owner, installed on selected repositories. `infra/agents/` applied: secret `codd-agent-github-app-key` and the host's read access (2 added). Key loaded as v1 by the owner. |
+| 2026-10-13 | `apply.sh` | Host checks: 40 pass. Codd clones `hyprn-platform` and gets "Repository not found" for `hyprn-mvp`; the default model answers. Ada's `platform-opencode` worktree and branch removed; Ada has no OpenCode token |
