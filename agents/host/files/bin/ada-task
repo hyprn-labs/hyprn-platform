@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# ada-task: one task = one branch agent/<agent>/<task> = one worktree ~/work/<task>.
+# Shared Ada successor of opencode-task (which stays untouched for Codd):
+# creates them from the latest hyprn-platform main if needed, exports
+# index-derived isolation env (ports, Compose project, test DB) that two
+# concurrent tasks never collide on, emits the draft-PR body contract, and
+# removes everything on merge/close via the cleanup subcommand.
+# The agent never merges: draft PRs only (deny rules backstop per Phase 1 D-01/D-02).
+#
+# Usage:
+#   ada-task <task-name>                 create (or reopen) the worktree and run a session
+#   ada-task cleanup <task-name>         remove worktree, branch, volumes, DB, env file
+#   ada-task pr-body <task-name>         print the draft-PR body contract template
+#
+# Env (all optional; product overrides from hyprn-mvp are picked up when present):
+#   WORKTREE_INDEX         small integer isolating this task (default 0)
+#   ADA_BASE               platform checkout holding the branches (default ~/work/hyprn-platform)
+#   ADA_WORKDIR            parent dir for worktrees (default ~/work)
+#   ADA_TASK_NO_EXEC=1     create everything but skip the final session exec (used by checks)
+set -euo pipefail
+
+usage() { echo "usage: ada-task <task-name> | ada-task cleanup <task-name> | ada-task pr-body <task-name>" >&2; exit 1; }
+
+cmd="${1:-}"
+case "$cmd" in
+  cleanup) task="${2:-}"; [ -n "$task" ] || usage; mode=cleanup ;;
+  pr-body) task="${2:-}"; [ -n "$task" ] || usage; mode=pr-body ;;
+  ""|-*|*help) usage ;;
+  *) task="$cmd"; [ $# -eq 1 ] || usage; mode=create ;;
+esac
+
+[[ "$task" =~ ^[a-z0-9][a-z0-9-]{0,40}$ ]] && [ "$task" != hyprn-platform ] \
+  || { echo "ada-task: use lowercase letters, digits and dashes" >&2; exit 1; }
+
+# Index-derived isolation: every value derives from WORKTREE_INDEX so a second
+# concurrent task (next index, stride 100) gets its own ports, Compose project
+# and test database with no collision.
+WORKTREE_INDEX="${WORKTREE_INDEX:-0}"
+PORT_BASE="${PORT_BASE:-20000}"
+APP_PORT="$((PORT_BASE + WORKTREE_INDEX * 100))"
+APP_PORT_TEST="$((APP_PORT + 1))"
+COMPOSE_PROJECT_NAME="hyprn-wt-${WORKTREE_INDEX}-${task}"
+TEST_DB="hyprn_test_wt${WORKTREE_INDEX}"
+# Product-side overrides (hyprn-mvp reads port/Compose/DB from environment when
+# it provides them; until then the derived defaults stand on their own).
+APP_PORT="${PRODUCT_APP_PORT:-$APP_PORT}"
+APP_PORT_TEST="${PRODUCT_APP_TEST_PORT:-$APP_PORT_TEST}"
+COMPOSE_PROJECT_NAME="${PRODUCT_COMPOSE_PROJECT:-$COMPOSE_PROJECT_NAME}"
+TEST_DB="${PRODUCT_TEST_DB:-$TEST_DB}"
+
+base="${ADA_BASE:-$HOME/work/hyprn-platform}"
+branch="agent/$(id -un)/$task"
+parent="${ADA_WORKDIR:-$HOME/work}"
+dir="$parent/$task"
+# Runtime state lives in a sibling file keyed by worktree name, never inside
+# the worktree itself (state inside the worktree would be wiped by cleanup and
+# would leak across tasks sharing a checkout).
+ENV_FILE="${dir}.env"
+
+write_env_file() {
+  cat > "$ENV_FILE" <<EOF
+# ada-task env for $task (index $WORKTREE_INDEX); written by ada-task, removed by ada-task cleanup.
+export WORKTREE_INDEX="$WORKTREE_INDEX"
+export APP_PORT="$APP_PORT"
+export APP_PORT_TEST="$APP_PORT_TEST"
+export COMPOSE_PROJECT_NAME="$COMPOSE_PROJECT_NAME"
+export TEST_DB="$TEST_DB"
+EOF
+}
+
+print_pr_body() {
+  cat <<EOF
+## What changed
+- <task $task: one line per change>
+
+## How verified
+- <command and result, e.g. tests/agents/run.sh: PASS>
+EOF
+}
+
+if [ "$mode" = pr-body ]; then
+  print_pr_body
+  exit 0
+fi
+
+if [ "$mode" = cleanup ]; then
+  if [ -d "$base" ] && git -C "$base" rev-parse --git-dir >/dev/null 2>&1; then
+    if git -C "$base" worktree list --porcelain | grep -qx "worktree $dir"; then
+      git -C "$base" worktree remove --force "$dir"
+    fi
+    if git -C "$base" show-ref --quiet --verify "refs/heads/$branch"; then
+      git -C "$base" branch -D "$branch"
+    fi
+  fi
+  # Volumes are selected only by the exact derived COMPOSE_PROJECT_NAME prefix;
+  # never wildcard-delete: the anchored filter cannot reach another task.
+  if command -v docker >/dev/null 2>&1; then
+    docker volume ls --format '{{.Name}}' 2>/dev/null \
+      | grep -E "^${COMPOSE_PROJECT_NAME}_" \
+      | xargs -r docker volume rm >/dev/null 2>&1 || true
+  fi
+  if command -v dropdb >/dev/null 2>&1; then
+    dropdb --if-exists "$TEST_DB" 2>/dev/null || true
+  fi
+  rm -f "$ENV_FILE"
+  echo "ada-task: cleaned $task (worktree, branch, volumes, DB, env file)"
+  exit 0
+fi
+
+# --- create / reopen ---------------------------------------------------------
+[ -d "$base" ] || git clone -q https://github.com/hyprn-labs/hyprn-platform "$base"
+git -C "$base" fetch -q --prune origin
+if [ ! -d "$dir" ]; then
+  if git -C "$base" show-ref --quiet --verify "refs/heads/$branch"; then
+    git -C "$base" worktree add -q "$dir" "$branch"
+  else
+    git -C "$base" worktree add -q "$dir" -b "$branch" origin/main
+  fi
+fi
+write_env_file
+export WORKTREE_INDEX APP_PORT APP_PORT_TEST COMPOSE_PROJECT_NAME TEST_DB
+
+if [ "${ADA_TASK_NO_EXEC:-0}" = 1 ]; then
+  echo "ada-task: prepared $task (index $WORKTREE_INDEX, port $APP_PORT, project $COMPOSE_PROJECT_NAME, db $TEST_DB)"
+  exit 0
+fi
+exec tmux new-session -A -s "$task" -c "$dir" opencode
