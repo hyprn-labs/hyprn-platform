@@ -10,3 +10,4 @@ Decision records for this repository (MADR 4). Decisions spanning product and pl
 | [0004](0004-agent-github-machine-account.md) | Agent GitHub access through a machine account until the GitHub App | Superseded by 0005 |
 | [0005](0005-agent-github-app.md) | Agent GitHub access through a GitHub App with one-hour tokens | Accepted |
 | [0006](0006-agent-first-operating-model.md) | Agent-first operating model — loops, runtimes and the fleet control plane | Proposed |
+| [0007](0007-codd-pattern-coding-agents.md) | Codd-pattern coding agents — GitHub App plus Linux user plus OpenCode, herdr-controlled | Proposed |
