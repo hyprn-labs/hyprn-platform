@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# gh for agent users: always the current GitHub App token from tmpfs (ADR-0005);
-# HYPRN_GITHUB_TOKEN_FILE selects a narrower token from the agent's own folder.
-dir="/run/hyprn-agents/secrets/$(id -un)"
-token_file="$dir/github-token"
-case "${HYPRN_GITHUB_TOKEN_FILE:-}" in "$dir/"*) token_file="$HYPRN_GITHUB_TOKEN_FILE" ;; esac
+# gh for agent users: always the current GitHub App token from tmpfs (ADR-0005).
+token_file="/run/hyprn-agents/secrets/$(id -un)/github-token"
 [ -r "$token_file" ] && GH_TOKEN="$(cat "$token_file")" && export GH_TOKEN
 exec /usr/bin/gh "$@"

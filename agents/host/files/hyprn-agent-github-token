@@ -2,8 +2,7 @@
 # Mints a one-hour GitHub App installation token for one agent (ADR-0005) and
 # writes it to tmpfs, readable by that agent only. The App's private key is read
 # from Secret Manager with the VM identity, kept in memory and never written to
-# disk. When OPENCODE_REPOS is set, a second token limited to those repositories
-# is minted for OpenCode sessions. Run as root by hyprn-agent-github-token@<agent>.timer.
+# disk. Run as root by hyprn-agent-github-token@<agent>.timer.
 set -euo pipefail
 AGENT="$1"
 PROJECT="${PROJECT:-hyprn-agents}"
@@ -11,7 +10,7 @@ CONF="/etc/hyprn-agents/agents/$AGENT.github"
 MD="http://169.254.169.254/computeMetadata/v1"
 [ -r "$CONF" ] || { echo "hyprn-agent-github-token: no GitHub App configured for $AGENT"; exit 0; }
 # shellcheck disable=SC1090
-. "$CONF"   # APP_ID, INSTALLATION_ID, optional OPENCODE_REPOS
+. "$CONF"   # APP_ID, INSTALLATION_ID
 
 access=$(curl -sf -H 'Metadata-Flavor: Google' "$MD/instance/service-accounts/default/token" | jq -r .access_token)
 key=$(curl -sf -H "Authorization: Bearer $access" \
@@ -25,35 +24,20 @@ claims=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$
 signature=$(printf '%s.%s' "$header" "$claims" | openssl dgst -sha256 -binary -sign <(printf '%s\n' "$key") | b64url)
 unset key
 
-mint() {  # $1: JSON request body
-  local token
-  token=$(curl -sf -X POST \
-    -H "Authorization: Bearer $header.$claims.$signature" \
-    -H "Accept: application/vnd.github+json" \
-    -d "$1" "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" | jq -r .token)
-  [ -n "$token" ] && [ "$token" != null ] || return 1
-  printf '%s' "$token"
-}
+token=$(curl -sf -X POST \
+  -H "Authorization: Bearer $header.$claims.$signature" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{"permissions":{"contents":"write","pull_requests":"write","metadata":"read"}}' \
+  "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" | jq -r .token)
+[ -n "$token" ] && [ "$token" != null ] || { echo "hyprn-agent-github-token: minting failed for $AGENT" >&2; exit 1; }
 
 dir="/run/hyprn-agents/secrets/$AGENT"
 install -d -m 0711 /run/hyprn-agents/secrets
 install -d -m 0500 -o "$AGENT" -g "$AGENT" "$dir"
-write() {  # $1: file name, $2: token
-  local tmp="$dir/.$1.tmp"
-  rm -f "$tmp"
-  (umask 0377; printf '%s\n' "$2" > "$tmp")
-  chown "$AGENT:$AGENT" "$tmp"
-  mv "$tmp" "$dir/$1"
-}
-
-permissions='{"contents":"write","pull_requests":"write","metadata":"read"}'
-token=$(mint "{\"permissions\":$permissions}") || { echo "hyprn-agent-github-token: minting failed for $AGENT" >&2; exit 1; }
-write github-token "$token"
+umask 0377
+tmp="$dir/.github-token.tmp"
+rm -f "$tmp"
+printf '%s\n' "$token" > "$tmp"
+chown "$AGENT:$AGENT" "$tmp"
+mv "$tmp" "$dir/github-token"
 echo "hyprn-agent-github-token: token minted for $AGENT (valid one hour)"
-
-if [ -n "${OPENCODE_REPOS:-}" ]; then
-  body=$(jq -nc --arg repos "$OPENCODE_REPOS" --argjson p "$permissions" '{repositories: ($repos | split(" ")), permissions: $p}')
-  token=$(mint "$body") || { echo "hyprn-agent-github-token: scoped minting failed for $AGENT" >&2; exit 1; }
-  write github-token-opencode "$token"
-  echo "hyprn-agent-github-token: OpenCode token minted for $AGENT ($OPENCODE_REPOS)"
-fi

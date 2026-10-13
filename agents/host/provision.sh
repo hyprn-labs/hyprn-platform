@@ -9,7 +9,6 @@ CLAUDE_CODE_VERSION="2.1.287"
 DOCKER_KEY_FPR="9DC858229FC7DD38854AE2D88D81803C0EBFCD88"
 OPENCODE_VERSION="1.19.0"
 OPENCODE_SHA256="7bb9e61ad6feacf2e89c10a6a2c1840e3de4220bb50ba1fc7110f31806076aec"  # opencode-linux-x64.tar.gz
-OPENCODE_REPOS="hyprn-platform"  # repositories OpenCode sessions may change
 GH_KEY_FPRS="2C6106201985B60E6C7AC87323F3D4EA75716059 7F38BBB59D064DBCB3D84D725612B36462313325"
 
 [ "$(id -u)" -eq 0 ] || { echo "provision.sh must run as root" >&2; exit 1; }
@@ -87,7 +86,7 @@ install_host_files() {
 }
 
 # OpenCode (runbooks/agents/opencode.md): pinned release, root-owned binary and
-# managed configuration, started through the wrapper in hyprn-agent-bin.
+# managed configuration; the wrapper runs it only for agents whose harness is opencode.
 install_opencode() {
   log "OpenCode $OPENCODE_VERSION"
   local dest=/usr/local/lib/opencode tmp
@@ -103,13 +102,14 @@ install_opencode() {
   fi
   install -d -m 0755 /etc/opencode
   install -m 0644 "$HERE/files/opencode.json" /etc/opencode/opencode.json
-  install -m 0755 "$HERE/files/bin/opencode" /usr/local/libexec/hyprn-agent-bin/opencode
+  install -m 0755 "$HERE/files/bin/opencode" "$HERE/files/bin/opencode-task" /usr/local/libexec/hyprn-agent-bin/
 }
 
 add_agent() {
-  local name="$1" uid="$2" app_slug="$3" app_id="$4" installation_id="$5" bot_id="$6" display="$7"
+  local name="$1" uid="$2" harness="$3" app_slug="$4" app_id="$5" installation_id="$6" bot_id="$7" display="$8"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
-  log "agent $name ($uid)"
+  log "agent $name ($uid, $harness)"
+  case "$harness" in claude|opencode) ;; *) echo "unknown harness for $name: $harness" >&2; exit 1 ;; esac
 
   if ! id "$name" >/dev/null 2>&1; then
     useradd --create-home --uid "$uid" --user-group --shell /bin/bash --comment "$display" "$name"
@@ -117,7 +117,9 @@ add_agent() {
   chmod 0700 "$home"
   grep -q "^$name:" /etc/subuid || usermod --add-subuids "$sub-$((sub + 65535))" "$name"
   grep -q "^$name:" /etc/subgid || usermod --add-subgids "$sub-$((sub + 65535))" "$name"
-  install -d -o "$name" -g "$name" -m 0700 "$home/work" "$home/.claude"
+  install -d -o "$name" -g "$name" -m 0700 "$home/work"
+  printf '%s\n' "$harness" > "/etc/hyprn-agents/agents/$name.harness"
+  chmod 0644 "/etc/hyprn-agents/agents/$name.harness"
 
   loginctl enable-linger "$name"
   for _ in $(seq 1 30); do [ -S "/run/user/$uid/bus" ] && break; sleep 1; done
@@ -130,6 +132,28 @@ add_agent() {
   fi
   as_agent "systemctl --user enable --now docker" >/dev/null 2>&1
 
+  # GitHub App (ADR-0005): token broker configuration and the App bot's Git identity.
+  printf 'APP_ID=%s\nINSTALLATION_ID=%s\n' "$app_id" "$installation_id" > "/etc/hyprn-agents/agents/$name.github"
+  chmod 0644 "/etc/hyprn-agents/agents/$name.github"
+  systemctl enable "hyprn-agent-github-token@$name.timer" >/dev/null
+  systemctl start "hyprn-agent-github-token@$name.service"
+  systemctl start "hyprn-agent-github-token@$name.timer"
+  as_agent "git config --global user.name '$display'"
+  as_agent "git config --global user.email '$bot_id+$app_slug[bot]@users.noreply.github.com'"
+  as_agent "git config --global --replace-all credential.https://github.com.helper /usr/local/libexec/hyprn-git-credential"
+  as_agent "git config --global init.defaultBranch main"
+  as_agent "git config --global push.autoSetupRemote true"
+  systemctl enable "hyprn-agent-secrets@$name.service" >/dev/null
+  systemctl restart "hyprn-agent-secrets@$name.service"
+
+  if [ "$harness" = opencode ]; then
+    # Role file, read by OpenCode as the agent's global rules.
+    install -d -o "$name" -g "$name" -m 0700 "$home/.config" "$home/.config/opencode"
+    [ -f "$ROLES/$name.md" ] && install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.config/opencode/AGENTS.md"
+    return 0
+  fi
+
+  install -d -o "$name" -g "$name" -m 0700 "$home/.claude"
   if ! as_agent "\$HOME/.local/bin/claude --version 2>/dev/null | grep -q '^$CLAUDE_CODE_VERSION'"; then
     as_agent "curl -fsSL https://claude.ai/install.sh | bash -s $CLAUDE_CODE_VERSION" >/dev/null
   fi
@@ -140,18 +164,6 @@ add_agent() {
   if [ -f "$ROLES/$name.md" ]; then
     install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.claude/CLAUDE.md"
   fi
-  # GitHub App (ADR-0005): token broker configuration and the App bot's Git identity.
-  printf 'APP_ID=%s\nINSTALLATION_ID=%s\nOPENCODE_REPOS="%s"\n' "$app_id" "$installation_id" "$OPENCODE_REPOS" \
-    > "/etc/hyprn-agents/agents/$name.github"
-  chmod 0644 "/etc/hyprn-agents/agents/$name.github"
-  systemctl enable "hyprn-agent-github-token@$name.timer" >/dev/null
-  systemctl start "hyprn-agent-github-token@$name.service"
-  systemctl start "hyprn-agent-github-token@$name.timer"
-  as_agent "git config --global user.name '$display'"
-  as_agent "git config --global user.email '$bot_id+$app_slug[bot]@users.noreply.github.com'"
-  as_agent "git config --global --replace-all credential.https://github.com.helper /usr/local/libexec/hyprn-git-credential"
-  as_agent "git config --global init.defaultBranch main"
-  as_agent "git config --global push.autoSetupRemote true"
 
   # Slack channel plugin from the local marketplace.
   as_agent "claude plugin marketplace add /opt/hyprn-agents/marketplace" >/dev/null 2>&1 || true
@@ -163,9 +175,6 @@ add_agent() {
   fi
   echo "--channels plugin:slack@hyprn-agents" > "/etc/hyprn-agents/agents/$name.args"
   chmod 0644 "/etc/hyprn-agents/agents/$name.args"
-
-  systemctl enable "hyprn-agent-secrets@$name.service" >/dev/null
-  systemctl restart "hyprn-agent-secrets@$name.service"
 
   # The session starts once the agent is signed in (B4); restarted to pick up changes.
   if [ -s "$home/.claude/.credentials.json" ]; then
@@ -179,7 +188,7 @@ add_agent() {
 install_base
 install_host_files
 install_opencode
-grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid app_slug app_id installation_id bot_id display; do
-  add_agent "$name" "$uid" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
+grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid harness app_slug app_id installation_id bot_id display; do
+  add_agent "$name" "$uid" "$harness" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
 done
 log "done"

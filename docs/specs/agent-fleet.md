@@ -48,7 +48,7 @@ A runtime is a **harness × credential × model** binding declared per agent.
 - Claude subscriptions are used only in Anthropic's own applications; third-party harnesses use API keys only.
 - Claude Code is not pointed at non-Claude models.
 - Changing an agent's model or provider MUST be a change of its binding only.
-- Interim, until the gateway: OpenCode on OpenCode Zen's free tier, run by the owner as Ada on `hyprn-platform` only ([runbook](../../runbooks/agents/opencode.md)).
+- Interim, until the gateway: Codd, an engineering agent on OpenCode with OpenCode Zen's free tier, steered by the owner in the terminal, with a GitHub App on `hyprn-platform` only and no Slack app or Workspace user ([runbook](../../runbooks/agents/opencode.md)).
 - In reserve, outside the fleet's core: Claude Code cloud sessions and Claude Tag for occasional work away from the host; they bill per use.
 
 ## 4. Compute

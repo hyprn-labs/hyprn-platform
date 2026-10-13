@@ -1,21 +1,6 @@
 #!/usr/bin/env bash
-# OpenCode for agent users: human-directed sessions in a hyprn-platform checkout
-# only, with a GitHub token scoped to that repository. The organization policy
-# is the root-owned managed configuration /etc/opencode/opencode.json.
-set -euo pipefail
-real=/usr/local/lib/opencode/opencode
-case "${1:-}" in --version|-v) exec "$real" --version ;; esac
-for arg in "$@"; do
-  case "$arg" in --continue|-c) ;; *) echo "opencode: only --continue is allowed" >&2; exit 1 ;; esac
-done
-root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "opencode: run it inside a hyprn-platform checkout" >&2; exit 1; }
-origin=$(git -C "$root" remote get-url origin 2>/dev/null || true)
-case "$origin" in
-  https://github.com/hyprn-labs/hyprn-platform|https://github.com/hyprn-labs/hyprn-platform.git) ;;
-  *) echo "opencode: only hyprn-platform is allowed (origin: ${origin:-none})" >&2; exit 1 ;;
-esac
-token_file="/run/hyprn-agents/secrets/$(id -un)/github-token-opencode"
-[ -r "$token_file" ] || { echo "opencode: no repository-scoped GitHub token yet" >&2; exit 1; }
-export HYPRN_GITHUB_TOKEN_FILE="$token_file"
-cd "$root"
-exec "$real" "$@"
+# OpenCode only for agents whose harness is opencode (agents/host/agents.txt);
+# the organization policy is the root-owned /etc/opencode/opencode.json.
+harness="$(cat "/etc/hyprn-agents/agents/$(id -un).harness" 2>/dev/null)"
+[ "$harness" = opencode ] || { echo "opencode: not $(id -un)'s harness" >&2; exit 1; }
+exec /usr/local/lib/opencode/opencode "$@"

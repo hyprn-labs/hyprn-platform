@@ -1,55 +1,57 @@
-# OpenCode on the agent host
+# Codd: OpenCode on the agent host
 
-OpenCode runs on the agent host as a second harness for Ada, steered by the platform owner over SSH. Its default model is Meta's Muse Spark 1.3 on OpenCode Zen's free tier. It is an interim tool to speed up the platform build until the model gateway exists (milestone M2).
+Codd (AI agent) is an interim engineering agent for `hyprn-platform`. It runs OpenCode under its own Linux user `codd`, steered by the platform owner in the terminal, with Meta's Muse Spark 1.3 on OpenCode Zen's free tier as its default model. It speeds up the platform build until the model gateway exists (milestone M2).
 
 ## Data use
 
-The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything an OpenCode session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` only (2026-10-13). Product repositories never enter an OpenCode session.
+The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything a Codd session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` only (2026-10-13). Codd has no access to product repositories.
 
-## Controls
+## Identity and limits
 
-| Control | Where |
+| Item | Value |
 |---|---|
-| Pinned release, checksum verified, root-owned binary at `/usr/local/lib/opencode/opencode` | `agents/host/provision.sh` |
-| Managed configuration that users and projects cannot override: default model, the `opencode` provider only (no Claude or ChatGPT sign-in), no automatic updates, sharing disabled | `agents/host/files/opencode.json` → `/etc/opencode/opencode.json` |
-| Starts only inside a `hyprn-platform` checkout; takes no arguments other than `--continue` | `agents/host/files/bin/opencode` |
-| Paths outside the checkout refused | `external_directory: deny` in the managed configuration |
-| GitHub token minted for `hyprn-platform` only, one hour | `OPENCODE_REPOS` in `provision.sh`, `files/hyprn-agent-github-token` |
-| Every push asked in the session; pushes to `main`, force pushes, `gh pr merge` and `git config` refused | `permission.bash` in the managed configuration |
-| Host checks: version, policy, token scope, refusal outside `hyprn-platform` | `tests/agents/host-checks.sh` |
+| Linux user | `codd` (UID 20002): private home, no sudo, rootless Docker, metadata server unreachable |
+| GitHub | App `codd-agent-hyprn`, installed on `hyprn-platform` only; commits as `codd-agent-hyprn[bot]` |
+| Slack, Workspace | None: Codd is steered in the terminal and signs in nowhere |
+| Model | `opencode/muse-spark-1.3-contributor-free`, no API key (Zen's free tier) |
 
-The session runs as the Linux user `ada`, with Ada's limits: private home, no sudo, metadata server unreachable, rootless Docker. Commits and pull requests appear as `ada-agent-hyprn[bot]`.
+The operating system and GitHub set Codd's reach: other agents' homes, tokens and processes are unreadable, and its App sees one repository. Inside that, Codd works freely: any command, any path on the host except `/run/hyprn-agents`.
 
-Residual risk: these controls are enforced by OpenCode and by wrappers running as `ada`, not by a separate identity. A command the rules do not recognize could still read Ada's other files or use Ada's all-repository token. The GitHub ruleset on `main` (Phase 1) is the hard backstop.
+The managed configuration `/etc/opencode/opencode.json` (from `agents/host/files/opencode.json`, root-owned, not overridable) also:
+
+- loads only the `opencode` provider, so no Claude or ChatGPT sign-in is ever used;
+- turns off automatic updates and session sharing;
+- refuses pushes to `main`, force pushes, `gh pr merge` and global Git configuration changes; asks before `gh api`.
+
+The GitHub ruleset on `main` (Phase 1) is the hard backstop for pushes and merges.
 
 ## Use
 
-```bash
-gcloud compute ssh hyprn-agents-host-01 --zone=europe-west1-b --project=hyprn-agents --tunnel-through-iap
-sudo -iu ada
-```
-
-One task = one branch `agent/ada/<slug>` = one worktree:
+From the laptop, one terminal or herdr pane per task (lowercase task name, letters, digits and dashes):
 
 ```bash
-[ -d ~/work/hyprn-platform ] || git clone https://github.com/hyprn-labs/hyprn-platform ~/work/hyprn-platform
-git -C ~/work/hyprn-platform fetch --prune origin
-git -C ~/work/hyprn-platform worktree add ~/work/platform-<slug> -b agent/ada/<slug> origin/main
-cd ~/work/platform-<slug> && opencode
+CLOUDSDK_CONFIG=$HOME/.config/gcloud-hyprn gcloud compute ssh hyprn-agents-host-01 --zone=europe-west1-b --project=hyprn-agents --tunnel-through-iap -- -t 'sudo -u codd -H bash -lc "opencode-task <task>"'
 ```
 
-State "via OpenCode (Muse Spark)" in the pull request description. Remove the worktree after merge with `git -C ~/work/hyprn-platform worktree remove ~/work/platform-<slug>`.
+`opencode-task` clones `hyprn-platform` on first use, fetches, creates the worktree `~/work/<task>` on branch `agent/codd/<task>` from the latest `main` (or reopens it), and starts OpenCode there. Running it again with the same name reopens the task. Codd opens a draft pull request; the owner reviews and merges.
+
+After merge, remove the worktree:
+
+```bash
+sudo -u codd -H bash -lc "git -C ~/work/hyprn-platform worktree remove ~/work/<task>"
+```
 
 ## Change the model
 
 Set `model` and `small_model` in `agents/host/files/opencode.json` and run `agents/host/apply.sh`. Free Zen models change often; check [the Zen model list](https://opencode.ai/docs/zen/) and its data terms first.
 
-## Remove
+## Retire
 
-Delete `install_opencode`, `OPENCODE_*`, `files/opencode.json`, `files/bin/opencode` and the OpenCode host checks, then run `apply.sh`. On the host: `rm -rf /usr/local/lib/opencode /etc/opencode /usr/local/libexec/hyprn-agent-bin/opencode`.
+Remove Codd's line from `agents/host/agents.txt` and `codd` from `var.agents` in `infra/agents/`, uninstall and delete the App `codd-agent-hyprn`, delete `install_opencode`, the OpenCode files and checks, then apply. On the host: `userdel -r codd` and `rm -rf /usr/local/lib/opencode /etc/opencode /usr/local/libexec/hyprn-agent-bin/opencode*`.
 
 ## Record
 
 | Date | Action | Result |
 |---|---|---|
-| 2026-10-13 | OpenCode 1.19.0 and its policy installed by `apply.sh` | Host checks: 26 pass. As `ada` in `~/work/hyprn-platform`, the default model answers without an API key; outside a `hyprn-platform` checkout the wrapper refuses; the OpenCode token sees one repository |
+| 2026-10-13 | OpenCode 1.19.0 and its policy installed for Ada by `apply.sh` | Host checks: 26 pass; the default model answers without an API key |
+| 2026-10-13 | Codd prepared: Linux user, policy relaxed to the Linux user boundary; OpenCode removed from Ada | App `codd-agent-hyprn` (App 5306008, installation 171119571, bot 342187193) created by the owner, installed on selected repositories. `infra/agents/` applied: secret `codd-agent-github-app-key` and the host's read access (2 added). Awaiting the key and `apply.sh` |

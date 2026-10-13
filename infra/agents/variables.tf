@@ -49,7 +49,13 @@ variable "host_image" {
 }
 
 variable "agents" {
-  description = "Agent names (agents/host/agents.txt)."
+  description = "Agent names (agents/host/agents.txt); each gets a GitHub App key secret."
+  type        = list(string)
+  default     = ["ada", "codd"]
+}
+
+variable "slack_agents" {
+  description = "Agents steered from Slack; each gets Slack token secrets."
   type        = list(string)
   default     = ["ada"]
 }
