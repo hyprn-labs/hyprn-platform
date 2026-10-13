@@ -96,3 +96,31 @@ resource "google_secret_manager_secret_iam_member" "allowed_users" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${each.value}"
 }
+
+# GitHub App private key per agent (ADR-0005); read by the root token broker on
+# the host only, never by the agent.
+resource "google_secret_manager_secret" "agent_github_app_key" {
+  for_each  = toset(var.agents)
+  secret_id = "${each.key}-agent-github-app-key"
+
+  replication {
+    user_managed {
+      replicas {
+        location = var.region
+      }
+    }
+  }
+
+  labels = {
+    component  = "agents"
+    agent      = each.key
+    managed_by = "terraform"
+  }
+}
+
+resource "google_secret_manager_secret_iam_member" "agent_github_app_key" {
+  for_each  = google_secret_manager_secret.agent_github_app_key
+  secret_id = each.value.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.host.email}"
+}

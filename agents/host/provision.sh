@@ -66,6 +66,10 @@ install_host_files() {
   install -m 0644 "$HERE/files/profile.sh" /etc/profile.d/hyprn-agents.sh
   install -m 0755 "$HERE/files/hyprn-agent-secrets" /usr/local/libexec/hyprn-agent-secrets
   install -m 0755 "$HERE/files/hyprn-git-credential" /usr/local/libexec/hyprn-git-credential
+  install -m 0755 "$HERE/files/hyprn-agent-github-token" /usr/local/libexec/hyprn-agent-github-token
+  install -m 0644 "$HERE/files/hyprn-agent-github-token@.service" "$HERE/files/hyprn-agent-github-token@.timer" /etc/systemd/system/
+  install -d -m 0755 /usr/local/libexec/hyprn-agent-bin
+  install -m 0755 "$HERE/files/bin/gh" /usr/local/libexec/hyprn-agent-bin/gh
   install -m 0644 "$HERE/files/hyprn-agent-secrets@.service" /etc/systemd/system/
 
   # Plugin marketplace, root-owned; agents read it and install from it.
@@ -80,7 +84,7 @@ install_host_files() {
 }
 
 add_agent() {
-  local name="$1" uid="$2" github="$3" github_id="$4" display="$5"
+  local name="$1" uid="$2" app_slug="$3" app_id="$4" installation_id="$5" bot_id="$6" display="$7"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
   log "agent $name ($uid)"
 
@@ -113,9 +117,14 @@ add_agent() {
   if [ -f "$ROLES/$name.md" ]; then
     install -o "$name" -g "$name" -m 0644 "$ROLES/$name.md" "$home/.claude/CLAUDE.md"
   fi
-  # Git identity: the agent's GitHub account; the ID-based no-reply address survives account renames.
+  # GitHub App (ADR-0005): token broker configuration and the App bot's Git identity.
+  printf 'APP_ID=%s\nINSTALLATION_ID=%s\n' "$app_id" "$installation_id" > "/etc/hyprn-agents/agents/$name.github"
+  chmod 0644 "/etc/hyprn-agents/agents/$name.github"
+  systemctl enable "hyprn-agent-github-token@$name.timer" >/dev/null
+  systemctl start "hyprn-agent-github-token@$name.service"
+  systemctl start "hyprn-agent-github-token@$name.timer"
   as_agent "git config --global user.name '$display'"
-  as_agent "git config --global user.email '$github_id+$github@users.noreply.github.com'"
+  as_agent "git config --global user.email '$bot_id+$app_slug[bot]@users.noreply.github.com'"
   as_agent "git config --global --replace-all credential.https://github.com.helper /usr/local/libexec/hyprn-git-credential"
   as_agent "git config --global init.defaultBranch main"
   as_agent "git config --global push.autoSetupRemote true"
@@ -145,7 +154,7 @@ add_agent() {
 
 install_base
 install_host_files
-grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid github github_id display; do
-  add_agent "$name" "$uid" "$github" "$github_id" "$display"
+grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid app_slug app_id installation_id bot_id display; do
+  add_agent "$name" "$uid" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
 done
 log "done"

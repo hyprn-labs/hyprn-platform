@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# gh for agent users: always the current GitHub App token from tmpfs (ADR-0005).
+token_file="/run/hyprn-agents/secrets/$(id -un)/github-token"
+[ -r "$token_file" ] && GH_TOKEN="$(cat "$token_file")" && export GH_TOKEN
+exec /usr/bin/gh "$@"
