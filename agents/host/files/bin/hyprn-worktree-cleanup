@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Removes the calling agent's finished task worktrees (spec section 2, GH-02):
+# a worktree on agent/<agent>/<task> and its local branch go once its pull
+# request is merged or closed, it has no uncommitted changes, all its commits
+# are on GitHub and no process runs in it. Everything else is kept and listed
+# with the reason. Main checkouts are never touched. --dry-run only reports.
+set -uo pipefail
+dry=no; [ "${1:-}" = --dry-run ] && dry=yes
+gh=/usr/local/libexec/hyprn-agent-bin/gh
+me="$(id -un)"
+
+busy() {  # $1: worktree path; true if one of my processes works inside it
+  local p
+  for p in /proc/[0-9]*; do
+    case "$(readlink "$p/cwd" 2>/dev/null)" in "$1"|"$1"/*) return 0 ;; esac
+  done
+  return 1
+}
+
+for gitdir in "$HOME"/work/*/.git; do
+  [ -d "$gitdir" ] || continue
+  base="${gitdir%/.git}"
+  repo="$(basename "$(git -C "$base" remote get-url origin)" .git)"
+  [ "$dry" = yes ] || git -C "$base" worktree prune
+  git -C "$base" fetch -q --prune origin 2>/dev/null || true
+  git -C "$base" worktree list --porcelain | awk '/^worktree /{w=substr($0,10)} /^branch /{print w "\t" substr($0,19)}' |
+  while IFS=$'\t' read -r wt branch; do
+    [ "$wt" = "$base" ] && continue
+    case "$branch" in "agent/$me/"*) ;; *) continue ;; esac
+    states="$("$gh" pr list --repo "hyprn-labs/$repo" --head "$branch" --state all --json number,state \
+      --jq '.[] | "#\(.number) \(.state)"' 2>/dev/null)" || { echo "kept $wt: GitHub not reachable"; continue; }
+    if [ -z "$states" ]; then echo "kept $wt: no pull request yet"; continue; fi
+    if [ "$(wc -l <<<"$states")" -ne 1 ]; then echo "kept $wt: several pull requests ($(paste -sd, <<<"$states"))"; continue; fi
+    case "$states" in *MERGED|*CLOSED) ;; *) echo "kept $wt: pull request $states"; continue ;; esac
+    if [ -n "$(git -C "$wt" status --porcelain)" ]; then echo "kept $wt: uncommitted changes ($states)"; continue; fi
+    # Every local commit must be on GitHub: in a remote branch, or in the pull
+    # request's head (kept by GitHub after a merge or a branch deletion).
+    number="${states%% *}"; number="${number#\#}"
+    if [ "$(git -C "$wt" rev-list --count HEAD --not --remotes)" != 0 ] &&
+       ! { git -C "$base" fetch -q origin "refs/pull/$number/head" 2>/dev/null &&
+           git -C "$base" merge-base --is-ancestor "$(git -C "$wt" rev-parse HEAD)" FETCH_HEAD; }; then
+      echo "kept $wt: commits not on GitHub ($states)"; continue
+    fi
+    if busy "$wt"; then echo "kept $wt: a process is running in it ($states)"; continue; fi
+    if [ "$dry" = yes ]; then echo "would remove $wt and $branch ($states)"; continue; fi
+    git -C "$base" worktree remove "$wt" && git -C "$base" branch -D "$branch" >/dev/null \
+      && echo "removed $wt and $branch ($states)"
+  done
+done
+exit 0

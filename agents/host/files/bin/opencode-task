@@ -2,7 +2,8 @@
 # One task = one branch agent/<agent>/<task> = one worktree ~/work/<task>:
 # creates them from the latest hyprn-platform main if needed, then runs OpenCode
 # there in a tmux session named after the task, which survives disconnects and is
-# reattached by running the same command again.
+# reattached by running the same command again. Finished tasks' worktrees are
+# cleaned up first (hyprn-worktree-cleanup).
 set -euo pipefail
 task="${1:?usage: opencode-task <task-name>}"
 [[ "$task" =~ ^[a-z0-9][a-z0-9-]{0,40}$ ]] && [ "$task" != hyprn-platform ] \
@@ -11,6 +12,7 @@ base="$HOME/work/hyprn-platform"
 branch="agent/$(id -un)/$task"
 dir="$HOME/work/$task"
 [ -d "$base" ] || git clone -q https://github.com/hyprn-labs/hyprn-platform "$base"
+hyprn-worktree-cleanup | grep -v '^kept .*: no pull request yet$' || true
 git -C "$base" fetch -q --prune origin
 if [ ! -d "$dir" ]; then
   if git -C "$base" show-ref --quiet --verify "refs/heads/$branch"; then

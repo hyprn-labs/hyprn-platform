@@ -37,11 +37,7 @@ CLOUDSDK_CONFIG=$HOME/.config/gcloud-hyprn gcloud compute ssh hyprn-agents-host-
 
 The host stays on while Codd writes to its session, while a terminal has input, or while an SSH command runs; it powers off 30 minutes after all three stop. An idle Codd at its prompt does not keep it on; `sudo touch /run/hyprn-agents/hold` does.
 
-After merge, remove the worktree:
-
-```bash
-sudo -u codd -H bash -lc "git -C ~/work/hyprn-platform worktree remove ~/work/<task>"
-```
+Finished tasks clean up after themselves: `hyprn-worktree-cleanup` runs at every `opencode-task` and daily on the host (`hyprn-worktree-cleanup@<agent>.timer`, also after a boot that missed it). It removes a task's worktree and local branch once its pull request is merged or closed, with no uncommitted changes, every commit on GitHub and nothing running in it; otherwise it keeps the worktree and says why. To see what it would do: `sudo -u codd -H bash -lc "hyprn-worktree-cleanup --dry-run"`.
 
 ## Change the model
 
@@ -65,3 +61,4 @@ If an agent is ever removed outright: remove its line from `agents/host/agents.t
 | 2026-10-13 | MVP reach | Owner extended Codd's reach to `hyprn-mvp` (decision, same prototyping terms; no staging, prod, or secret values). Verified same day: a branch push to `hyprn-mvp` as `codd-agent-hyprn[bot]` is accepted, so the App installation covers both repositories. Worktree `~/work/mvp-resume` on branch `agent/codd/mvp-resume` created for the resume. |
 | 2026-10-14 | Platform only | Owner removed `hyprn-mvp` from Codd's App installation (decision: product code stays off a model that trains on prompts); Codd's App sees `hyprn-platform` only (host check). Role file, spec, ADR-0007 and requirements aligned |
 | 2026-10-14 | `apply.sh` | Codd's role file now states `hyprn-platform` only; 59 host checks pass with the egress proxy on |
+| 2026-10-14 | Worktree inventory | `fix-readme` (#14 merged, clean): to be removed by the cleanup; `phase-1-discuss` (#15 closed): kept, two uncommitted check records; `fix-readme9`: folder already gone, Git's record pruned during the first dry run |
