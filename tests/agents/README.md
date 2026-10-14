@@ -1,3 +1,11 @@
 # tests/agents
 
-[`host-checks.sh`](host-checks.sh) runs as root on the agent host after each provisioning: metadata server unreachable for agent users, private homes, no administrative groups, rootless Docker only, DNS and outbound HTTPS, Claude Code and the Slack plugin for Claude Code agents, OpenCode for OpenCode agents and refused for the others, Codd's GitHub App limited to `hyprn-platform` and `hyprn-mvp`, secrets readable only by their agent, Git identity per agent, OpenCode pinned with its root-owned policy, root-owned Slack allowlist, idle-stop timer active, no service-account key files.
+Safety checks for the agent fleet (ACC-08). Each line prints `PASS`, `FAIL` or `SKIP`; a script exits non-zero when any check fails.
+
+| Script | Where | Checks |
+|---|---|---|
+| [`run.sh`](run.sh) | Agent host, as root; run by `agents/host/apply.sh` after each provisioning | Runs `host-checks.sh` and every `checks/*.sh`, keeps a dated record in `/var/lib/hyprn-agents/checks/` |
+| [`host-checks.sh`](host-checks.sh) | Agent host | Metadata server unreachable for agent users, private homes, no administrative groups, rootless Docker only, DNS and outbound HTTPS, Claude Code and the Slack plugin for Claude Code agents, OpenCode for OpenCode agents and refused for the others, Codd's GitHub App limited to `hyprn-platform`, secrets readable only by their agent, Git identity per agent, OpenCode pinned with its root-owned policy, root-owned Slack allowlist, idle-stop timer active, no service-account key files |
+| [`checks/accounts.sh`](checks/accounts.sh) | Agent host | No gcloud user credentials, no cloud credential variables, agent secrets limited to Slack and GitHub tokens |
+| [`checks/policy.sh`](checks/policy.sh) | Agent host | The Claude Code policy the console serves matches `agents/policy/managed-settings.json`; the Slack plugin comes from the root-owned local marketplace |
+| [`owner-checks.sh`](owner-checks.sh) | Owner's workstation, HYPRN configurations, read-only | Reviewed ruleset and policy files; no person holding cloud roles; Secret Manager audit logs and both alerts; folder sink; GitHub two-factor requirement, `owners` team and, on the Team plan, the ruleset in every repository |

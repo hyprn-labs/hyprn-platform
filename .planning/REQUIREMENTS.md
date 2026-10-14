@@ -16,7 +16,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 ### Agent policy (POL) — spec §13
 
 - [ ] **POL-01**: The Claude Code organization policy lives in `agents/policy/managed-settings.json` with explicit allow, ask and deny lists (routine work allowed, risky actions asked, merging and pushing to `main` denied) and the pinned herdr hooks allowed; the Team Owner applies it in the admin console and `runbooks/agents/claude.md` records each change.
-- [ ] **POL-02**: The sandbox network allowlist for agent shell commands is part of that policy; a request to any other host fails inside the sandbox.
+- [ ] **POL-02**: The sandbox network allowlist for agent shell commands is part of that policy; a request to any other host fails inside the sandbox. Moved to Phase 7 with EGR-02: both are built from the destinations observed under EGR-01.
 - [ ] **POL-03**: `strictKnownMarketplaces` accepts only the `hyprn-agents` marketplace.
 - [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in every `hyprn-labs` repository.
 
@@ -43,7 +43,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 - [ ] **ACC-05**: The host holds no user cloud credentials, no key files and no staging or prod roles or secrets.
 - [ ] **ACC-06**: The wake identity is refused everything but get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across idle stops.
 - [ ] **ACC-07**: Ada, Boole and Codd cannot reach each other's homes, secrets, containers, tokens or bots.
-- [ ] **ACC-08**: One command (`tests/agents/run.sh`) runs every check delivered so far and writes a dated record to `runbooks/agents/`; each later phase adds its checks to it.
+- [ ] **ACC-08**: One command on the host (`tests/agents/run.sh`) and one on the owner's workstation (`tests/agents/owner-checks.sh`) run every check delivered so far; the host keeps a dated record; each later phase adds its checks to them.
 - [ ] **ACC-09**: The controller and gateway identities hold exactly their declared roles; the gateway is unreachable from the internet; a run's container holds only its loop's credentials.
 - [ ] **ACC-10**: At the end of M3, the full check run passes with the egress allowlist enforced, and its dated record is kept.
 
@@ -126,7 +126,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | POL-01 | Phase 1 | Pending |
-| POL-02 | Phase 1 | Pending |
+| POL-02 | Phase 7 | Pending |
 | POL-03 | Phase 1 | Pending |
 | POL-04 | Phase 1 | Pending |
 | GHE-01 | Phase 1 | Pending |

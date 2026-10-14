@@ -57,6 +57,9 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - Run state lives in its own database on the gateway's Cloud SQL instance.
 - The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
 - Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
+- GitHub Team plan purchase deferred (owner, 2026-10-14): Phase 1 ships the reviewed ruleset; deny rules remain the control on `main` until it is bought. The ruleset requires a code-owner approval (team `owners`) and lets organization admins merge their own pull requests.
+- Codd stays on `hyprn-platform` only (owner, 2026-10-14); `hyprn-mvp` is removed from its App installation.
+- Pull request 15 (Codd's Phases 1–7 build) is not merged: its Phase 1 work is reviewed and brought over in 1a and 1b, later phases piece by piece. On 2026-10-14 its unmerged host changes and console policy were applied and broke the agents' network and policy; the host was restored from `main` (runbooks `claude.md`, `host.md`).
 - Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` and `hyprn-mvp`, enforced by its GitHub App being installed on those two repositories only (verified 2026-10-13 by a branch push to each) and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 

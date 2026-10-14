@@ -1,0 +1,3 @@
+# Code owners for hyprn-platform: the main ruleset (agents/github/main-ruleset.json)
+# requires their approval on every pull request. Agents are never code owners.
+* @hyprn-labs/owners

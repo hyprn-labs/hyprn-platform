@@ -27,16 +27,17 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 ### Phase 1: Security baseline  (M1)
 **Goal**: `main` is protected by GitHub, Ada runs under enforced policy, outbound traffic is visible, misuse of secrets or IAM raises an alert, and the safety controls are proven by one command. Codd is covered too: its App scope, secret, host provisioning and managed OpenCode config are proven by the same run.
 **Depends on**: Nothing
-**Requirements**: GHE-01, GHE-03, POL-01, POL-02, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08, CODD-01
-**Owner actions**: upgrade `hyprn-labs` to the GitHub Team plan; apply the policy in the Claude admin console; create the break-glass admin; require two-factor authentication in `hyprn-labs`.
+**Requirements**: GHE-01, GHE-03, POL-01, POL-03, POL-04, EGR-01, DET-01, DET-02, SEC-01, SEC-02, DOC-01, ACC-01, ACC-02, ACC-03, ACC-04, ACC-05, ACC-06, ACC-08, CODD-01
+**Owner actions**: create the `owners` team in `hyprn-labs`; apply the policy in the Claude admin console; apply `infra/agents/detect.tf` and test both alerts; create the break-glass admin; remove the owner's direct roles on the `agents` folder. The GitHub Team plan purchase is deferred (owner, 2026-10-14); the ruleset is applied when it is bought.
+**Delivery**: two pull requests — 1a: policy, ruleset definition, alerts, safeguards and the check commands; 1b: egress observation.
 **Success Criteria**:
-  1. The ruleset protects `main` in every repository; GitHub refuses a merge or push to `main` by Ada's App.
-  2. The admin console policy matches `agents/policy/managed-settings.json`; routine worktree work runs without prompts.
+  1. The reviewed ruleset (`agents/github/main-ruleset.json`) is ready to apply; until the Team plan, Claude Code deny rules and Codd's OpenCode policy refuse merges and pushes to `main`. Once applied, GitHub refuses a merge or push to `main` by any agent App.
+  2. The admin console policy matches `agents/policy/managed-settings.json` (checked on the host); routine worktree work runs without prompts.
   3. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
   4. The egress proxy logs each agent's destinations; a direct outbound connection is dropped.
-5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
-6. `tests/agents/run.sh` passes and writes a dated record.
-7. Codd's App is installed on `hyprn-platform` only, its key lives in Secret Manager, its OpenCode config matches `agents/host/files/opencode.json`, and the check run covers it.
+  5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
+  6. `tests/agents/run.sh` (host) and `tests/agents/owner-checks.sh` (workstation) pass; the host keeps a dated record.
+  7. Codd's App is installed on `hyprn-platform` only, its key lives in Secret Manager, its OpenCode config matches `agents/host/files/opencode.json`, and the check run covers it.
 **Plans**: TBD
 
 ### Phase 2: Engineering workflow  (M1)

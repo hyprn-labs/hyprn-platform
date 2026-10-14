@@ -55,6 +55,19 @@ gcloud projects remove-iam-policy-binding <project> --member="user:<account>" --
 
 Check: organization, billing and project IAM list `gcp-admins` and Google service agents only.
 
+## Misuse detection
+
+`infra/agents/detect.tf` audits Secret Manager reads and emails `gcp-admins` on an unexpected secret read, creation, deletion or reader grant, and on any IAM policy change to the `hyprn-agents` project or the `agents` folder. Apply it like any `infra/agents/` change: plan, review, apply the reviewed plan. Then test each alert once (owner's go for each):
+
+1. **Secret alert:** as the owner, read a secret and count its bytes without displaying it: `gcloud secrets versions access latest --secret=agents-slack-allowed-users --project=hyprn-agents | wc -c`. Expected: an email from "hyprn agents: unexpected secret access" within about 5 minutes.
+2. **IAM alert:** add and then remove a harmless binding, for example `roles/viewer` for `gcp-admins@hyprn.ai` on `hyprn-agents`. Expected: an email from "hyprn agents: IAM policy change".
+
+## Account safeguards
+
+- **Break-glass administrator (SEC-01):** a role-named super administrator in the Workspace admin console, with its own security key and printed backup codes kept offline, no Google Cloud role, used only when the owner's account is unavailable.
+- **Direct grants:** no person holds a role on the organization, the `agents` folder or `hyprn-agents`; the admins group does. Folder creation grants its creator Folder Admin and Folder Editor; remove them from the owner's account once the group holds its folder roles.
+- `tests/agents/owner-checks.sh` checks both, with detection and the GitHub organization settings.
+
 ## Record
 
 | Date | Step | Result |
