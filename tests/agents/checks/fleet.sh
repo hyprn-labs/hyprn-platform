@@ -70,6 +70,7 @@ rm -f "$WAKEBAD"
 # shape. Static and local: no SSH, no vendor calls.
 FLEET="$REPO_ROOT/agents/fleet"
 check "fleet add driver exists and is executable" "[ -x '$FLEET' ]"
+check "onboarding runbook exists and covers both kinds plus remove" "[ -f '$REPO_ROOT/runbooks/agents/onboarding.md' ] && grep -q 'fleet add' '$REPO_ROOT/runbooks/agents/onboarding.md' && grep -q 'fleet remove' '$REPO_ROOT/runbooks/agents/onboarding.md'"
 # Snapshot the tree so the dry-run-clean assertion below only sees what the
 # dry-runs themselves change (the check must stay green on a dirty worktree).
 TREE_BEFORE="$(mktemp)"
@@ -93,7 +94,11 @@ check "operations dry-run prints a numbered owner checklist" "grep -q '^[0-9]\. 
 check "engineering dry-run states the stop before the seat invite" "grep -q 'stops before the Claude seat invitation' '$ENG_OUT'"
 check "engineering opencode dry-run covers App plus user plus OpenCode plus herdr" "grep -q 'GitHub App' '$ENG_OUT' && grep -q 'Linux user' '$ENG_OUT' && grep -q 'OpenCode' '$ENG_OUT' && grep -q 'herdr' '$ENG_OUT'"
 check "remove dry-run prints the manual-remainder table" "grep -q 'manual-remainder table' '$RM_OUT'"
-check "dry-runs leave the tree unmodified" "git -C '$REPO_ROOT' status --porcelain agents/ infra/agents/ | grep -v '^??' | sort | diff -q '$TREE_BEFORE' -"
+# grep -v exits 1 on empty input, which pipefail turns into a pipeline
+# failure on a clean tree: snapshot to a file with || true instead.
+TREE_AFTER="$(mktemp)"
+git -C "$REPO_ROOT" status --porcelain agents/ infra/agents/ | grep -v '^??' | sort >"$TREE_AFTER" || true
+check "dry-runs leave the tree unmodified" "diff -q '$TREE_BEFORE' '$TREE_AFTER'"
 check "no secret-value flags in fleet add/remove driver" "! grep -rEn -- '$VALUE_FLAGS' '$FLEET'"
 ENG_ACTIONS="$(grep -c '^[0-9]\. \[go\]' "$ENG_OUT")"
 OPS_ACTIONS="$(grep -c '^[0-9]\. \[go\]' "$OPS_OUT")"
@@ -101,6 +106,6 @@ echo "EVIDENCE add --kind engineering --harness opencode --dry-run: $((ENG_END-E
 echo "EVIDENCE add --kind operations --dry-run: $((OPS_END-OPS_START))s, $OPS_ACTIONS owner actions (budget 15 min / ~8 actions)"
 check "engineering dry-run evidence carries action count" "grep -q 'Total owner actions' '$ENG_OUT'"
 check "operations dry-run evidence carries action count" "grep -q 'Total owner actions' '$OPS_OUT'"
-rm -f "$ENG_OUT" "$OPS_OUT" "$RM_OUT" "$TREE_BEFORE"
+rm -f "$ENG_OUT" "$OPS_OUT" "$RM_OUT" "$TREE_BEFORE" "$TREE_AFTER"
 
 exit $fail
