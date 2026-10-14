@@ -12,7 +12,7 @@ check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"
 while read -r name _ harness _; do
   [ "$harness" = claude ] || continue
   live="/home/$name/.claude/remote-settings.json"
-  check "$name: console policy matches agents/policy/managed-settings.json" "diff <(jq -S . '$live') <(jq -S 'del(.\"\$comment\")' '$REVIEWED')"
+  check "$name: console policy matches agents/policy/managed-settings.json" "[ \"\$(jq -cS . '$live')\" = \"\$(jq -cS . '$REVIEWED')\" ]"
   check "$name: Slack plugin from the local marketplace" "runuser -l $name -c 'claude plugin marketplace list' </dev/null | grep -q /opt/hyprn-agents/marketplace"
   check "$name: marketplace root-owned, not agent-writable" "[ \"\$(stat -c %U /opt/hyprn-agents/marketplace)\" = root ] && ! runuser -l $name -c 'test -w /opt/hyprn-agents/marketplace' </dev/null"
 done < <(grep -vE '^\s*(#|$)' "$HERE/../../../agents/host/agents.txt")
