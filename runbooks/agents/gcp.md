@@ -95,6 +95,7 @@ path, expected end-state, and sign-off row.
 
 ### 4. Canary secret read → admin email (DET-01 live test)
 
+- Mailbox posture (2026-10-14): `gcp-admins` posting ceiling is capped org-wide at "entire organization" ("entire web" rejected as constrained). Set to "entire organization". Whether alarm mail passes is proven empirically by this canary — arrival = accepted, absence = revisit (raise ceiling vs reroute).
 - Action (owner go): read a canary secret version as an unexpected
   principal (not the host or wake identity).
 - Expected end-state: an alert email arrives at `gcp-admins@hyprn.ai`
