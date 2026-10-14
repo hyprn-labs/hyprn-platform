@@ -1,0 +1,243 @@
+#!/usr/bin/env bash
+# Meeting-loop workflow (Phase 4, LOOP-02/LOOP-03): fetch, extract,
+# propose, park, approved-PATCH, record_cost for one meeting run.
+# Proposes Notion updates and posts the Slack summary, then PARKS and
+# exits immediately (never sleep-with-container; resume re-queues and
+# re-invokes with --resume). The Notion PATCH applies ONLY when
+# Dispatcher.resume returns true for the loop owner.
+# Usage:
+#   hyprn-meeting-workflow <agent> <run-id> <loop.yaml> [--fixture <dir> --page <id>]
+#   hyprn-meeting-workflow <agent> <run-id> <loop.yaml> --resume <answer> --sender <sender>
+# Run as root (runner invokes it); fixture mode runs anywhere, no network.
+# Values are never printed; shapes only.
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+REPO_ROOT_FALLBACK="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+export REPO_ROOT="${REPO_ROOT:-$REPO_ROOT_FALLBACK}"
+AGENT="${1:-}"
+RUN_ID="${2:-}"
+LOOP="${3:-}"
+[ -n "$AGENT" ] && [ -n "$RUN_ID" ] && [ -n "$LOOP" ] || { echo "usage: hyprn-meeting-workflow <agent> <run-id> <loop.yaml> [--fixture <dir> --page <id> | --resume <answer> --sender <sender>]" >&2; exit 2; }
+shift 3
+
+FIXTURE_DIR=""
+PAGE_ID=""
+RESUME_ANSWER=""
+RESUME_SENDER=""
+QUEUE_DB="${QUEUE_DB:-/run/hyprn-agents/queue.db}"
+RUN_ROOT="${RUN_ROOT:-/run/hyprn-agents/runs}"
+NOTION_VERSION="2026-03-11"
+COST_USD="${COST_USD:-0.05}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fixture) FIXTURE_DIR="${2:-}"; shift 2 ;;
+    --page) PAGE_ID="${2:-}"; shift 2 ;;
+    --resume) RESUME_ANSWER="${2:-}"; shift 2 ;;
+    --sender) RESUME_SENDER="${2:-}"; shift 2 ;;
+    --db) QUEUE_DB="${2:-}"; shift 2 ;;
+    *) echo "unknown flag: $1" >&2; exit 2 ;;
+  esac
+done
+[ -r "$LOOP" ] || { echo "hyprn-meeting-workflow: loop file not readable: $LOOP" >&2; exit 1; }
+
+RUN_DIR="$RUN_ROOT/$RUN_ID"
+mkdir -p "$RUN_DIR"
+
+# Declared secret names come ONLY from the reviewed loop file — never from
+# trigger payload (ADR-0006 rule 3). Undeclared secrets are refused.
+declared_secrets() {
+  python3 -c "
+import yaml
+doc = yaml.safe_load(open('$LOOP'))
+tools = doc.get('tools', []) if isinstance(doc, dict) else []
+names = []
+if 'slack-post' in [str(t) for t in tools]:
+    names += ['$AGENT-agent-slack-app-token', '$AGENT-agent-slack-bot-token']
+if 'notion-read' in [str(t) for t in tools] or 'notion-write' in str(doc.get('autonomy', {})):
+    names.append('boole-agent-notion-token')
+print(' '.join(names))
+"
+}
+
+loop_owner() {
+  python3 -c "import yaml; print(yaml.safe_load(open('$LOOP')).get('owner', ''))"
+}
+
+fetch_page() {
+  # Fetch page plus block children into $RUN_DIR/page.json.
+  if [ -n "$FIXTURE_DIR" ]; then
+    src="$FIXTURE_DIR/${PAGE_ID}.json"
+    [ -r "$src" ] || src="$FIXTURE_DIR/new.json"
+    cp "$src" "$RUN_DIR/page.json"
+  else
+    notion_token="$(cat "$RUN_DIR/boole-agent-notion-token" 2>/dev/null || true)"
+    [ -n "$notion_token" ] || { echo "hyprn-meeting-workflow: no Notion token in run dir" >&2; exit 1; }
+    NOTION_TOKEN="$notion_token" python3 - "$PAGE_ID" "$RUN_DIR/page.json" <<'EOF'
+import json, os, sys, urllib.request
+page_id, out = sys.argv[1], sys.argv[2]
+base = "https://api.notion.com"
+headers = {"Authorization": "Bearer %s" % os.environ["NOTION_TOKEN"],
+           "Notion-Version": "2026-03-11"}
+page = json.load(urllib.request.urlopen(
+    urllib.request.Request("%s/v1/pages/%s" % (base, page_id),
+                           headers=headers), timeout=30))
+blocks = json.load(urllib.request.urlopen(
+    urllib.request.Request("%s/v1/blocks/%s/children" % (base, page_id),
+                           headers=headers), timeout=30))
+json.dump({"id": page_id, "title": "", "body": json.dumps(blocks)},
+          open(out, "w"))
+EOF
+    unset notion_token
+  fi
+}
+
+extract_contract() {
+  # Extract per agents/loops/meeting/prompts.md into $RUN_DIR/contract.json.
+  python3 - "$RUN_DIR/page.json" "$RUN_DIR/contract.json" <<'EOF'
+import json, sys
+page = json.load(open(sys.argv[1]))
+title = page.get("title", "")
+body = page.get("body", "")
+if not title and not body:
+    json.dump({"decisions": [], "actions": [], "open_questions": [],
+               "patch": {}, "note": "malformed page: propose-nothing"},
+              open(sys.argv[2], "w"))
+    sys.exit(0)
+decisions, actions, questions = [], [], []
+import re
+for line in body.splitlines():
+    text = line.strip()
+    if not text:
+        continue
+    for match in re.finditer(r"(DECISION|ACTION|QUESTION):", text, re.I):
+        kind = match.group(1).upper()
+        start = match.end()
+        nxt = re.search(r"(DECISION|ACTION|QUESTION):", text[start:], re.I)
+        value = (text[start:start + nxt.start()] if nxt
+                 else text[start:]).strip(" .")
+        bucket = {"DECISION": decisions, "ACTION": actions,
+                  "QUESTION": questions}[kind]
+        item = {"text": value, "source": text}
+        if kind == "ACTION":
+            item.update({"owner": "", "due": ""})
+        bucket.append(item)
+json.dump({"decisions": decisions, "actions": actions,
+           "open_questions": questions, "patch": {}}, open(sys.argv[2], "w"))
+EOF
+}
+
+draft_patch() {
+  # Draft the Notion property patch WITHOUT applying it.
+  python3 - "$RUN_DIR/contract.json" "$RUN_DIR/patch.json" <<'EOF'
+import json, sys
+contract = json.load(open(sys.argv[1]))
+json.dump({"properties": dict(contract.get("patch", {}))}, open(sys.argv[2], "w"))
+EOF
+}
+
+post_summary() {
+  # Post the Slack summary with patch preview at A2 (fixture mode writes
+  # an outbox file instead of the network).
+  summary="$(python3 - "$RUN_ID" "$PAGE_ID" "$RUN_DIR/page.json" "$RUN_DIR/contract.json" "$RUN_DIR/patch.json" <<'EOF'
+import json, sys
+run_id, page_id = sys.argv[1], sys.argv[2]
+page = json.load(open(sys.argv[3]))
+contract = json.load(open(sys.argv[4]))
+patch = json.load(open(sys.argv[5]))
+print("[meeting %s page %s] %s | Decisions: %d Actions: %d Open: %d | Patch preview: %s | Approve? Reply yes to apply, no to drop." % (
+    run_id, page.get("id", page_id),
+    page.get("title", "?"), len(contract.get("decisions", [])),
+    len(contract.get("actions", [])), len(contract.get("open_questions", [])),
+    json.dumps(patch.get("properties", {}))))
+EOF
+)"
+  if [ -n "$FIXTURE_DIR" ]; then
+    printf '%s\n' "$summary" > "$RUN_DIR/slack-outbox.txt"
+  else
+    slack_token="$(cat "$RUN_DIR/boole-agent-slack-bot-token" 2>/dev/null || true)"
+    [ -n "$slack_token" ] || { echo "hyprn-meeting-workflow: no Slack token in run dir" >&2; exit 1; }
+    curl -sf -X POST -H "Authorization: Bearer $slack_token" \
+      -H 'Content-Type: application/json' \
+      -d "$(python3 -c "import json,sys; print(json.dumps({'text': sys.argv[1]}))" "$summary")" \
+      https://slack.com/api/chat.postMessage > /dev/null
+    unset slack_token
+  fi
+}
+
+park_and_exit() {
+  # Park awaiting owner approval. Holds a DB row, never a process: exit
+  # immediately; resume re-queues and re-invokes with --resume.
+  question="[meeting $RUN_ID page $PAGE_ID] approve the proposed Notion patch? Reply yes to apply, no to drop."
+  QUEUE_DB="$QUEUE_DB" python3 - "$RUN_ID" "$question" <<'EOF'
+import os, sqlite3, sys
+sys.path.insert(0, os.path.join(os.environ.get("REPO_ROOT", "."), "controller"))
+from dispatcher import Dispatcher
+connection = sqlite3.connect(os.environ.get("QUEUE_DB", "/run/hyprn-agents/queue.db"))
+Dispatcher(connection).park(sys.argv[1], sys.argv[2])
+EOF
+  exit 0
+}
+
+apply_patch() {
+  # Apply the drafted PATCH only after Dispatcher.resume approves.
+  # Returns 0 when applied, 1 when the run stays parked.
+  allowed="$(QUEUE_DB="$QUEUE_DB" python3 - "$RUN_ID" "$RESUME_ANSWER" "$RESUME_SENDER" <<'EOF'
+import os, sqlite3, sys
+sys.path.insert(0, os.path.join(os.environ.get("REPO_ROOT", "."), "controller"))
+sys.path.insert(0, os.path.dirname(os.environ.get("LOOP_FILE", "agents/loops/meeting.yaml")) or ".")
+import yaml
+owner = yaml.safe_load(open(os.environ.get("LOOP_FILE", "agents/loops/meeting.yaml"))).get("owner", "")
+from dispatcher import Dispatcher
+connection = sqlite3.connect(os.environ.get("QUEUE_DB", "/run/hyprn-agents/queue.db"))
+print("yes" if Dispatcher(connection).resume(sys.argv[1], sys.argv[2], sys.argv[3], owner) else "no")
+EOF
+)"
+  # LOOP_FILE is exported below before this function runs.
+  if [ "$allowed" != "yes" ]; then
+    echo "hyprn-meeting-workflow: answer not from owner, run stays parked"
+    return 1
+  fi
+  if [ -n "$FIXTURE_DIR" ]; then
+    cp "$RUN_DIR/patch.json" "$RUN_DIR/applied.json"
+  else
+    notion_token="$(cat "$RUN_DIR/boole-agent-notion-token" 2>/dev/null || true)"
+    PATCH_URL="https://api.notion.com/v1/pages/$PAGE_ID"
+    NOTION_TOKEN="$notion_token" PATCH_URL="$PATCH_URL" python3 - "$RUN_DIR/patch.json" <<'EOF'
+import os, sys, urllib.request
+with open(sys.argv[1], "rb") as handle:
+    payload = handle.read()
+request = urllib.request.Request(os.environ["PATCH_URL"], data=payload,
+    headers={"Content-Type": "application/json", "Notion-Version": "2026-03-11",
+             "Authorization": "Bearer %s" % os.environ["NOTION_TOKEN"]})
+urllib.request.urlopen(request, timeout=30).read()
+EOF
+    unset notion_token PATCH_URL
+  fi
+  return 0
+}
+
+record_run_cost() {
+  QUEUE_DB="$QUEUE_DB" python3 - "$RUN_ID" "$COST_USD" <<'EOF'
+import os, sqlite3, sys
+sys.path.insert(0, os.path.join(os.environ.get("REPO_ROOT", "."), "controller"))
+from dispatcher import Dispatcher
+connection = sqlite3.connect(os.environ.get("QUEUE_DB", "/run/hyprn-agents/queue.db"))
+Dispatcher(connection).record_cost(sys.argv[1], float(sys.argv[2]))
+EOF
+}
+
+export LOOP_FILE="$LOOP"
+if [ -n "$RESUME_ANSWER" ]; then
+  [ -n "$RESUME_SENDER" ] || { echo "hyprn-meeting-workflow: --resume needs --sender" >&2; exit 2; }
+  if apply_patch; then
+    record_run_cost
+  fi
+  exit 0
+fi
+
+[ -n "$PAGE_ID" ] || { echo "hyprn-meeting-workflow: --page required for a new run" >&2; exit 2; }
+fetch_page
+extract_contract
+draft_patch
+post_summary
+park_and_exit
