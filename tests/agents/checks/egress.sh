@@ -13,6 +13,8 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 NFT="$REPO_ROOT/agents/host/files/egress.nft"
 SQUID="$REPO_ROOT/agents/host/files/squid-hyprn.conf"
+PROFILE="$REPO_ROOT/agents/host/files/profile.sh"
+PROVISION="$REPO_ROOT/agents/host/provision.sh"
 AGENTS="$(mktemp)"
 # Fleet registry (FLT-01) is the only declaration: render agents.txt to an
 # ephemeral file; every parse loop below is untouched.
@@ -33,6 +35,11 @@ check "proxy config declares an access log with agent identifier" "grep -v '^#' 
 check "proxy config allows all on each agent port (observe mode)" "grep -v '^#' '$SQUID' | grep -qE '^http_access allow ada_port$' && grep -v '^#' '$SQUID' | grep -qE '^http_access allow codd_port$'"
 check "proxy config has no deny rules (observe mode: no blocking)" "! grep -v '^#' '$SQUID' | grep -qE '^http_access deny'"
 check "proxy config references no allowlist (observe mode: unenforced)" "! grep -v '^#' '$SQUID' | grep -qiE 'dstdomain|allowlist'"
+check "provisioning installs agent profile to profile.d" "grep -q 'files/profile.sh.*/etc/profile.d/hyprn-agents.sh' '$PROVISION'"
+check "agent shells export lowercase proxy vars" "grep -q 'export http_proxy=' '$PROFILE' && grep -q 'export https_proxy=' '$PROFILE'"
+check "agent shells export uppercase proxy vars" "grep -q 'export HTTP_PROXY=' '$PROFILE' && grep -q 'export HTTPS_PROXY=' '$PROFILE'"
+check "proxy port selected per UID (ada 20001->3128, codd 20002->3129)" "grep -q '20001).*3128' '$PROFILE' && grep -q '20002).*3129' '$PROFILE'"
+check "proxy bypass covers loopback and metadata" "grep -q 'no_proxy=.*localhost.*127.0.0.1.*169.254.169.254' '$PROFILE' && grep -q 'NO_PROXY=.*localhost.*127.0.0.1.*169.254.169.254' '$PROFILE'"
 
 # --- live: host-only probes (SKIP off-host) ---
 live "firewall table loaded" "nft list table inet hyprn_agents"
