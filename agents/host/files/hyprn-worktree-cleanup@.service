@@ -1,0 +1,9 @@
+[Unit]
+Description=hyprn agents: remove finished task worktrees of %i
+After=network-online.target hyprn-agent-secrets@%i.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=%i
+ExecStart=/usr/local/libexec/hyprn-agent-bin/hyprn-worktree-cleanup

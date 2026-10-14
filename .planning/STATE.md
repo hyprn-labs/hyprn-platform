@@ -22,7 +22,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 
 Phase: 1 of 7 (Security baseline, M1) — delivered; closing items listed under Pending Todos
 Plan: 1a (#16–#18) and 1b (#19, #20) merged and applied
-Status: Phase 2 next (engineering workflow)
+Status: Phase 2 in progress (engineering workflow): finished-worktree cleanup first
 Last activity: 2026-10-14 - Phase 1 closed: Claude policy live, ruleset defined, misuse alerts emailing for secrets and project IAM, egress observed through the proxy, 59 host checks and 17 owner checks pass; open items under Pending Todos
 
 Progress: [█░░░░░░░░░] 14%

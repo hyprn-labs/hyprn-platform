@@ -146,7 +146,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | ACC-08 | Phase 1 | Complete |
 | CODD-01 | Phase 1 | Complete |
 | GH-01 | Phase 2 | Pending |
-| GH-02 | Phase 2 | Pending |
+| GH-02 | Phase 2 | Partial: cleanup of finished worktrees done; ports, Compose project and database per worktree pending |
 | GH-03 | Phase 2 | Complete |
 | CODD-03 | Phase 2 | Pending |
 | EFF-01 | Phase 2 | Pending |

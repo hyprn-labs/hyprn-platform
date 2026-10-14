@@ -72,6 +72,8 @@ install_host_files() {
   install -m 0644 "$HERE/files/hyprn-agent-github-token@.service" "$HERE/files/hyprn-agent-github-token@.timer" /etc/systemd/system/
   install -d -m 0755 /usr/local/libexec/hyprn-agent-bin
   install -m 0755 "$HERE/files/bin/gh" /usr/local/libexec/hyprn-agent-bin/gh
+  install -m 0755 "$HERE/files/bin/hyprn-worktree-cleanup" /usr/local/libexec/hyprn-agent-bin/hyprn-worktree-cleanup
+  install -m 0644 "$HERE/files/hyprn-worktree-cleanup@.service" "$HERE/files/hyprn-worktree-cleanup@.timer" /etc/systemd/system/
   install -m 0644 "$HERE/files/hyprn-agent-secrets@.service" /etc/systemd/system/
 
   # Plugin marketplace, root-owned; agents read it and install from it.
@@ -177,6 +179,7 @@ add_agent() {
   as_agent "git config --global push.autoSetupRemote true"
   systemctl enable "hyprn-agent-secrets@$name.service" >/dev/null
   systemctl restart "hyprn-agent-secrets@$name.service"
+  systemctl enable --now "hyprn-worktree-cleanup@$name.timer" >/dev/null
 
   if [ "$harness" = opencode ]; then
     # Role file, read by OpenCode as the agent's global rules.
