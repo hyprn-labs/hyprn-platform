@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Fleet registry renderer (Phase 6, FLT-01).
+
+Renders agents/fleet.yaml into agents/host/agents.txt, agents/wake/wake.json
+and infra/agents/fleet.auto.tfvars.json. Deterministic stdlib-only output
+(json with indent=2, fixed-width agents.txt rows); consumers keep reading the
+generated files until migrated one at a time.
+
+Usage: fleet-render [--fleet FILE] [--check]
+  default mode writes the three generated files; --check exits 1 when a
+  re-render would differ (the regen-clean gate used by checks/fleet.sh).
+
+Dependencies: Python 3 standard library and PyYAML (Debian python3-yaml).
+"""
+import json
+import subprocess
+import sys
+
+# Third-party: PyYAML (Debian package python3-yaml).
+import yaml
+
+AGENTS_TXT_HEADER = (
+    "# GENERATED from agents/fleet.yaml — do not edit; "
+    "re-render with agents/fleet-render.\n"
+    "# name  uid    harness   github-app        app-id   installation-id  "
+    "bot-user-id  display name\n"
+    "# One line per agent; UIDs 20000-20999 are agent users; the GitHub App "
+    "is per agent (ADR-0005).\n"
+    "# harness: claude (Claude Code on a Claude seat, Slack channel) or "
+    "opencode (OpenCode, terminal only).\n"
+)
+
+# Column order is load-bearing: agents/host/provision.sh skips comments and
+# blank lines, then reads name uid harness app_slug app_id installation_id
+# bot_id display (display takes the rest of the line). Widths reproduce the
+# committed rows byte-for-byte.
+ROW_FORMAT = "%-8s%-7s%-10s%-18s%-9s%-17s%-13s%s\n"
+
+
+def log(*parts):
+    print("hyprn-fleet-render:", *parts, file=sys.stderr, flush=True)
+
+
+def repo_root():
+    out = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True, check=True)
+    return out.stdout.strip()
+
+
+def load_registry(path):
+    with open(path, encoding="utf-8") as handle:
+        return yaml.safe_load(handle)
+
+
+def render_agents_txt(doc):
+    lines = [AGENTS_TXT_HEADER]
+    for agent in doc["agents"]:
+        github = agent["github"]
+        lines.append(ROW_FORMAT % (
+            agent["name"], str(agent["uid"]), agent["harness"],
+            github["app"], str(github["app_id"]),
+            str(github["installation_id"]), str(github["bot_id"]),
+            agent["display"]))
+    return "".join(lines)
+
+
+def render_wake_json(doc):
+    # Slack agents only: wake.py builds one Waker per listed agent and reads
+    # <agent>-agent-slack-app-token at boot, so a Slack-less (Codd-pattern)
+    # agent must never appear here.
+    wake = doc.get("wake", {})
+    names = [a["name"] for a in doc["agents"] if a.get("slack")]
+    # Byte-stable shape matching the committed file: 2-space indent with the
+    # agents list kept inline (json.dump with indent would expand it).
+    lines = ["{\n"]
+    lines.append('  "project": %s,\n' % json.dumps(
+        wake.get("project", "hyprn-agents")))
+    lines.append('  "zone": %s,\n' % json.dumps(
+        wake.get("zone", "europe-west1-b")))
+    lines.append('  "host": %s,\n' % json.dumps(
+        wake.get("host", "hyprn-agents-host-01")))
+    lines.append('  "agents": [%s]\n' % ", ".join(json.dumps(n) for n in names))
+    lines.append("}\n")
+    return "".join(lines)
+
+
+def render_tfvars_json(doc):
+    names = sorted(a["name"] for a in doc["agents"])
+    slack = sorted(a["name"] for a in doc["agents"] if a.get("slack"))
+    # Stable sorted order: infra/agents/secrets.tf keys resources by name
+    # with for_each, so reordering would recreate secret containers.
+    return json.dumps({"agents": names, "slack_agents": slack}, indent=2) + "\n"
+
+
+def targets(root):
+    return [
+        (root + "/agents/host/agents.txt", render_agents_txt),
+        (root + "/agents/wake/wake.json", render_wake_json),
+        (root + "/infra/agents/fleet.auto.tfvars.json", render_tfvars_json),
+    ]
+
+
+def main(argv):
+    fleet_path = None
+    check_only = False
+    rest = list(argv)
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--check":
+            check_only = True
+        elif arg == "--fleet" and rest:
+            fleet_path = rest.pop(0)
+        else:
+            log("usage: fleet-render [--fleet FILE] [--check]")
+            return 2
+    root = repo_root()
+    if fleet_path is None:
+        fleet_path = root + "/agents/fleet.yaml"
+    try:
+        doc = load_registry(fleet_path)
+    except (ValueError, OSError) as error:
+        log(fleet_path, "unparseable:", error)
+        return 1
+    failed = 0
+    for path, render in targets(root):
+        try:
+            wanted = render(doc)
+        except (KeyError, TypeError, AttributeError) as error:
+            log(fleet_path, "cannot render", path + ":", error)
+            return 1
+        if check_only:
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    current = handle.read()
+            except OSError as error:
+                log(path, "unreadable:", error)
+                failed += 1
+                continue
+            if current != wanted:
+                log(path, "regen diff: re-render differs; run agents/fleet-render")
+                failed += 1
+        else:
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(wanted)
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

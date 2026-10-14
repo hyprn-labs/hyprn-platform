@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Fleet registry validator (Phase 6, FLT-01 + CODD-02 schema side).
+
+Static gate over agents/fleet.yaml. Shape follows the agents/loops/validate.py
+precedent: REQUIRED set, enum asserts, per-file loop, exit 1 on failure,
+hyprn- prefixed stderr log.
+
+Usage: fleet-validate <fleet.yaml> [--wake <wake.json>]
+  --wake asserts the wake agent list matches exactly the slack:true agents,
+  so a Slack-less (Codd-pattern) agent can never gain wake token reads.
+
+Dependencies: Python 3 standard library and PyYAML (Debian python3-yaml).
+"""
+import json
+import re
+import sys
+
+# Third-party: PyYAML (Debian package python3-yaml).
+import yaml
+
+REQUIRED = {"name", "uid", "kind", "harness", "display",
+            "github", "slack", "workspace"}
+REQUIRED_GITHUB = {"app", "app_id", "installation_id", "bot_id"}
+
+KINDS = {"engineering", "operations"}
+HARNESSES = {"claude", "opencode"}
+# `group` is Ada's transient pre-move state (M3 group-to-user move is an
+# owner console step); steady states are `user` and `none`.
+WORKSPACES = {"user", "group", "none"}
+
+# Agent-name rule from agents/host/files/bin/opencode-task.
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,40}$")
+
+UID_MIN = 20000
+UID_MAX = 20999
+
+# Secret inventory naming <name>-agent-<purpose> (conventions/README.md);
+# the legacy agent-<name>-* names were deleted (slack.md record 2026-10-13).
+SECRET_RE = re.compile(r"^[a-z0-9][a-z0-9-]*-agent-[a-z][a-z-]*$")
+
+
+def log(*parts):
+    print("hyprn-fleet:", *parts, file=sys.stderr, flush=True)
+
+
+def derived_secret_names(agent):
+    names = [agent["name"] + "-agent-github-app-key"]
+    if agent.get("slack"):
+        names.append(agent["name"] + "-agent-slack-app-token")
+        names.append(agent["name"] + "-agent-slack-bot-token")
+    return names
+
+
+def check_agent(agent, seen_uids):
+    if not isinstance(agent, dict):
+        raise ValueError("agent entry must be a mapping")
+    missing = REQUIRED - set(agent)
+    assert not missing, "missing %s" % sorted(missing)
+    name = agent["name"]
+    assert isinstance(name, str) and NAME_RE.match(name), \
+        "bad agent name %r" % (name,)
+    assert not name.startswith("agent-"), \
+        "agent name %r uses the deleted agent-<name>-* secret pattern" % (name,)
+    uid = agent["uid"]
+    assert isinstance(uid, int) and not isinstance(uid, bool), \
+        "uid must be an integer for %s" % (name,)
+    assert UID_MIN <= uid <= UID_MAX, \
+        "uid %r out of range 20000-20999 for %s" % (uid, name)
+    assert uid not in seen_uids, "duplicate uid %r" % (uid,)
+    seen_uids.add(uid)
+    assert agent["kind"] in KINDS, \
+        "bad kind %r for %s" % (agent["kind"], name)
+    assert agent["harness"] in HARNESSES, \
+        "bad harness %r for %s" % (agent["harness"], name)
+    assert agent["workspace"] in WORKSPACES, \
+        "bad workspace %r for %s" % (agent["workspace"], name)
+    assert isinstance(agent["slack"], bool), \
+        "slack must be true/false for %s" % (name,)
+    assert agent["display"] and isinstance(agent["display"], str), \
+        "display must be a non-empty string for %s" % (name,)
+    github = agent["github"]
+    assert isinstance(github, dict), "github must be a mapping for %s" % (name,)
+    missing_github = REQUIRED_GITHUB - set(github)
+    assert not missing_github, \
+        "missing github %s for %s" % (sorted(missing_github), name)
+    assert github["app"] == name + "-agent-hyprn", \
+        "github app %r must be <name>-agent-hyprn for %s" % (github["app"], name)
+    for key in ("app_id", "installation_id", "bot_id"):
+        value = github[key]
+        assert isinstance(value, int) and not isinstance(value, bool) \
+            and value > 0, "github %s must be a positive integer for %s" \
+            % (key, name)
+    repos = github.get("repos", "all")
+    assert repos == "all" or (
+        isinstance(repos, list) and repos
+        and all(isinstance(r, str) and r for r in repos)), \
+        "github repos must be 'all' or a non-empty list for %s" % (name,)
+    for secret in derived_secret_names(agent):
+        assert SECRET_RE.match(secret), \
+            "derived secret name %r violates <name>-agent-<purpose>" % (secret,)
+
+
+def validate(path, wake_path=None):
+    """Validate one fleet registry file. Returns True when valid."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            doc = yaml.safe_load(handle)
+    except (ValueError, OSError) as error:
+        log(path, "unparseable:", error)
+        return False
+    try:
+        if not isinstance(doc, dict):
+            raise ValueError("top-level mapping required")
+        agents = doc.get("agents")
+        if not isinstance(agents, list) or not agents:
+            raise ValueError("non-empty agents list required")
+        seen_uids = set()
+        seen_names = set()
+        for agent in agents:
+            check_agent(agent, seen_uids)
+            name = agent["name"]
+            if name in seen_names:
+                raise ValueError("duplicate agent name %r" % (name,))
+            seen_names.add(name)
+        if wake_path is not None:
+            with open(wake_path, encoding="utf-8") as handle:
+                wake = json.load(handle)
+            listed = wake.get("agents")
+            if not isinstance(listed, list):
+                raise ValueError("wake.json agents list required")
+            slack_names = sorted(a["name"] for a in agents if a.get("slack"))
+            if sorted(listed) != slack_names:
+                raise ValueError(
+                    "wake.json agents %r != slack:true agents %r; "
+                    "a Slack-less agent must never be wake-listed"
+                    % (sorted(listed), slack_names))
+    except (ValueError, KeyError, AssertionError, AttributeError,
+            TypeError) as error:
+        log(path, "invalid:", error)
+        return False
+    return True
+
+
+def main(argv):
+    paths = []
+    wake_path = None
+    rest = list(argv)
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--wake" and rest:
+            wake_path = rest.pop(0)
+        elif arg.startswith("--"):
+            log("usage: fleet-validate <fleet.yaml> [--wake <wake.json>]")
+            return 2
+        else:
+            paths.append(arg)
+    if not paths:
+        log("usage: fleet-validate <fleet.yaml> [--wake <wake.json>]")
+        return 2
+    failed = 0
+    for path in paths:
+        if not validate(path, wake_path):
+            failed += 1
+    return 1 if failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
