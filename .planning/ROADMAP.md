@@ -85,7 +85,11 @@ Plans:
   2. A new meeting page triggers a run within 5 minutes; the owner approves Notion updates in Slack.
   3. At least 10 real meetings in two weeks, within 30 USD a month.
   4. Ada and Boole cannot reach each other's homes, secrets, containers, tokens or bots.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 04-01-PLAN.md — Tracer: meeting.yaml A1 loop plus Notion poll seam with idempotent enqueue on fakes
+- [ ] 04-02-PLAN.md — Extraction rubric plus propose-park-approved-write workflow plus cost ledger plus meeting.sh
+- [ ] 04-03-PLAN.md — Boole Notion declarations plus ACC-07 isolation check plus owner-go trial checklist
 
 ### Phase 5: Learning  (M2)
 **Goal**: The meeting loop gets better from the owner's feedback, with every change tested and merged by the owner.
@@ -108,7 +112,12 @@ Plans:
   2. A test agent of each kind is onboarded and offboarded within 15 minutes and about 8 human actions (the engineering test stops before the Claude seat invitation).
   3. Ada runs as a Workspace user; the onboarding runbook stands on its own.
   4. A Codd-pattern coding agent (GitHub App, Linux user, OpenCode, herdr-controlled) is onboarded by the same command.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 06-01-PLAN.md — Tracer: fleet.yaml registry plus renderer, validator, and fleet.sh check
+- [ ] 06-02-PLAN.md — fleet add/remove drivers with dry-run owner checklists for both kinds
+- [ ] 06-03-PLAN.md — Vendor spikes (Workspace, Slack icon, setup-token) plus onboarding runbook
+- [ ] 06-04-PLAN.md — Gap closure: migrate provision/wake/checks to registry, delete agents.txt and wake.json
 
 ### Phase 7: Hardening and acceptance  (M3)
 **Goal**: The fleet runs with egress enforced and every control proven in one final run.
