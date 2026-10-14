@@ -66,6 +66,13 @@ resource "google_project_iam_member" "agents_admins_owner" {
   member  = "group:${var.admins_group}"
 }
 
+# The admins group manages the agents folder's log sinks (infra/agents/detect.tf).
+resource "google_folder_iam_member" "agents_admins_logging" {
+  folder = google_folder.agents.name
+  role   = "roles/logging.configWriter"
+  member = "group:${var.admins_group}"
+}
+
 # State for infra/agents/, kept inside the agents project.
 resource "google_storage_bucket" "agents_tfstate" {
   name                        = "${var.agents_project_id}-tfstate"
