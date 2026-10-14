@@ -40,3 +40,5 @@ On the host: `sudo tail -f /var/log/squid/access.log`; connections that bypass t
 
 | Date | Step | Result |
 |---|---|---|
+| 2026-10-14 | `apply.sh` (Phase 1b) | Squid 5.7 and the Ops Agent installed, firewall logging loaded; 52 host checks pass with the proxy off. The firewall counted 90 direct connections from agent users in the first minutes, as expected |
+| 2026-10-14 | `hyprn-egress-proxy on` | All egress checks pass for Ada and Codd (shell, HTTPS, Docker through the proxy, logged under their names); Ada's Slack reconnected; both agents answer the owner. The log reaches Cloud Logging (`squid_access`). First destinations: `api.anthropic.com`, `slack.com`, `api.github.com`, and Claude Code's error reporting at `http-intake.logs.us5.datadoghq.com`. Observation review: 2026-10-21 |
