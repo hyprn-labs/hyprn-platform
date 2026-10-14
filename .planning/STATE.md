@@ -125,6 +125,7 @@ Gotchas met while building the fleet; read before operating it.
 | 1 | verification_deferred_human | /gsd-verify-work 1 |
 | 2 | verification_deferred_human | /gsd-verify-work 2 |
 | 3 | verification_deferred_human | /gsd-verify-work 3 |
+| 4 | verification_deferred_human | /gsd-verify-work 4 |
 
 ## Session Continuity
 
