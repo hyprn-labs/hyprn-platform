@@ -11,4 +11,4 @@ tar -czf - agents/host agents/roles agents/marketplace tests/agents |
   gcloud compute ssh "$HOST" --zone="$ZONE" --project="$PROJECT" --tunnel-through-iap --quiet --command \
     'set -e; rm -rf ~/hyprn-provision; mkdir ~/hyprn-provision; tar -C ~/hyprn-provision -xzf -;
      sudo bash ~/hyprn-provision/agents/host/provision.sh;
-     sudo bash ~/hyprn-provision/tests/agents/host-checks.sh'
+     sudo bash ~/hyprn-provision/tests/agents/run.sh'

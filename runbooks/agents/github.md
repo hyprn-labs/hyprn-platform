@@ -31,6 +31,21 @@ Generate a new private key on the App's page, load it as a new secret version, r
 
 Ada's App is installed on all `hyprn-labs` repositories, Codd's on `hyprn-platform` only (Organization → Settings → GitHub Apps → Configure). Tokens never exceed the App's permissions or its installation's repositories.
 
+## Protect `main`
+
+`agents/github/main-ruleset.json` is the ruleset for every repository: no deletion or force push of `main`, changes through pull requests approved by a code owner (`CODEOWNERS`: the `owners` team), stale approvals dismissed, and the last push approved by someone other than its author. Organization admins may merge their own pull requests; agents' Apps cannot bypass it.
+
+1. Create the team `owners` in `hyprn-labs` (Teams → New team, visible) and add the platform owner. Teams are available on the Free plan.
+2. Once `hyprn-labs` is on the Team plan (rulesets on private repositories need it), apply the ruleset to each repository:
+
+   ```bash
+   GH_CONFIG_DIR="$HOME/.config/gh-hyprn" gh api repos/hyprn-labs/<repo>/rulesets --method POST --input agents/github/main-ruleset.json
+   ```
+
+3. Check with `tests/agents/owner-checks.sh`.
+
+Until then the Claude Code deny rules (`agents/policy/managed-settings.json`) and Codd's OpenCode policy are the only controls on `main`.
+
 ## Record
 
 | Date | Step | Result |
