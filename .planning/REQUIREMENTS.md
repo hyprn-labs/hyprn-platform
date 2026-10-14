@@ -133,7 +133,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | GHE-03 | Phase 1 | Partial: deny rules; ruleset with GHE-01 |
 | EGR-01 | Phase 1 | Partial: observing; drop after review 2026-10-21 |
 | DET-01 | Phase 1 | Complete |
-| DET-02 | Phase 1 | Partial: project verified; folder path pending |
+| DET-02 | Phase 1 | Partial: project verified; folder changes need an organization-level sink |
 | SEC-01 | Phase 1 | Pending (owner) |
 | SEC-02 | Phase 1 | Complete |
 | DOC-01 | Phase 1 | Complete |

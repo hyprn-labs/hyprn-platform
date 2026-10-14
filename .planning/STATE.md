@@ -23,7 +23,7 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 Phase: 1 of 7 (Security baseline, M1) — delivered; closing items listed under Pending Todos
 Plan: 1a (#16–#18) and 1b (#19, #20) merged and applied
 Status: Phase 2 next (engineering workflow)
-Last activity: 2026-10-14 - Phase 1 delivered: Claude policy live, ruleset defined, misuse alerts emailing, egress observed through the proxy, 52 host checks and 17 owner checks pass
+Last activity: 2026-10-14 - Phase 1 closed: Claude policy live, ruleset defined, misuse alerts emailing for secrets and project IAM, egress observed through the proxy, 59 host checks and 17 owner checks pass; open items under Pending Todos
 
 Progress: [█░░░░░░░░░] 14%
 
@@ -101,7 +101,7 @@ Gotchas met while building the fleet; read before operating it.
 - Phases 2–7: unreviewed reference material is on branch `agent/codd/phase-1-discuss` (closed pull request 15); bring pieces over per phase, each reviewed, applied with a way back, and checked. Never apply its host files or paste its policy directly.
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
-- Phase 1 remaining: break-glass administrator (SEC-01, owner); folder IAM alert test after the sink fix (DET-02); egress review on 2026-10-21, then drop direct connections (EGR-01); live Slack relay and refusal tests when convenient (ACC-01..03, POL-04). Deferred: ruleset (GHE-01) with the Team plan.
+- Phase 1 remaining: break-glass administrator (SEC-01, owner); folder IAM changes reach no alert: they are logged under the organization, not the folder, so the fix is an organization-level sink, which needs organization-level logging roles for `gcp-admins` (owner decision, DET-02); egress review on 2026-10-21, then drop direct connections (EGR-01); live Slack relay and refusal tests when convenient (ACC-01..03, POL-04). Deferred: ruleset (GHE-01) with the Team plan.
 - Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 
 ### Blockers/Concerns
