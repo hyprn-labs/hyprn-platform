@@ -43,6 +43,13 @@ contract with empty arrays and an empty `patch`, plus a Slack note
 stating the page was skipped as malformed. A malformed page NEVER
 produces a Notion write proposal.
 
+## Extraction multiplicity (Phase 5 clarification)
+
+One meeting line may carry several markers. Each marker yields its own
+quoted item sharing that line as its `source`; repeated markers on one
+line yield one item per marker. A marker-free line stating an open
+question yields one `open_questions` item quoting that line.
+
 ## Approval boundary
 
 Extraction PROPOSES only. Notion writes happen solely through the

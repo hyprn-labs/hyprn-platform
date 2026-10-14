@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Learning-loop checks (Phase 5, LRN-01/LRN-02 + OPS-03 static).
+# Learning-loop checks (Phase 5, LRN-01/LRN-02/LRN-03/LRN-04 + OPS-03 static).
 # Static content assertions plus fake-backed probes run anywhere: no
 # network, no tokens, no host-only state. Exits non-zero on any failure.
 set -uo pipefail
@@ -9,11 +9,25 @@ SCHEMA="$REPO_ROOT/controller/schema.sql"
 DISPATCHER="$REPO_ROOT/controller/dispatcher.py"
 EVAL_JSONL="$REPO_ROOT/agents/loops/meeting-eval.jsonl"
 RUNNER="$REPO_ROOT/agents/eval/run.py"
+PROMOTION="$REPO_ROOT/agents/eval/promotion.py"
 FIXTURES="$REPO_ROOT/agents/loops/testdata/eval-fixtures"
 LOOP_YAML="$REPO_ROOT/agents/loops/meeting.yaml"
+PROMPTS="$REPO_ROOT/agents/loops/meeting/prompts.md"
+LEARNING_MD="$REPO_ROOT/runbooks/agents/learning.md"
+GITHUB_MD="$REPO_ROOT/runbooks/agents/github.md"
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
 skip() { echo "SKIP $1 ($2)"; }
+
+# Improvement gate (LRN-03): a PASS verdict plus a prompts/skills-only
+# diff queues the draft for owner review; anything else stays in draft.
+# The owner merge step lives outside this gate by design.
+improvement_gate() { # $1 verdict file, $2 diffstat file
+  grep -q '^overall: PASS' "$1" || return 1
+  ! grep -q 'agents/loops/meeting\.yaml' "$2" || return 1
+  ! grep -qE '^\+.*(autonomy|promotion_rule)' "$2" || return 1
+  return 0
+}
 
 check "schema carries the feedback table" "grep -q 'CREATE TABLE IF NOT EXISTS feedback' '$SCHEMA'"
 check "dispatcher carries the feedback writer" "grep -q 'def record_feedback' '$DISPATCHER'"
@@ -64,6 +78,25 @@ check "runner takes secrets only from the reviewed loop file" "grep -q 'eclared 
 check "runner declares its live and post flags" "python3 '$RUNNER' --help | grep -q -- '--run' && python3 '$RUNNER' --help | grep -q -- '--post'"
 check "runner post mode emits the seed-labeled body section" "python3 '$RUNNER' --fixture '$FIXTURES' --eval '$EVAL_JSONL' --post | grep -q '^## Eval result' && python3 '$RUNNER' --fixture '$FIXTURES' --eval '$EVAL_JSONL' --post | grep -q '^seed: '"
 
+check "fixture improvement carries the rubric-clarity wording" "grep -q 'Extraction multiplicity' '$PROMPTS'"
+check "passing fixture improvement queues for owner review" "VGATE=\"\$(mktemp)\"; DGATE=\"\$(mktemp)\"; python3 '$RUNNER' --fixture '$FIXTURES' --eval '$EVAL_JSONL' >\"\$VGATE\" 2>/dev/null; printf 'branch=agent/boole/seed-wording-clarity\nauthor=boole-agent-hyprn[bot]\n## What changed\n## How verified\n## Eval result\n' >>\"\$VGATE\"; printf 'agents/loops/meeting/prompts.md | 4 +++-\n' >\"\$DGATE\"; grep -q '^## Eval result' \"\$VGATE\" && grep -q 'agent/boole/' \"\$VGATE\" && grep -q 'boole-agent-hyprn\[bot\]' \"\$VGATE\" && grep -q '## What changed' \"\$VGATE\" && grep -q '## How verified' \"\$VGATE\" && improvement_gate \"\$VGATE\" \"\$DGATE\"; rc=\$?; rm -f \"\$VGATE\" \"\$DGATE\"; [ \$rc -eq 0 ]"
+check "failing fixture improvement stays in draft" "BADDIR=\"\$(mktemp -d)\"; VGATE=\"\$(mktemp)\"; DGATE=\"\$(mktemp)\"; cp '$FIXTURES'/seed-001.json \"\$BADDIR/seed-001.json\"; printf '{\"decisions\":[],\"actions\":[],\"open_questions\":[],\"patch\":{}}' > \"\$BADDIR/seed-001.json\"; python3 '$RUNNER' --fixture \"\$BADDIR\" --eval '$EVAL_JSONL' >\"\$VGATE\" 2>/dev/null || true; printf 'agents/loops/meeting/prompts.md | 4 +++-\n' >\"\$DGATE\"; ! improvement_gate \"\$VGATE\" \"\$DGATE\"; rc=\$?; rm -rf \"\$BADDIR\" \"\$VGATE\" \"\$DGATE\"; [ \$rc -eq 0 ]"
+check "autonomy-touching diffs rejected by the gate" "VGATE=\"\$(mktemp)\"; DGATE=\"\$(mktemp)\"; python3 '$RUNNER' --fixture '$FIXTURES' --eval '$EVAL_JSONL' >\"\$VGATE\" 2>/dev/null; printf 'agents/loops/meeting.yaml | 2 +-\n+  notion-write: A2\n' >\"\$DGATE\"; ! improvement_gate \"\$VGATE\" \"\$DGATE\"; rc=\$?; rm -f \"\$VGATE\" \"\$DGATE\"; [ \$rc -eq 0 ]"
+
+check "promotion reads thresholds from the registry file" "grep -q 'promotion_rule' '$PROMOTION' && ! grep -q 'yaml.dump\|safe_dump' '$PROMOTION'"
+check "promotion exits non-zero on seeds-only state" "! python3 '$PROMOTION' '$LOOP_YAML' --eval '$EVAL_JSONL' >/dev/null 2>&1"
+check "promotion reports insufficient data on seeds-only state" "POUT=\"\$(python3 '$PROMOTION' '$LOOP_YAML' --eval '$EVAL_JSONL' 2>&1 || true)\"; echo \"\$POUT\" | grep -q 'INSUFFICIENT DATA (seeds excluded)' && echo \"\$POUT\" | grep -q '^real: 0 runs'"
+check "promotion threshold source is the registry, never hard-coded" "TDIR=\"\$(mktemp -d)\"; TEVAL=\"\$TDIR/eval.jsonl\"; TLOOP=\"\$TDIR/loop.yaml\"; python3 -c \"import json; rows=[json.loads(l) for l in open('$EVAL_JSONL') if l.strip()]; rows[6]['origin']='real'; rows[12]['origin']='real'; open('\$TEVAL','w').write('\n'.join(json.dumps(r) for r in rows)+'\n')\"; sed 's/last_runs: 10/last_runs: 2/' '$LOOP_YAML' >\"\$TLOOP\"; python3 '$PROMOTION' \"\$TLOOP\" --eval \"\$TEVAL\" | grep -q 'TEMPLATE PASS'; rc=\$?; POUT2=\"\$(python3 '$PROMOTION' '$LOOP_YAML' --eval \"\$TEVAL\" 2>&1 || true)\"; echo \"\$POUT2\" | grep -q 'INSUFFICIENT DATA'; rc2=\$?; rm -rf \"\$TDIR\"; [ \$rc -eq 0 ] && [ \$rc2 -eq 0 ]"
+check "promotion changes no autonomy level" "grep -q 'notion-write: A1' '$LOOP_YAML'"
+
+check "Boole App declared with platform-only scope" "grep -q 'boole-agent-hyprn' '$LEARNING_MD' && grep -qi 'hyprn-platform.*only' '$LEARNING_MD'"
+check "Boole declaration names contents plus PR write with metadata read" "grep -q 'Contents' '$LEARNING_MD' && grep -q 'Pull requests' '$LEARNING_MD' && grep -qi 'metadata read' '$LEARNING_MD'"
+check "webhook stays inactive in the declaration" "grep -qi 'webhook.*inactive' '$LEARNING_MD'"
+check "Boole declaration carries the broker token path" "grep -q 'boole-agent-github-app-key' '$LEARNING_MD' && grep -q 'one-hour' '$LEARNING_MD'"
+check "Boole declaration records the owner checklist" "grep -q 'owner checklist' '$LEARNING_MD' && grep -q 'gcloud secrets versions add boole-agent-github-app-key' '$LEARNING_MD'"
+check "Boole declaration creates nothing and embeds no key material" "! grep -q 'BEGIN PRIVATE KEY' '$LEARNING_MD' && grep -q 'no App creation' '$LEARNING_MD'"
+check "GitHub runbook records the Boole declaration row" "grep -q 'Boole App declared' '$GITHUB_MD' && grep -q 'boole-agent-hyprn' '$GITHUB_MD'"
+
 if [ -n "${BOOLE_HOST:-}" ] && command -v docker >/dev/null 2>&1; then
   check "live: runner gateway path grades the seed set" "python3 '$RUNNER' --run live-probe --eval '$EVAL_JSONL'"
   check "live: runner posts the report on the probe PR" "python3 '$RUNNER' --post-pr '${EVAL_POST_PR:-0}' --fixture '$FIXTURES' --eval '$EVAL_JSONL'"
@@ -73,7 +106,7 @@ else
 fi
 skip "live: feedback capture from the channel server" "live wiring waits for the Boole bot (owner vendor step)"
 
-check "no secret values in learning declarations" "! grep -rE 'xox[baprs]-|ntn_[A-Za-z0-9]|secret_[A-Za-z0-9_-]{6,}|sk-[A-Za-z0-9]{8,}' '$EVAL_JSONL' '$RUNNER' '$SCHEMA' '$DISPATCHER' '$FIXTURES' '$LOOP_YAML'"
+check "no secret values in learning declarations" "! grep -rE 'xox[baprs]-|ntn_[A-Za-z0-9]|secret_[A-Za-z0-9_-]{6,}|sk-[A-Za-z0-9]{8,}' '$EVAL_JSONL' '$RUNNER' '$PROMOTION' '$SCHEMA' '$DISPATCHER' '$FIXTURES' '$LOOP_YAML' '$PROMPTS' '$LEARNING_MD' '$GITHUB_MD'"
 
 check "no secret values in runner output" "! python3 '$RUNNER' --fixture '' --eval '$EVAL_JSONL' 2>/dev/null | grep -E 'xox[baprs]-|ntn_[A-Za-z0-9]|sk-[A-Za-z0-9]{8,}'"
 check "learning.sh is executable for run.sh auto-discovery" "[ -x '$HERE/learning.sh' ]"
