@@ -58,6 +58,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - The GitHub Team plan ruleset is in Phase 1 (GHE-01, GHE-03); deny rules (POL-04) stay as a second layer.
 - Boole's run containers are egress-restricted from their first run (EGR-03, Phase 3).
 - GitHub Team plan purchase deferred (owner, 2026-10-14): Phase 1 ships the reviewed ruleset; deny rules remain the control on `main` until it is bought. The ruleset requires a code-owner approval (team `owners`) and lets organization admins merge their own pull requests.
+- Misuse alerts cover the `hyprn-agents` project only (owner, 2026-10-14): secret access and project IAM changes. Folder and organization access changes are the admin layer's concern; if monitored later, it is with an organization sink into `hyprn-bootstrap` (Phase 7 or the staging and prod build-out).
 - Egress observe-first (2026-10-14): Phase 1b logs and never refuses; agents move onto the proxy with `hyprn-egress-proxy on` and back with `off`; dropping direct connections comes after a week of observation.
 - Codd stays on `hyprn-platform` only (owner, 2026-10-14); `hyprn-mvp` is removed from its App installation.
 - Pull request 15 (Codd's Phases 1–7 build) is not merged: its Phase 1 work is reviewed and brought over in 1a and 1b, later phases piece by piece. On 2026-10-14 its unmerged host changes and console policy were applied and broke the agents' network and policy; the host was restored from `main` (runbooks `claude.md`, `host.md`).
@@ -101,7 +102,7 @@ Gotchas met while building the fleet; read before operating it.
 - Phases 2–7: unreviewed reference material is on branch `agent/codd/phase-1-discuss` (closed pull request 15); bring pieces over per phase, each reviewed, applied with a way back, and checked. Never apply its host files or paste its policy directly.
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
-- Phase 1 remaining: break-glass administrator (SEC-01, owner); folder IAM changes reach no alert: they are logged under the organization, not the folder, so the fix is an organization-level sink, which needs organization-level logging roles for `gcp-admins` (owner decision, DET-02); egress review on 2026-10-21, then drop direct connections (EGR-01); live Slack relay and refusal tests when convenient (ACC-01..03, POL-04). Deferred: ruleset (GHE-01) with the Team plan.
+- Phase 1 remaining: break-glass administrator (SEC-01, owner); egress review on 2026-10-21, then drop direct connections (EGR-01); live Slack relay and refusal tests when convenient (ACC-01..03, POL-04). Deferred: ruleset (GHE-01) with the Team plan.
 - Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 
 ### Blockers/Concerns

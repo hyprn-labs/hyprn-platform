@@ -66,19 +66,6 @@ resource "google_project_iam_member" "agents_admins_owner" {
   member  = "group:${var.admins_group}"
 }
 
-# The admins group manages the agents folder's log sinks (infra/agents/detect.tf)
-# and reads its logs.
-resource "google_folder_iam_member" "agents_admins_logging" {
-  for_each = toset(["roles/logging.configWriter", "roles/logging.viewer"])
-  folder   = google_folder.agents.name
-  role     = each.key
-  member   = "group:${var.admins_group}"
-}
-
-moved {
-  from = google_folder_iam_member.agents_admins_logging
-  to   = google_folder_iam_member.agents_admins_logging["roles/logging.configWriter"]
-}
 
 # State for infra/agents/, kept inside the agents project.
 resource "google_storage_bucket" "agents_tfstate" {
