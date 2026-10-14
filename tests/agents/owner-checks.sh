@@ -33,6 +33,14 @@ policies() {
 for policy in "hyprn agents: unexpected secret access" "hyprn agents: IAM policy change"; do
   check "alert enabled with the admins channel: $policy" "policies | jq -e --arg n \"$policy\" '.alertPolicies[]? | select(.displayName == \$n and .enabled == true and (.notificationChannels | length) > 0)'"
 done
+WAKE="serviceAccount:hyprn-agents-wake@$PROJECT.iam.gserviceaccount.com"
+check "wake identity: only log and metric writing at project level" "[ \"\$(gcloud projects get-iam-policy $PROJECT --format=json | jq -r --arg m $WAKE '[.bindings[] | select(.members | index(\$m)) | .role] | sort | join(\",\")')\" = 'roles/logging.logWriter,roles/monitoring.metricWriter' ]"
+check "wake identity: only get, start and stop, on the host only" "[ \"\$(gcloud iam roles describe agentHostPower --project=$PROJECT --format=json | jq -r '.includedPermissions | sort | join(\",\")')\" = 'compute.instances.get,compute.instances.start,compute.instances.stop' ] && gcloud compute instances get-iam-policy hyprn-agents-host-01 --zone=europe-west1-b --project=$PROJECT --format=json | jq -e --arg m $WAKE '.bindings == [{\"role\":\"projects/$PROJECT/roles/agentHostPower\",\"members\":[\$m]}]'"
+if [ "$(gcloud compute instances describe hyprn-agents-host-01 --zone=europe-west1-b --project=$PROJECT --format='value(status)')" = RUNNING ]; then
+  check "wake service holds no Slack connection while the host runs" "gcloud compute ssh hyprn-agents-wake-01 --zone=europe-west1-b --project=$PROJECT --tunnel-through-iap --quiet --command 'sudo journalctl -u hyprn-agents-wake --no-pager | grep -E \"(connected|disconnected)\" | tail -1' 2>/dev/null | grep -q 'disconnected; host is running'"
+else
+  skip "wake service holds no Slack connection while the host runs" "host stopped"
+fi
 check "agents folder IAM changes routed to the project" "gcloud logging sinks describe agents-folder-iam-to-project --folder=$FOLDER --format=json | jq -e '.destination | endswith(\"projects/$PROJECT\")'"
 
 echo "== GitHub"

@@ -113,7 +113,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 
 | Phase | Milestone | Status |
 |-------|-----------|--------|
-| 1. Security baseline | M1 | Not started |
+| 1. Security baseline | M1 | Delivered 2026-10-14; closing: SEC-01, folder alert test, egress drop after 2026-10-21; deferred: GHE-01, ACC-01..03 live |
 | 2. Engineering workflow | M1 | Not started |
 | 3. Control plane core | M2 | Not started |
 | 4. Boole and the meeting loop | M2 | Not started |

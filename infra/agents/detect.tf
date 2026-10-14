@@ -68,7 +68,6 @@ resource "google_monitoring_alert_policy" "agents_iam_change" {
     condition_matched_log {
       filter = <<-EOT
         protoPayload.methodName="SetIamPolicy"
-        (resource.type="project" OR resource.type="folder")
         protoPayload.serviceName!="secretmanager.googleapis.com"
       EOT
     }
@@ -89,7 +88,7 @@ resource "google_logging_folder_sink" "agents_folder_iam" {
   name        = "agents-folder-iam-to-project"
   folder      = var.agents_folder_id
   destination = "logging.googleapis.com/projects/${var.project_id}"
-  filter      = "protoPayload.methodName=\"SetIamPolicy\" AND resource.type=\"folder\""
+  filter      = "protoPayload.methodName=\"SetIamPolicy\""
 }
 
 # The sink's writer identity may write log entries into this project.

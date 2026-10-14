@@ -114,7 +114,7 @@ Decisions below are locked unless marked proposed. Do not plan work that reverse
 | Deny rules on merge and push to `main` until the ruleset | Free plan cannot protect private repositories | Phase 1, with the ruleset |
 | Second agent on API keys and open models (Boole) | Tests the whole loop stack without a second seat | M2 (ADR-0006, proposed) |
 | Telemetry and gateway cost instead of a measured week | Continuous data, reviewed monthly | Phases 2–3 |
-| Codd on OpenCode with a free Muse Spark model, `hyprn-platform` and `hyprn-mvp` | Faster platform and product build at no cost; own identity so its work is visible and its reach enforced by GitHub and Linux; Meta may train on the prompts | Kept; model moves to protective terms on the company move, by configuration |
+| Codd on OpenCode with a free Muse Spark model, `hyprn-platform` only (owner, 2026-10-14) | Faster platform build at no cost; product code stays off a model that trains on prompts; own identity so its work is visible and its reach enforced by GitHub and Linux; Meta may train on the prompts | Kept; model moves to protective terms on the company move, by configuration |
 
 ---
 *Last updated: 2026-10-13 after the document review*
