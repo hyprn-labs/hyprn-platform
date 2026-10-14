@@ -10,7 +10,10 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 RULESET="$REPO_ROOT/agents/github/main-ruleset.json"
 CODEOWNERS="$REPO_ROOT/CODEOWNERS"
-AGENTS="$REPO_ROOT/agents/host/agents.txt"
+AGENTS="$(mktemp)"
+# Fleet registry (FLT-01) is the only declaration: render agents.txt to an
+# ephemeral file; every parse loop below is untouched.
+python3 "$REPO_ROOT/agents/fleet-render" --agents-out "$AGENTS" || exit 1
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
 skip() { echo "SKIP $1 ($2)"; }
@@ -81,4 +84,5 @@ while read -r name uid harness _; do
   check "$name: App installation total count is 2" "[ \"\$(run 'gh api installation/repositories --jq .total_count')\" = 2 ]"
 done < <(grep -vE '^\s*(#|$)' "$AGENTS")
 
+rm -f "$AGENTS"
 exit $fail

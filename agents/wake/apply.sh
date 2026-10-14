@@ -4,6 +4,6 @@
 set -euo pipefail
 : "${CLOUDSDK_CONFIG:?set CLOUDSDK_CONFIG to the gcloud configuration dedicated to hyprn.ai}"
 cd "$(git rev-parse --show-toplevel)"
-tar -czf - agents/wake |
+tar -czf - agents/wake agents/fleet.yaml agents/fleet-render agents/fleet-validate |
   gcloud compute ssh hyprn-agents-wake-01 --zone=europe-west1-b --project=hyprn-agents --tunnel-through-iap --quiet --command \
     'set -e; rm -rf ~/hyprn-wake; mkdir ~/hyprn-wake; tar -C ~/hyprn-wake -xzf -; sudo bash ~/hyprn-wake/agents/wake/provision.sh'

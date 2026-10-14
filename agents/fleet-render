@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """Fleet registry renderer (Phase 6, FLT-01).
 
-Renders agents/fleet.yaml into agents/host/agents.txt, agents/wake/wake.json
-and infra/agents/fleet.auto.tfvars.json. Deterministic stdlib-only output
-(json with indent=2, fixed-width agents.txt rows); consumers keep reading the
-generated files until migrated one at a time.
+Renders agents/fleet.yaml into the agents.txt row shape, the wake.json
+shape, and infra/agents/fleet.auto.tfvars.json. Only the tfvars JSON is a
+committed file: the default write path emits just it, while --agents-out /
+--wake-out / --tfvars-out write byte-identical agents.txt / wake.json /
+tfvars content to explicit paths (provision-time ephemeral files consumed
+by provision.sh, wake provision.sh, checks, and fleet dry-runs). --check
+asserts the committed tfvars.json is regen-clean (the gate used by
+checks/fleet.sh); row/JSON parity for the ephemeral shapes is asserted
+over explicit renders in checks/fleet.sh.
 
 Usage: fleet-render [--fleet FILE] [--check]
-  default mode writes the three generated files; --check exits 1 when a
-  re-render would differ (the regen-clean gate used by checks/fleet.sh).
+  default mode writes the committed tfvars.json; --check exits 1 when a
+  re-render would differ. Passing any --*-out flag switches to explicit
+  mode, where only the requested outputs are written.
 
 Dependencies: Python 3 standard library and PyYAML (Debian python3-yaml).
 """
 import json
+import os
 import subprocess
 import sys
 
@@ -124,7 +131,16 @@ def main(argv):
             log("usage: fleet-render [--fleet FILE] [--check]")
             log("       [--agents-out F --wake-out F --tfvars-out F]")
             return 2
-    root = repo_root()
+    explicit_fleet = fleet_path is not None
+    try:
+        root = repo_root()
+    except subprocess.CalledProcessError:
+        if not explicit_fleet:
+            log("not in a git repository and no --fleet given")
+            return 1
+        # Provision-time tarball on a host: no git checkout, so anchor
+        # defaults at the shipped tree holding agents/fleet.yaml.
+        root = os.path.dirname(os.path.dirname(os.path.abspath(fleet_path)))
     if fleet_path is None:
         fleet_path = root + "/agents/fleet.yaml"
     try:
@@ -138,6 +154,14 @@ def main(argv):
         root + "/agents/wake/wake.json": wake_out,
         root + "/infra/agents/fleet.auto.tfvars.json": tfvars_out,
     }
+    # The agents.txt/wake.json shapes are provision-time ephemeral, never
+    # committed; only the tfvars JSON keeps a committed default path.
+    legacy = {
+        root + "/agents/host/agents.txt",
+        root + "/agents/wake/wake.json",
+    }
+    explicit = (agents_out is not None or wake_out is not None
+                or tfvars_out is not None)
     for path, render in targets(root):
         override = outputs[path]
         try:
@@ -149,6 +173,8 @@ def main(argv):
             if override is not None:
                 log("--check cannot be combined with --*-out overrides")
                 return 2
+            if path in legacy:
+                continue
             try:
                 with open(path, encoding="utf-8") as handle:
                     current = handle.read()
@@ -160,7 +186,14 @@ def main(argv):
                 log(path, "regen diff: re-render differs; run agents/fleet-render")
                 failed += 1
         else:
-            dest = override if override is not None else path
+            if override is not None:
+                dest = override
+            elif explicit or path in legacy:
+                # Explicit mode writes only requested outputs; the default
+                # path emits the committed tfvars.json only.
+                continue
+            else:
+                dest = path
             with open(dest, "w", encoding="utf-8") as handle:
                 handle.write(wanted)
     return 1 if failed else 0

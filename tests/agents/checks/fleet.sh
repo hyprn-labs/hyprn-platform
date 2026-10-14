@@ -8,31 +8,50 @@ REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 VALIDATOR="$REPO_ROOT/agents/fleet-validate"
 RENDERER="$REPO_ROOT/agents/fleet-render"
 REGISTRY="$REPO_ROOT/agents/fleet.yaml"
-AGENTS_TXT="$REPO_ROOT/agents/host/agents.txt"
-WAKE_JSON="$REPO_ROOT/agents/wake/wake.json"
 TFVARS_JSON="$REPO_ROOT/infra/agents/fleet.auto.tfvars.json"
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
 skip() { echo "SKIP $1 ($2)"; }
 
+# SC1 post-deletion world: agents.txt/wake.json are provision-time ephemeral,
+# never committed — render them to temp files once and prove everything over
+# the renders.
+AGENTS_RENDERED="$(mktemp)"
+WAKE_RENDERED="$(mktemp)"
+python3 "$RENDERER" --agents-out "$AGENTS_RENDERED" --wake-out "$WAKE_RENDERED" || { echo "FAIL renderer explicit outputs"; exit 1; }
+
 check "validator exits 0 on the fleet registry" "python3 '$VALIDATOR' '$REGISTRY'"
-check "validator accepts the committed wake list" "python3 '$VALIDATOR' '$REGISTRY' --wake '$WAKE_JSON'"
-check "renderer regen is clean on all three generated files" "python3 '$RENDERER' --check"
+check "validator accepts the rendered wake list" "python3 '$VALIDATOR' '$REGISTRY' --wake '$WAKE_RENDERED'"
+check "renderer regen is clean on the committed tfvars.json" "python3 '$RENDERER' --check"
+
+# SC1 letter: both legacy files are gone from git.
+check "agents.txt is gone from git" "[ -z \"\$(git -C '$REPO_ROOT' ls-files agents/host/agents.txt)\" ]"
+check "wake.json is gone from git" "[ -z \"\$(git -C '$REPO_ROOT' ls-files agents/wake/wake.json)\" ]"
+
+# SC1 letter: no live readers of the deleted committed paths remain under
+# agents/ or tests/agents/checks. Comment mentions are allowed (historical
+# notes); this file proves deletion and the renderer defines the shapes, so
+# both are excluded from the scan.
+READERS="$(mktemp)"
+grep -rnE 'agents/host/agents\.txt|agents/wake/wake\.json' "$REPO_ROOT/agents" "$REPO_ROOT/tests/agents/checks" 2>/dev/null | grep -vE ':[[:space:]]*#' | grep -v 'agents/fleet-render' | grep -v 'checks/fleet\.sh' >"$READERS" || true
+check "no live readers of the deleted committed paths" "[ ! -s '$READERS' ]"
 
 if python3 -c "import yaml" >/dev/null 2>&1; then
   check "registry declares ada and codd" "python3 -c \"import yaml; assert {a['name'] for a in yaml.safe_load(open('$REGISTRY'))['agents']} >= {'ada','codd'}\""
   check "codd row carries the Codd pattern (opencode, no slack, no workspace)" "python3 -c \"import yaml; c=[a for a in yaml.safe_load(open('$REGISTRY'))['agents'] if a['name']=='codd'][0]; assert (c['kind'],c['harness'],c['slack'],c['workspace'])==('engineering','opencode',False,'none')\""
   check "tfvars renders agents [ada codd] sorted" "python3 -c \"import json; assert json.load(open('$TFVARS_JSON'))['agents']==['ada','codd']\""
   check "tfvars renders slack_agents [ada]" "python3 -c \"import json; assert json.load(open('$TFVARS_JSON'))['slack_agents']==['ada']\""
-  check "ada present in wake.json agents" "python3 -c \"import json; assert 'ada' in json.load(open('$WAKE_JSON'))['agents']\""
-  check "codd absent from wake.json agents" "python3 -c \"import json; assert 'codd' not in json.load(open('$WAKE_JSON'))['agents']\""
+  check "ada present in wake.json agents" "python3 -c \"import json; assert 'ada' in json.load(open('$WAKE_RENDERED'))['agents']\""
+  check "codd absent from wake.json agents" "python3 -c \"import json; assert 'codd' not in json.load(open('$WAKE_RENDERED'))['agents']\""
+  check "rendered wake agents are exactly [ada]" "python3 -c \"import json; assert json.load(open('$WAKE_RENDERED'))['agents']==['ada']\""
 else
   skip "registry content probes" "no yaml parser on PATH"
 fi
 
 # The provision.sh reader skips comments/blanks and reads eight columns with
 # display taking the rest of the line; rendered rows must keep that shape.
-check "agents.txt rows keep the load-bearing eight-column shape" "grep -vE '^\\s*(#|\$)' '$AGENTS_TXT' | awk 'NF>=8' | grep -q ada"
+check "agents.txt rows keep the load-bearing eight-column shape" "grep -vE '^\\s*(#|\$)' '$AGENTS_RENDERED' | awk 'NF>=8' | grep -q ada"
+check "rendered agents rows carry ada 20001 and codd 20002" "grep -qE '^ada +20001 ' '$AGENTS_RENDERED' && grep -qE '^codd +20002 ' '$AGENTS_RENDERED'"
 
 # Scripts take secret paths/handles only, never values: no value-taking token
 # flags, no set -x near handles. agents/fleet joins this list in 06-02.
@@ -62,7 +81,7 @@ check "negative probe: agent-<name> legacy name is rejected" "! python3 '$VALIDA
 rm -f "$LEGACY"
 
 WAKEBAD="$(mktemp)"
-python3 -c "import json; d=json.load(open('$WAKE_JSON')); d['agents']=sorted(d['agents']+['codd']); json.dump(d,open('$WAKEBAD','w'),indent=2)"
+python3 -c "import json; d=json.load(open('$WAKE_RENDERED')); d['agents']=sorted(d['agents']+['codd']); json.dump(d,open('$WAKEBAD','w'),indent=2)"
 check "negative probe: Slack-less agent in wake list is rejected" "! python3 '$VALIDATOR' '$REGISTRY' --wake '$WAKEBAD'"
 rm -f "$WAKEBAD"
 
@@ -106,6 +125,6 @@ echo "EVIDENCE add --kind engineering --harness opencode --dry-run: $((ENG_END-E
 echo "EVIDENCE add --kind operations --dry-run: $((OPS_END-OPS_START))s, $OPS_ACTIONS owner actions (budget 15 min / ~8 actions)"
 check "engineering dry-run evidence carries action count" "grep -q 'Total owner actions' '$ENG_OUT'"
 check "operations dry-run evidence carries action count" "grep -q 'Total owner actions' '$OPS_OUT'"
-rm -f "$ENG_OUT" "$OPS_OUT" "$RM_OUT" "$TREE_BEFORE" "$TREE_AFTER"
+rm -f "$ENG_OUT" "$OPS_OUT" "$RM_OUT" "$TREE_BEFORE" "$TREE_AFTER" "$AGENTS_RENDERED" "$WAKE_RENDERED" "$READERS"
 
 exit $fail

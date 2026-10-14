@@ -10,7 +10,10 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 NFT="$REPO_ROOT/agents/host/files/egress.nft"
 SQUID="$REPO_ROOT/agents/host/files/squid-hyprn.conf"
-AGENTS="$REPO_ROOT/agents/host/agents.txt"
+AGENTS="$(mktemp)"
+# Fleet registry (FLT-01) is the only declaration: render agents.txt to an
+# ephemeral file; every parse loop below is untouched.
+python3 "$REPO_ROOT/agents/fleet-render" --agents-out "$AGENTS" || exit 1
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
 
@@ -39,4 +42,5 @@ done < <(grep -vE '^\s*(#|$)' "$AGENTS")
 
 check "recent per-agent destination entries in Cloud Logging" "gcloud logging read 'resource.type=\"gce_instance\" AND jsonPayload.agent_label=~\"ada|codd\"' --freshness=1h --limit=1 --project=hyprn-agents --format='value(timestamp)' | grep -qE '[0-9]{4}-[0-9]{2}-[0-9]{2}'"
 
+rm -f "$AGENTS"
 exit $fail

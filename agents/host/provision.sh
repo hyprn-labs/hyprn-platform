@@ -33,7 +33,7 @@ install_base() {
   apt-get update -q
   apt-get install -y -q ca-certificates curl gnupg git tmux jq cron nftables uidmap \
     dbus-user-session slirp4netns fuse-overlayfs bubblewrap socat build-essential \
-    python3-venv python3-websocket unattended-upgrades
+    python3-venv python3-websocket python3-yaml unattended-upgrades
   # Product toolchains (EFF-01): hyprn-mvp pins were unreadable (no checkout;
   # see runbook gap record), so the host set above stands as the fallback and
   # no versions are guessed. When hyprn-mvp is available, pin its toolchains
@@ -264,7 +264,14 @@ install_host_files
 install_opencode
 install_herdr
 install_telemetry
-grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid harness app_slug app_id installation_id bot_id display; do
+# Fleet registry (FLT-01) is the only agent declaration: validate fail-closed
+# before any user is created, render agents.txt to an ephemeral file, and
+# feed it to the unchanged parse loop (load-bearing column order preserved).
+python3 "$HERE/../fleet-validate" "$HERE/../fleet.yaml" || { echo "fleet registry invalid; aborting provisioning" >&2; exit 1; }
+RENDERED_AGENTS="$(mktemp)"
+python3 "$HERE/../fleet-render" --fleet "$HERE/../fleet.yaml" --agents-out "$RENDERED_AGENTS"
+grep -vE '^\s*(#|$)' "$RENDERED_AGENTS" | while read -r name uid harness app_slug app_id installation_id bot_id display; do
   add_agent "$name" "$uid" "$harness" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
 done
+rm -f "$RENDERED_AGENTS"
 log "done"

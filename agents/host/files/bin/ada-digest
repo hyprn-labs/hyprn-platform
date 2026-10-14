@@ -30,7 +30,10 @@ done
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../../.." && pwd)"
-AGENTS_FILE="$REPO_ROOT/agents/host/agents.txt"
+AGENTS_FILE="$(mktemp)"
+# Fleet registry (FLT-01) is the only declaration: render agents.txt to an
+# ephemeral file; the digest loop below is untouched.
+python3 "$REPO_ROOT/agents/fleet-render" --agents-out "$AGENTS_FILE" || exit 1
 MANAGED_OPENCODE="$REPO_ROOT/agents/host/files/opencode.json"
 TELEMETRY_FILE="/var/lib/hyprn-agents/telemetry/batches.jsonl"
 HOLD_FILE="/run/hyprn-agents/hold"
@@ -72,6 +75,7 @@ build_digest() {
     esac
     printf '• *%s* (%s): %s tokens, %s seat-limit hits, cost: %s\n' "$name" "$harness" "$tokens" "$hits" "$cost"
   done < <(grep -vE '^\s*(#|$)' "$AGENTS_FILE")
+  rm -f "$AGENTS_FILE"
   printf '_%s_\n' "$CAVEAT"
   printf 'Collector endpoint: %s\n' "$ENDPOINT"
 }

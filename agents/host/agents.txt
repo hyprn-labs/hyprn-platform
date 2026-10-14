@@ -1,6 +1,0 @@
-# GENERATED from agents/fleet.yaml — do not edit; re-render with agents/fleet-render.
-# name  uid    harness   github-app        app-id   installation-id  bot-user-id  display name
-# One line per agent; UIDs 20000-20999 are agent users; the GitHub App is per agent (ADR-0005).
-# harness: claude (Claude Code on a Claude seat, Slack channel) or opencode (OpenCode, terminal only).
-ada     20001  claude    ada-agent-hyprn   5299141  170941397        341930344    Ada (AI agent)
-codd    20002  opencode  codd-agent-hyprn  5306008  171119571        342187193    Codd (AI agent)

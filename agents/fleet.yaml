@@ -1,12 +1,12 @@
 # Agents fleet registry — the single declaration of agents (FLT-01).
 #
 # This is the only hand-edited agent declaration. agents/fleet-render emits
-# agents/host/agents.txt, agents/wake/wake.json and
-# infra/agents/fleet.auto.tfvars.json from this file; those outputs are
-# committed and agents/fleet-validate plus tests/agents/checks/fleet.sh fail
-# on any regen diff or schema violation. Consumers (provision.sh, wake
-# provision, Terraform) keep reading the generated files until migrated one
-# at a time.
+# infra/agents/fleet.auto.tfvars.json from this file (committed;
+# agents/fleet-validate plus tests/agents/checks/fleet.sh fail on any regen
+# diff or schema violation) and renders the agents.txt/wake.json shapes to
+# explicit paths for provision-time use (agents/host/provision.sh,
+# agents/wake/provision.sh, checks) — those shapes are ephemeral and never
+# committed. Consumers read the registry or its renders, never legacy files.
 #
 # Ada runs as a Workspace group until the M3 group-to-user move (owner
 # console step); the value `group` is that transient pre-move state.

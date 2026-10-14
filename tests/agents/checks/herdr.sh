@@ -14,7 +14,10 @@ SESSION="$REPO_ROOT/agents/host/files/herdr-session"
 UNIT="$REPO_ROOT/agents/host/files/herdr@.service"
 FALLBACK_UNIT="$REPO_ROOT/agents/host/files/hyprn-agent@.service"
 POLICY="$REPO_ROOT/agents/policy/managed-settings.json"
-AGENTS="$REPO_ROOT/agents/host/agents.txt"
+AGENTS="$(mktemp)"
+# Fleet registry (FLT-01) is the only declaration: render agents.txt to an
+# ephemeral file; every parse loop below is untouched.
+python3 "$REPO_ROOT/agents/fleet-render" --agents-out "$AGENTS" || exit 1
 HERDR_VERSION="$(sed -n 's/^HERDR_VERSION="\(.*\)"/\1/p' "$PROVISION")"
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
@@ -77,4 +80,5 @@ else
   done
 fi
 
+rm -f "$AGENTS"
 exit $fail

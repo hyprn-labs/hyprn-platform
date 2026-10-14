@@ -7,7 +7,7 @@ HOST="${HOST:-hyprn-agents-host-01}"
 ZONE="${ZONE:-europe-west1-b}"
 PROJECT="${PROJECT:-hyprn-agents}"
 cd "$(git rev-parse --show-toplevel)"
-tar -czf - agents/host agents/roles agents/marketplace tests/agents |
+tar -czf - agents/host agents/roles agents/marketplace tests/agents agents/fleet.yaml agents/fleet-render agents/fleet-validate |
   gcloud compute ssh "$HOST" --zone="$ZONE" --project="$PROJECT" --tunnel-through-iap --quiet --command \
     'set -e; rm -rf ~/hyprn-provision; mkdir ~/hyprn-provision; tar -C ~/hyprn-provision -xzf -;
      sudo bash ~/hyprn-provision/agents/host/provision.sh;

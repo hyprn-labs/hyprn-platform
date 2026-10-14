@@ -1,6 +1,0 @@
-{
-  "project": "hyprn-agents",
-  "zone": "europe-west1-b",
-  "host": "hyprn-agents-host-01",
-  "agents": ["ada"]
-}

@@ -149,10 +149,14 @@ cmd_add() {
       --agents-out "$tmpdir/agents.txt" \
       --wake-out "$tmpdir/wake.json" \
       --tfvars-out "$tmpdir/fleet.auto.tfvars.json"
-    echo "Rendered diff against committed files (provisional entry only):"
-    diff -u "$REPO_ROOT/agents/host/agents.txt" "$tmpdir/agents.txt" || true
-    diff -u "$REPO_ROOT/agents/wake/wake.json" "$tmpdir/wake.json" || true
-    diff -u "$REPO_ROOT/infra/agents/fleet.auto.tfvars.json" "$tmpdir/fleet.auto.tfvars.json" || true
+    echo "Rendered diff against current registry (provisional entry only):"
+    python3 "$RENDERER" \
+      --agents-out "$tmpdir/base-agents.txt" \
+      --wake-out "$tmpdir/base-wake.json" \
+      --tfvars-out "$tmpdir/base-fleet.auto.tfvars.json"
+    diff -u "$tmpdir/base-agents.txt" "$tmpdir/agents.txt" || true
+    diff -u "$tmpdir/base-wake.json" "$tmpdir/wake.json" || true
+    diff -u "$tmpdir/base-fleet.auto.tfvars.json" "$tmpdir/fleet.auto.tfvars.json" || true
     rm -rf "$tmpdir"
     print_terraform_intent "$name" "$slack"
     print_add_checklist "$name" "$kind" "$harness"

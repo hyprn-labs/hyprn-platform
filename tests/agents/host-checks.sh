@@ -3,7 +3,11 @@
 # the host; exits non-zero if any check fails.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
-AGENTS="$HERE/../../agents/host/agents.txt"
+AGENTS="$(mktemp)"
+# Fleet registry (FLT-01) is the only declaration: render agents.txt to an
+# ephemeral file (the shipped tarball carries fleet.yaml plus fleet-render);
+# every parse loop below is untouched.
+python3 "$HERE/../../agents/fleet-render" --fleet "$HERE/../../agents/fleet.yaml" --agents-out "$AGENTS" || exit 1
 fail=0
 check() { if eval "$2" >/dev/null 2>&1; then echo "PASS $1"; else echo "FAIL $1"; fail=1; fi; }
 OPENCODE_VERSION="$(sed -n 's/^OPENCODE_VERSION="\(.*\)"/\1/p' "$HERE/../../agents/host/provision.sh")"
@@ -46,4 +50,5 @@ while read -r name uid harness _; do
   done
 done < <(grep -vE '^\s*(#|$)' "$AGENTS")
 
+rm -f "$AGENTS"
 exit $fail
