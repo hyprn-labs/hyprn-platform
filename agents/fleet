@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# Fleet add/remove driver (Phase 6, FLT-04/06/07 + CODD-02): one command
+# onboards and offboards a test agent of each kind over the existing
+# agents/host/apply.sh and provision.sh flows, with dry-run owner checklists.
+# Idempotent; run from the repository root.
+#
+#   agents/fleet add <name> --kind engineering|operations [--harness claude|opencode] [--dry-run] [--owner-go]
+#   agents/fleet remove <name> [--dry-run] [--owner-go]
+#
+# Scripts take secret paths/handles only, never values: no value-taking secret
+# flags, no set -x near handles. Values travel
+# pbpaste | gcloud secrets versions add ... --data-file=- in owner hands, and
+# are verified by shape (xapp-, xoxb-) never by printing.
+#
+# Every non-dry-run cloud or vendor step needs an explicit owner go (AGENTS.md
+# authority rule; removals get their own go): without --dry-run the command
+# refuses unless --owner-go is passed, and vendor approvals stay printed
+# go-checklists even then. Live vendor approvals are owner gates.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$HERE/.." && pwd)"
+REGISTRY="$REPO_ROOT/agents/fleet.yaml"
+RENDERER="$REPO_ROOT/agents/fleet-render"
+VALIDATOR="$REPO_ROOT/agents/fleet-validate"
+
+usage() {
+  echo "usage: fleet add <name> --kind engineering|operations [--harness claude|opencode] [--dry-run] [--owner-go]" >&2
+  echo "       fleet remove <name> [--dry-run] [--owner-go]" >&2
+  exit 2
+}
+
+valid_name() {
+  [[ "$1" =~ ^[a-z0-9][a-z0-9-]{0,40}$ ]] && [[ "$1" != agent-* ]]
+}
+
+registry_has() {
+  python3 -c "import yaml,sys; sys.exit(0 if '$1' in {a['name'] for a in yaml.safe_load(open('$REGISTRY'))['agents']} else 1)"
+}
+
+next_uid() {
+  python3 -c "import yaml; print(max(a['uid'] for a in yaml.safe_load(open('$REGISTRY'))['agents'])+1)"
+}
+
+# Provisional registry entry for a dry-run add: validates and renders exactly
+# like a real add, but lives in a temp file so the tree stays untouched.
+provisional_registry() {
+  local name="$1" uid="$2" kind="$3" harness="$4" out="$5"
+  local slack="false" workspace="none" repos_block=""
+  if [ "$harness" = claude ]; then slack="true"; fi
+  if [ "$kind" = operations ]; then workspace="user"; fi
+  if [ "$kind" = engineering ] && [ "$harness" = claude ]; then workspace="group"; fi
+  if [ "$kind" = operations ]; then
+    repos_block="      repos: [hyprn-platform]"
+  else
+    repos_block="      repos: all"
+  fi
+  {
+    cat "$REGISTRY"
+    # Placeholder IDs (1): a real add discovers app/installation/bot IDs with
+    # gh api per runbooks/agents/github.md before appending the entry.
+    printf '  - name: %s\n    uid: %s\n    kind: %s\n    harness: %s\n    display: "%s (AI agent)"\n    github:\n      app: %s-agent-hyprn\n      app_id: 1\n      installation_id: 1\n      bot_id: 1\n%s\n    slack: %s\n    workspace: %s\n' \
+      "$name" "$uid" "$kind" "$harness" "$(tr '[:lower:]' '[:upper:]' <<< "${name:0:1}")${name:1}" "$name" "$repos_block" "$slack" "$workspace"
+  } > "$out"
+}
+
+print_terraform_intent() {
+  local name="$1" slack="$2"
+  echo "Terraform delta intent (owner reviews the plan, applies exactly the reviewed plan):"
+  echo "- secret container ${name}-agent-github-app-key plus host read grant (mirrors infra/agents/secrets.tf agent blocks)"
+  if [ "$slack" = true ]; then
+    echo "- secret containers ${name}-agent-slack-app-token, ${name}-agent-slack-bot-token plus host and wake read grants"
+  fi
+  echo "- values are never in Terraform: owner loads each value by hand to its Secret Manager path"
+}
+
+print_add_checklist() {
+  local name="$1" kind="$2" harness="$3"
+  echo "Owner checklist: 8 human actions (vendor steps are explicit go items):"
+  echo "1. [go] Confirm the ${name} fleet.yaml entry (UID, App slug, kind ${kind}, harness ${harness})"
+  echo "2. [go] GitHub: confirm App ${name}-agent-hyprn creation plus install via the manifest flow (runbooks/agents/github.md); discover IDs with: GH_CONFIG_DIR=\"\$HOME/.config/gh-hyprn\" gh api orgs/hyprn-labs/installations"
+  echo "3. [go] GitHub: load the App private key straight to Secret Manager path ${name}-agent-github-app-key by owner hands (pbpaste pipe with --data-file=-); then delete the local key copy"
+  if [ "$harness" = claude ]; then
+    echo "4. [go] Slack: paste the reviewed slack-app-manifest.yaml with ${name} names, approve install (runbooks/agents/slack.md)"
+    echo "5. [go] Slack: load the Socket Mode token (shape xapp-) and bot token (shape xoxb-) by owner hands to ${name}-agent-slack-app-token and ${name}-agent-slack-bot-token"
+  else
+    echo "4. [go] Slack: none for the terminal-only path (no Slack app, no tokens)"
+    echo "5. [go] Slack: none for the terminal-only path (wake list unchanged)"
+  fi
+  echo "6. [go] Workspace: owner-console user steps for ${name}@agents.hyprn.ai (operations) or seat scoping (engineering)"
+  echo "7. [go] Terraform: review the plan, apply exactly the reviewed plan (secret containers plus grants)"
+  echo "8. [go] Run agents/host/apply.sh (plus agents/wake/apply.sh for Slack agents), then tests/agents/run.sh"
+  echo "Total owner actions: 8"
+  if [ "$kind" = engineering ]; then
+    echo "STOP: the engineering test stops before the Claude seat invitation (no member API; out of scope)"
+  fi
+  if [ "$harness" = opencode ]; then
+    echo "Codd-pattern path (kind engineering plus harness opencode): GitHub App plus Linux user plus OpenCode plus herdr control"
+    echo "- GitHub App ${name}-agent-hyprn installed on the agent repositories; key straight to the Secret Manager path"
+    echo "- Linux user ${name} provisioned by provision.sh add_agent (UID, private home, subuid range)"
+    echo "- OpenCode role file installed as the agent global rules; terminal-only, signs in nowhere"
+    echo "- herdr control is the session layer (opencode-task launcher)"
+    echo "- The add_agent opencode branch returns before Claude/Slack setup (provision.sh opencode branch)"
+  fi
+  if [ "$kind" = operations ]; then
+    echo "Operations path: Slack app plus gateway virtual key (${name}-agent-gateway-key placeholder per infra/agents/boole.tf)"
+  fi
+}
+
+cmd_add() {
+  local name="${1:?}" ; shift
+  local kind="" harness="" dry_run=0 owner_go=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --kind) kind="${2:?}"; shift 2 ;;
+      --harness) harness="${2:?}"; shift 2 ;;
+      --dry-run) dry_run=1; shift ;;
+      --owner-go) owner_go=1; shift ;;
+      *) usage ;;
+    esac
+  done
+  [ -n "$kind" ] || usage
+  case "$kind" in engineering|operations) ;; *) usage ;; esac
+  if [ -z "$harness" ]; then harness="claude"; fi
+  case "$harness" in claude|opencode) ;; *) usage ;; esac
+  valid_name "$name" || { echo "fleet add: use lowercase letters, digits and dashes (opencode-task rule), never the agent- prefix" >&2; exit 1; }
+  if registry_has "$name"; then echo "fleet add: $name already in $REGISTRY" >&2; exit 1; fi
+  if [ "$dry_run" -eq 0 ] && [ "$owner_go" -eq 0 ]; then
+    echo "fleet add: refusing without --dry-run or an explicit --owner-go (AGENTS.md authority rule)" >&2
+    exit 1
+  fi
+  if [ "$dry_run" -eq 0 ]; then
+    : "${CLOUDSDK_CONFIG:?set CLOUDSDK_CONFIG to the gcloud configuration dedicated to hyprn.ai}"
+  fi
+  local uid
+  uid="$(next_uid)"
+  if [ "$uid" -gt 20999 ]; then echo "fleet add: UID range 20000-20999 exhausted" >&2; exit 1; fi
+  echo "fleet add $name (kind $kind, harness $harness, UID $uid)"
+  local slack="false"
+  if [ "$harness" = claude ]; then slack="true"; fi
+  if [ "$dry_run" -eq 1 ]; then
+    echo "DRY-RUN: cloud and vendor state untouched; every step below is validated, nothing is executed"
+    local tmpdir prov
+    tmpdir="$(mktemp -d)"
+    prov="$tmpdir/fleet.yaml"
+    provisional_registry "$name" "$uid" "$kind" "$harness" "$prov"
+    python3 "$VALIDATOR" "$prov"
+    echo "PASS provisional registry validates"
+    python3 "$RENDERER" --fleet "$prov" \
+      --agents-out "$tmpdir/agents.txt" \
+      --wake-out "$tmpdir/wake.json" \
+      --tfvars-out "$tmpdir/fleet.auto.tfvars.json"
+    echo "Rendered diff against committed files (provisional entry only):"
+    diff -u "$REPO_ROOT/agents/host/agents.txt" "$tmpdir/agents.txt" || true
+    diff -u "$REPO_ROOT/agents/wake/wake.json" "$tmpdir/wake.json" || true
+    diff -u "$REPO_ROOT/infra/agents/fleet.auto.tfvars.json" "$tmpdir/fleet.auto.tfvars.json" || true
+    rm -rf "$tmpdir"
+    print_terraform_intent "$name" "$slack"
+    print_add_checklist "$name" "$kind" "$harness"
+    echo "DRY-RUN complete: no files changed, no cloud or vendor calls made"
+    return 0
+  fi
+  echo "Owner go accepted: provisioning $name (vendor approvals stay printed go-checklists)"
+  print_terraform_intent "$name" "$slack"
+  print_add_checklist "$name" "$kind" "$harness"
+  echo "Next (owner-gated): create the App and load secret values by hand, review and apply the Terraform plan, then run agents/host/apply.sh and tests/agents/run.sh"
+}
+
+print_remove_remainder() {
+  local name="$1"
+  echo "Remaining manual steps (manual-remainder table):"
+  echo "- App deletion confirm: uninstall and delete ${name}-agent-hyprn on its GitHub settings page"
+  echo "- Secret-version cleanup: disable ${name}-agent-* versions after values are confirmed migrated or disabled"
+  echo "- Workspace user delete or suspend: ${name}@agents.hyprn.ai in the owner console"
+  echo "- Group-to-user notes: record any group membership change in the onboarding runbook Record table"
+  echo "- Host: userdel -r ${name}; Terraform: review the destroy scope (secret containers only)"
+}
+
+cmd_remove() {
+  local name="${1:?}" ; shift
+  local dry_run=0 owner_go=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --dry-run) dry_run=1; shift ;;
+      --owner-go) owner_go=1; shift ;;
+      *) usage ;;
+    esac
+  done
+  valid_name "$name" || { echo "fleet remove: bad agent name $name" >&2; exit 1; }
+  if [ "$dry_run" -eq 1 ]; then
+    echo "DRY-RUN: nothing revoked, deleted, or re-rendered; the tree stays untouched"
+    if registry_has "$name"; then
+      echo "$name is in the registry; a real remove would revoke first, then remove the YAML entry"
+    else
+      echo "$name is not in the registry; a real remove would refuse (fixture dry-runs still print the remainder table)"
+    fi
+    print_remove_remainder "$name"
+    echo "DRY-RUN complete: no files changed, no cloud or vendor calls made"
+    return 0
+  fi
+  if [ "$owner_go" -eq 0 ]; then
+    echo "fleet remove: removals get their own go — refusing without --owner-go (AGENTS.md authority rule)" >&2
+    exit 1
+  fi
+  : "${CLOUDSDK_CONFIG:?set CLOUDSDK_CONFIG to the gcloud configuration dedicated to hyprn.ai}"
+  registry_has "$name" || { echo "fleet remove: $name not in $REGISTRY" >&2; exit 1; }
+  echo "Owner go accepted: offboarding $name"
+  echo "Order: revoke cloud identities and grants, then userdel -r plus App uninstall plus secret disable, then YAML removal and re-render"
+  print_remove_remainder "$name"
+  echo "Next (owner-gated): run the revocations above by hand, remove the ${name} entry from $REGISTRY, run agents/fleet-render, then tests/agents/checks/fleet.sh"
+}
+
+main() {
+  local cmd="${1:-}" ; shift || usage
+  case "$cmd" in
+    add) cmd_add "$@" ;;
+    remove) cmd_remove "$@" ;;
+    *) usage ;;
+  esac
+}
+
+main "$@"

@@ -103,6 +103,9 @@ def targets(root):
 
 def main(argv):
     fleet_path = None
+    agents_out = None
+    wake_out = None
+    tfvars_out = None
     check_only = False
     rest = list(argv)
     while rest:
@@ -111,8 +114,15 @@ def main(argv):
             check_only = True
         elif arg == "--fleet" and rest:
             fleet_path = rest.pop(0)
+        elif arg == "--agents-out" and rest:
+            agents_out = rest.pop(0)
+        elif arg == "--wake-out" and rest:
+            wake_out = rest.pop(0)
+        elif arg == "--tfvars-out" and rest:
+            tfvars_out = rest.pop(0)
         else:
             log("usage: fleet-render [--fleet FILE] [--check]")
+            log("       [--agents-out F --wake-out F --tfvars-out F]")
             return 2
     root = repo_root()
     if fleet_path is None:
@@ -123,13 +133,22 @@ def main(argv):
         log(fleet_path, "unparseable:", error)
         return 1
     failed = 0
+    outputs = {
+        root + "/agents/host/agents.txt": agents_out,
+        root + "/agents/wake/wake.json": wake_out,
+        root + "/infra/agents/fleet.auto.tfvars.json": tfvars_out,
+    }
     for path, render in targets(root):
+        override = outputs[path]
         try:
             wanted = render(doc)
         except (KeyError, TypeError, AttributeError) as error:
             log(fleet_path, "cannot render", path + ":", error)
             return 1
         if check_only:
+            if override is not None:
+                log("--check cannot be combined with --*-out overrides")
+                return 2
             try:
                 with open(path, encoding="utf-8") as handle:
                     current = handle.read()
@@ -141,7 +160,8 @@ def main(argv):
                 log(path, "regen diff: re-render differs; run agents/fleet-render")
                 failed += 1
         else:
-            with open(path, "w", encoding="utf-8") as handle:
+            dest = override if override is not None else path
+            with open(dest, "w", encoding="utf-8") as handle:
                 handle.write(wanted)
     return 1 if failed else 0
 
