@@ -26,6 +26,7 @@ check "proxy ports accepted for agent UIDs" "nft list table inet hyprn_agents | 
 check "proxy config declares one listen port per agent" "[ \"\$(grep -cE '^http_port' '$SQUID')\" -eq 2 ]"
 check "proxy config declares an access log with agent identifier" "grep -v '^#' '$SQUID' | grep -qE '^access_log' && grep -v '^#' '$SQUID' | grep -q 'logformat.*%lp'"
 check "proxy config carries no blocking rules (observe mode)" "! grep -v '^#' '$SQUID' | grep -qE '^http_access deny (ada_port|codd_port)'"
+check "proxy enforce shape: generated ACL plus per-port allow and deny (EGR-02 static slice)" "grep -v '^#' '$SQUID' | grep -q 'dstdomain' && grep -v '^#' '$SQUID' | grep -qE '^http_access allow (ada_port|codd_port) allowlist' && grep -v '^#' '$SQUID' | grep -qE '^http_access deny (ada_port|codd_port)'"
 check "proxy listens on each per-agent port" "(ss -ltn | grep -q ':3128 ') && (ss -ltn | grep -q ':3129 ')"
 
 while read -r name uid harness _; do

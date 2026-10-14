@@ -1,11 +1,40 @@
-# Egress allowlist placeholder (D-02, EGR-01 observe mode).
+# Egress allowlist (EGR-02, Phase 7 enforcement).
 #
-# Seeded from the hosts routine work needs; the proxy observes (logs) in
-# Phase 1 and enforcement arrives in M3 (EGR-02, Phase 7). Until then every
-# proxied destination is logged per agent with no blocking (D-05/D-06).
-# One domain per line; comment lines start with '#'.
+# Fail-closed: unknown domains are refused, never allowed. Provisioning
+# renders this file to /etc/squid/hyprn-allowlist.acl by stripping comment
+# lines (starting with '#') and blank lines, sorting unique; an empty render
+# aborts the reload and keeps the old ACL (see runbooks/agents/egress-enforce.md).
+# One domain per line. Every addition is a reviewed PR, never a direct host edit.
+#
+# Declared section: reviewed destinations the fleet needs for routine work.
+# Observed section below is explicitly empty: observe mode never ran live, so
+# there is no observed traffic to mine yet. Do not invent observed entries.
 
+# --- declared (reviewed 2026-10-14) ---
+# Routine steady-state entries. Ada/Codd git + gh, Claude API path, npm toolchain,
+# Boole loop / digest / wake destinations.
 github.com
 api.github.com
 api.anthropic.com
 registry.npmjs.org
+api.notion.com
+slack.com
+
+# --- provisioning-time only (apply-time, NOT steady-state) ---
+# Needed during host provisioning (apt keys, release fetches, Claude install)
+# per agents/host/provision.sh. Commented out: must be enabled as an
+# apply-time exception at provision, never enforced as steady-state.
+# download.docker.com
+# cli.github.com
+# release hosts (anomalyco/opencode, herdrdev/herdr releases)
+# claude.ai
+
+# --- container-only (EGR-03) ---
+# Operations run containers only; enforced on the shared container path via the
+# owning user's Squid port (Boole has no dedicated Squid port: only ada 3128 /
+# codd 3129 exist per agents/fleet.yaml at 2026-10-14).
+gateway.internal
+
+# --- observed (mined <date>, <record>) ---
+# Empty: observe mode never ran live. First-live-observation mining procedure:
+# see runbooks/agents/egress-enforce.md. No entries below this line yet.
