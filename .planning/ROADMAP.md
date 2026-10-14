@@ -126,7 +126,10 @@ Plans:
 **Success Criteria**:
   1. The egress allowlist is enforced without breaking Ada's or Boole's work.
   2. The full `tests/agents/run.sh` passes and its dated record is kept.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 07-01-PLAN.md — Reviewed enforce config: completed allowlist, Squid enforce delta with fail-closed render gate, flip/rollback runbook
+- [ ] 07-02-PLAN.md — Drill plus enforcement-on checks in egress.sh, owner-go flip and final aggregate run
 
 ## Progress
 
