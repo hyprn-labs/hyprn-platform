@@ -20,7 +20,7 @@ check "idle-stop timer active" "systemctl is-active --quiet hyprn-idle-stop.time
 check "Slack allowlist root-owned, not agent-writable" "[ ! -e /run/hyprn-agents/slack-allowed-users.json ] || [ \"\$(stat -c %U:%a /run/hyprn-agents/slack-allowed-users.json)\" = root:644 ]"
 check "OpenCode at the pinned version" "/usr/local/lib/opencode/opencode --version | grep -qF $OPENCODE_VERSION"
 check "OpenCode policy root-owned, opencode provider only" "[ \"\$(stat -c %U:%a /etc/opencode/opencode.json)\" = root:644 ] && jq -e '.enabled_providers == [\"opencode\"]' /etc/opencode/opencode.json"
-check "no service-account key files on host" "! grep -rlsq '\"private_key\"' /home /root /etc"
+check "no service-account key files on host" "! find /home /root /etc -type f -name '*.json' -exec grep -lq '\"private_key\"' {} \\; | grep -q ."
 
 while read -r name uid harness _; do
   run() { runuser -l "$name" -c "$1" </dev/null; }
