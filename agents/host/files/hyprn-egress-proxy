@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Routes agent users' web traffic through the egress observation proxy, or
+# stops doing so (EGR-01): hyprn-egress-proxy on | off | status. Run as root.
+# "on" sets the proxy for agent shells and sessions (/etc/profile.d), rootless
+# Docker and its containers, then restarts Claude Code sessions to pick it up;
+# "off" undoes all of it. OpenCode sessions pick it up when next started.
+set -euo pipefail
+FLAG=/etc/hyprn-agents/egress-proxy
+CONF=/etc/hyprn-agents/agents
+HOST_IP="$(cat /etc/hyprn-agents/host-ip)"
+case "${1:-}" in
+  on) touch "$FLAG" ;;
+  off) rm -f "$FLAG" ;;
+  status) [ -e "$FLAG" ] && echo on || echo off; exit 0 ;;
+  *) echo "usage: hyprn-egress-proxy on|off|status" >&2; exit 1 ;;
+esac
+
+for portfile in "$CONF"/*.proxy-port; do
+  [ -e "$portfile" ] || continue
+  name="$(basename "$portfile" .proxy-port)"
+  uid="$(id -u "$name")"
+  port="$(cat "$portfile")"
+  home="/home/$name"
+  as_agent() {
+    runuser -l "$name" -c "export XDG_RUNTIME_DIR=/run/user/$uid DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus; $1" </dev/null
+  }
+  dropin="$home/.config/systemd/user/docker.service.d/proxy.conf"
+  dockercfg="$home/.docker/config.json"
+  if [ -e "$FLAG" ]; then
+    as_agent "mkdir -p ~/.config/systemd/user/docker.service.d ~/.docker && printf '[Service]\nEnvironment=HTTP_PROXY=http://127.0.0.1:$port HTTPS_PROXY=http://127.0.0.1:$port NO_PROXY=localhost,127.0.0.1\n' > $dropin"
+    as_agent "[ -s $dockercfg ] || echo '{}' > $dockercfg; jq --arg p http://$HOST_IP:$port '.proxies.default = {httpProxy: \$p, httpsProxy: \$p, noProxy: \"localhost,127.0.0.1\"}' $dockercfg > $dockercfg.tmp && mv $dockercfg.tmp $dockercfg"
+  else
+    as_agent "rm -f $dropin; [ ! -s $dockercfg ] || { jq 'del(.proxies)' $dockercfg > $dockercfg.tmp && mv $dockercfg.tmp $dockercfg; }"
+  fi
+  as_agent "systemctl --user daemon-reload && systemctl --user restart docker" || echo "hyprn-egress-proxy: Docker restart failed for $name" >&2
+  if systemctl is-active --quiet "hyprn-agent@$name.service"; then
+    systemctl restart "hyprn-agent@$name.service"
+  fi
+  echo "hyprn-egress-proxy: $name $( [ -e "$FLAG" ] && echo "through the proxy (port $port)" || echo direct)"
+done

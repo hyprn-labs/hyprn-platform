@@ -34,7 +34,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
   1. The reviewed ruleset (`agents/github/main-ruleset.json`) is ready to apply; until the Team plan, Claude Code deny rules and Codd's OpenCode policy refuse merges and pushes to `main`. Once applied, GitHub refuses a merge or push to `main` by any agent App.
   2. The admin console policy matches `agents/policy/managed-settings.json` (checked on the host); routine worktree work runs without prompts.
   3. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
-  4. The egress proxy logs each agent's destinations; a direct outbound connection is dropped.
+  4. The egress proxy logs each agent's destinations to Cloud Logging and connections that bypass it are logged by user (observe-first, 1b); after a week of observation without unexplained bypasses, direct outbound connections are dropped.
   5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
   6. `tests/agents/run.sh` (host) and `tests/agents/owner-checks.sh` (workstation) pass; the host keeps a dated record.
   7. Codd's App is installed on `hyprn-platform` only, its key lives in Secret Manager, its OpenCode config matches `agents/host/files/opencode.json`, and the check run covers it.

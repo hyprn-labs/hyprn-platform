@@ -1,6 +1,9 @@
 # Agent users (UIDs 20000-20999) and their rootless containers cannot reach the
 # metadata server, so they cannot use the VM identity (ADR-0001 section 4).
 # The same address is the VPC DNS resolver; DNS (port 53) stays allowed.
+# Egress observation (EGR-01): new connections from agent users to anything
+# but this host (where the proxy listens) are counted and logged with the
+# user's UID under the prefix "hyprn-egress-direct"; nothing is refused.
 table inet hyprn_agents
 delete table inet hyprn_agents
 
@@ -11,5 +14,7 @@ table inet hyprn_agents {
     meta skuid 20000-20999 ip daddr 169.254.169.254 tcp dport 53 accept
     meta skuid 20000-20999 ip daddr 169.254.169.254 counter reject
     meta skuid 20000-20999 ip6 daddr fd20:ce::254 counter reject
+    meta skuid 20000-20999 ct state new fib daddr type != local counter
+    meta skuid 20000-20999 ct state new fib daddr type != local limit rate 30/minute log prefix "hyprn-egress-direct " flags skuid
   }
 }
