@@ -19,3 +19,16 @@ CREATE TABLE IF NOT EXISTS approvals(
   answer TEXT,
   decided_at TEXT
 );
+-- Owner-feedback store (Phase 5, LRN-01): reactions, replies and approval
+-- answers filed beside their run. Portable types only (TEXT/INTEGER plus
+-- datetime('now')), matching the runs/approvals idiom above. Duplicate
+-- Socket-Mode deliveries dedupe on the caller-supplied dedupe_key.
+CREATE TABLE IF NOT EXISTS feedback(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL REFERENCES runs(id),
+  kind TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  sender TEXT NOT NULL DEFAULT '',
+  dedupe_key TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

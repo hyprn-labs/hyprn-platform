@@ -14,8 +14,9 @@ recorded BEFORE any dispatch, and unknown loop names are refused BEFORE
 any credential or compute is touched. The reviewed YAML registry is the
 only authority for tools, credentials and destinations.
 
-Dependencies: Python 3 standard library only (sqlite3).
+Dependencies: Python 3 standard library only (sqlite3, json).
 """
+import json
 import sqlite3
 import sys
 import time
@@ -29,6 +30,11 @@ QUEUED = "queued"
 RUNNING = "running"
 AWAITING_APPROVAL = "awaiting_approval"
 KILLED = "killed"
+
+# Closed feedback-kind set (Phase 5, LRN-01). Anything outside this tuple is
+# refused before any state is touched; capture stays read-side only (no new
+# bot scopes, events, or reply shapes).
+FEEDBACK_KINDS = ("reaction", "reply", "approval")
 
 
 def log(*parts):
@@ -125,7 +131,54 @@ class Dispatcher:
         )
         self._set_state(run_id, QUEUED)
         self.db.commit()
+        # LRN-01: the owner's answer doubles as approval feedback — one extra
+        # insert in this already owner-gated path, never a new listener.
+        try:
+            approval_payload = json.dumps({"answer": answer, "sender": sender})
+        except (TypeError, ValueError):
+            approval_payload = json.dumps(
+                {"answer": str(answer), "sender": str(sender)})
+        self.record_feedback(
+            run_id, "approval", approval_payload, sender=sender,
+            dedupe_key="approval:%s" % run_id)
         return True
+
+    def record_feedback(self, run_id, kind, payload, sender="",
+                        dedupe_key=""):
+        """Store one owner-feedback row beside its run.
+
+        Validates the closed kind set and run existence BEFORE inserting;
+        a repeated dedupe key (Socket-Mode retry) returns the stored row
+        id instead of inserting twice. Returns the feedback row id, or
+        None when refused.
+        """
+        if kind not in FEEDBACK_KINDS:
+            log("refusing unknown feedback kind:", kind)
+            return None
+        if not dedupe_key:
+            log("refusing feedback without dedupe key")
+            return None
+        known = self.db.execute(
+            "SELECT id FROM runs WHERE id = ?", (run_id,)).fetchone()
+        if known is None:
+            log("refusing feedback for unknown run:", run_id)
+            return None
+        try:
+            cursor = self.db.execute(
+                "INSERT INTO feedback(run_id, kind, payload, sender,"
+                " dedupe_key) VALUES(?, ?, ?, ?, ?)",
+                (run_id, kind, payload, sender, dedupe_key),
+            )
+            self.db.commit()
+            return cursor.lastrowid
+        except sqlite3.IntegrityError:
+            existing = self.db.execute(
+                "SELECT id FROM feedback WHERE dedupe_key = ?",
+                (dedupe_key,)).fetchone()
+            return existing["id"] if existing is not None else None
+        except (sqlite3.Error, TypeError) as error:
+            log("record_feedback failed:", error)
+            return None
 
     def pending_wake(self):
         """Drain host-wake signals raised by newly queued runs."""
