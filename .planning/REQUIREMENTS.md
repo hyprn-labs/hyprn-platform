@@ -29,7 +29,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 ### Detection and account safeguards (DET, SEC, DOC) — spec §13
 
 - [x] **DET-01**: Data Access audit logs are on for Secret Manager in `hyprn-agents`; a Cloud Monitoring alert emails `gcp-admins@hyprn.ai` when a secret is read by any principal other than `hyprn-agents-host` and `hyprn-agents-wake` (and the controller and gateway identities once they exist), or when a secret is created, deleted or given a new reader.
-- [ ] **DET-02**: A Cloud Monitoring alert emails `gcp-admins@hyprn.ai` on any IAM policy change in `hyprn-agents`; folder-level changes on `agents` reach the same alert through a log sink into `hyprn-agents`. The group accepts mail from Google Cloud.
+- [x] **DET-02**: A Cloud Monitoring alert emails `gcp-admins@hyprn.ai` on any IAM policy change in `hyprn-agents`. Folder and organization access changes are not alerted here (owner, 2026-10-14).
 - [ ] **SEC-01**: A break-glass super admin exists with its own hardware security key and printed backup codes, both stored offline away from the owner's daily keys; it holds no standing Google Cloud role; `runbooks/agents/gcp.md` describes its use.
 - [x] **SEC-02**: `hyprn-labs` requires two-factor authentication for all members.
 - [x] **DOC-01**: ADR-0003 records our own Slack channel server.
@@ -133,7 +133,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 | GHE-03 | Phase 1 | Partial: deny rules; ruleset with GHE-01 |
 | EGR-01 | Phase 1 | Partial: observing; drop after review 2026-10-21 |
 | DET-01 | Phase 1 | Complete |
-| DET-02 | Phase 1 | Partial: project verified; folder path pending |
+| DET-02 | Phase 1 | Complete |
 | SEC-01 | Phase 1 | Pending (owner) |
 | SEC-02 | Phase 1 | Complete |
 | DOC-01 | Phase 1 | Complete |

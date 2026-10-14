@@ -41,7 +41,6 @@ if [ "$(gcloud compute instances describe hyprn-agents-host-01 --zone=europe-wes
 else
   skip "wake service holds no Slack connection while the host runs" "host stopped"
 fi
-check "agents folder IAM changes routed to the project" "gcloud logging sinks describe agents-folder-iam-to-project --folder=$FOLDER --format=json | jq -e '.destination | endswith(\"projects/$PROJECT\")'"
 
 echo "== GitHub"
 check "organization requires two-factor authentication" "gh api orgs/$GH_ORG --jq .two_factor_requirement_enabled | grep -qx true"

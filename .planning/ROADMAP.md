@@ -35,7 +35,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
   2. The admin console policy matches `agents/policy/managed-settings.json` (checked on the host); routine worktree work runs without prompts.
   3. Approvals from Slack work and only the owner's count; other senders are ignored; merge, push to `main`, force push and bypass mode are refused.
   4. The egress proxy logs each agent's destinations to Cloud Logging and connections that bypass it are logged by user (observe-first, 1b); after a week of observation without unexplained bypasses, direct outbound connections are dropped.
-  5. A test secret read by an unexpected principal and a test IAM change each produce an email alert to `gcp-admins`.
+  5. A test secret read by an unexpected principal and a test IAM change on `hyprn-agents` each produce an email alert to `gcp-admins`.
   6. `tests/agents/run.sh` (host) and `tests/agents/owner-checks.sh` (workstation) pass; the host keeps a dated record.
   7. Codd's App is installed on `hyprn-platform` only, its key lives in Secret Manager, its OpenCode config matches `agents/host/files/opencode.json`, and the check run covers it.
 **Plans**: TBD
@@ -113,7 +113,7 @@ Each phase adds its checks to `tests/agents/run.sh` (ACC-08), so every later pha
 
 | Phase | Milestone | Status |
 |-------|-----------|--------|
-| 1. Security baseline | M1 | Delivered 2026-10-14; closing: SEC-01, folder alert test, egress drop after 2026-10-21; deferred: GHE-01, ACC-01..03 live |
+| 1. Security baseline | M1 | Closed 2026-10-14; open: SEC-01, egress drop after 2026-10-21; deferred: GHE-01, ACC-01..03 live |
 | 2. Engineering workflow | M1 | Not started |
 | 3. Control plane core | M2 | Not started |
 | 4. Boole and the meeting loop | M2 | Not started |

@@ -1,13 +1,6 @@
 # Misuse detection (agent fleet specification section 13; DET-01, DET-02):
 # Secret Manager data-read audit logs, an email channel to the admins group,
-# and two log-based alerts. Folder-level IAM changes are routed into this
-# project by a folder sink so one alert covers project and folder.
-
-variable "agents_folder_id" {
-  description = "Numeric ID of the agents folder (bootstrap output)."
-  type        = string
-  default     = "86446816109"
-}
+# and two log-based alerts on the hyprn-agents project.
 
 # Secret reads (AccessSecretVersion) are data-read events, off by default.
 resource "google_project_iam_audit_config" "secretmanager_data_read" {
@@ -57,14 +50,13 @@ resource "google_monitoring_alert_policy" "secret_unexpected_access" {
   }
 }
 
-# Any IAM policy change on the agents project or, through the sink below, the
-# agents folder.
+# Any IAM policy change on the agents project.
 resource "google_monitoring_alert_policy" "agents_iam_change" {
   project      = var.project_id
   display_name = "hyprn agents: IAM policy change"
   combiner     = "OR"
   conditions {
-    display_name = "SetIamPolicy on the agents project or folder"
+    display_name = "SetIamPolicy on the agents project"
     condition_matched_log {
       filter = <<-EOT
         protoPayload.methodName="SetIamPolicy"
@@ -82,18 +74,4 @@ resource "google_monitoring_alert_policy" "agents_iam_change" {
   user_labels = {
     component = "agents"
   }
-}
-
-resource "google_logging_folder_sink" "agents_folder_iam" {
-  name        = "agents-folder-iam-to-project"
-  folder      = var.agents_folder_id
-  destination = "logging.googleapis.com/projects/${var.project_id}"
-  filter      = "protoPayload.methodName=\"SetIamPolicy\""
-}
-
-# The sink's writer identity may write log entries into this project.
-resource "google_project_iam_member" "agents_folder_sink_writer" {
-  project = var.project_id
-  role    = "roles/logging.logWriter"
-  member  = google_logging_folder_sink.agents_folder_iam.writer_identity
 }
