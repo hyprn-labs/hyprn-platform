@@ -32,3 +32,4 @@ step requested here, never automated.
 | Date | File revision | Step | Result |
 |---|---|---|---|
 | 2026-10-13 | (pending owner apply) | Console apply + prompt-free routine work + marketplace evidence | Awaiting owner go — Team Owner to apply, confirm, and sign |
+| 2026-10-14 | reviewed file revision (PR #15) | Managed settings pasted verbatim into Claude Code → Managed settings by Team Owner; Organization instructions untouched | Applied, awaiting prompt-free + marketplace verification at host green run |
