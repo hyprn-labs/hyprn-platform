@@ -4,7 +4,7 @@
 **Core Value:** Agents do HYPRN's engineering and operations work — on request and on their own triggers — safely, with costs known, and they get better from feedback; adding an agent is one command.
 **Target:** [`docs/specs/agent-fleet.md`](../docs/specs/agent-fleet.md); decisions in ADR-0001 to ADR-0007. Each group names the spec sections it delivers.
 
-Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` and `hyprn-mvp`, free-tier model until company terms).
+Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (ROADMAP.md); Ada is the engineering agent on a seat, Boole the operations agent, Codd the engineering agent on the Codd pattern (terminal/herdr-steered, `hyprn-platform` only, free-tier model until company terms).
 
 ## v1 Requirements
 
@@ -15,10 +15,10 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ### Agent policy (POL) — spec §13
 
-- [ ] **POL-01**: The Claude Code organization policy lives in `agents/policy/managed-settings.json` with explicit allow, ask and deny lists (routine work allowed, risky actions asked, merging and pushing to `main` denied) and the pinned herdr hooks allowed; the Team Owner applies it in the admin console and `runbooks/agents/claude.md` records each change.
+- [x] **POL-01**: The Claude Code organization policy lives in `agents/policy/managed-settings.json` with explicit allow, ask and deny lists (routine work allowed, risky actions asked, merging and pushing to `main` denied) and the pinned herdr hooks allowed; the Team Owner applies it in the admin console and `runbooks/agents/claude.md` records each change.
 - [ ] **POL-02**: The sandbox network allowlist for agent shell commands is part of that policy; a request to any other host fails inside the sandbox. Moved to Phase 7 with EGR-02: both are built from the destinations observed under EGR-01.
-- [ ] **POL-03**: `strictKnownMarketplaces` accepts only the `hyprn-agents` marketplace.
-- [ ] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in every `hyprn-labs` repository.
+- [x] **POL-03**: `strictKnownMarketplaces` accepts only the `hyprn-agents` marketplace, Anthropic's official marketplace and skills-directory plugins.
+- [x] **POL-04**: Claude Code deny rules refuse merging pull requests, pushing to `main` and force pushing in every `hyprn-labs` repository.
 
 ### Egress control (EGR) — spec §13
 
@@ -28,10 +28,10 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ### Detection and account safeguards (DET, SEC, DOC) — spec §13
 
-- [ ] **DET-01**: Data Access audit logs are on for Secret Manager in `hyprn-agents`; a Cloud Monitoring alert emails `gcp-admins@hyprn.ai` when a secret is read by any principal other than `hyprn-agents-host` and `hyprn-agents-wake` (and the controller and gateway identities once they exist), or when a secret is created, deleted or given a new reader.
+- [x] **DET-01**: Data Access audit logs are on for Secret Manager in `hyprn-agents`; a Cloud Monitoring alert emails `gcp-admins@hyprn.ai` when a secret is read by any principal other than `hyprn-agents-host` and `hyprn-agents-wake` (and the controller and gateway identities once they exist), or when a secret is created, deleted or given a new reader.
 - [ ] **DET-02**: A Cloud Monitoring alert emails `gcp-admins@hyprn.ai` on any IAM policy change in `hyprn-agents`; folder-level changes on `agents` reach the same alert through a log sink into `hyprn-agents`. The group accepts mail from Google Cloud.
 - [ ] **SEC-01**: A break-glass super admin exists with its own hardware security key and printed backup codes, both stored offline away from the owner's daily keys; it holds no standing Google Cloud role; `runbooks/agents/gcp.md` describes its use.
-- [ ] **SEC-02**: `hyprn-labs` requires two-factor authentication for all members.
+- [x] **SEC-02**: `hyprn-labs` requires two-factor authentication for all members.
 - [x] **DOC-01**: ADR-0003 records our own Slack channel server.
 
 ### Acceptance and isolation (ACC) — spec §13
@@ -39,11 +39,11 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 - [ ] **ACC-01**: Permission relay works in Slack: a risky action in Ada's session asks the owner; `yes <id>` lets it proceed, `no <id>` stops it, and a reply from anyone else is rejected.
 - [ ] **ACC-02**: Messages from non-allowlisted Slack senders get no reaction, never reach a session and do not wake the host.
 - [ ] **ACC-03**: Merge, push to `main`, force push and bypass mode are refused in Ada's session.
-- [ ] **ACC-04**: An organization-wide IAM search shows every `hyprn-agents` principal with exactly its declared roles and none outside the project.
-- [ ] **ACC-05**: The host holds no user cloud credentials, no key files and no staging or prod roles or secrets.
-- [ ] **ACC-06**: The wake identity is refused everything but get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across idle stops.
+- [x] **ACC-04**: An organization-wide IAM search shows every `hyprn-agents` principal with exactly its declared roles and none outside the project.
+- [x] **ACC-05**: The host holds no user cloud credentials, no key files and no staging or prod roles or secrets.
+- [x] **ACC-06**: The wake identity is refused everything but get, start and stop on the host; the wake service holds no Slack connection while the host runs; the host keeps its disk across idle stops.
 - [ ] **ACC-07**: Ada, Boole and Codd cannot reach each other's homes, secrets, containers, tokens or bots.
-- [ ] **ACC-08**: One command on the host (`tests/agents/run.sh`) and one on the owner's workstation (`tests/agents/owner-checks.sh`) run every check delivered so far; the host keeps a dated record; each later phase adds its checks to them.
+- [x] **ACC-08**: One command on the host (`tests/agents/run.sh`) and one on the owner's workstation (`tests/agents/owner-checks.sh`) run every check delivered so far; the host keeps a dated record; each later phase adds its checks to them.
 - [ ] **ACC-09**: The controller and gateway identities hold exactly their declared roles; the gateway is unreachable from the internet; a run's container holds only its loop's credentials.
 - [ ] **ACC-10**: At the end of M3, the full check run passes with the egress allowlist enforced, and its dated record is kept.
 
@@ -87,7 +87,7 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 ### Codd-pattern coding agents (CODD) — spec §1, §2, §3
 
-- [ ] **CODD-01**: Codd's identity scope holds: GitHub App `codd-agent-hyprn` installed on `hyprn-platform` and `hyprn-mvp` with one-hour tokens; Linux user `codd` with a private home; managed OpenCode config from `agents/host/files/opencode.json`; no Slack app and no Workspace user.
+- [x] **CODD-01**: Codd's identity scope holds: GitHub App `codd-agent-hyprn` installed on `hyprn-platform` only with one-hour tokens; Linux user `codd` with a private home; managed OpenCode config from `agents/host/files/opencode.json`; no Slack app and no Workspace user.
 - [ ] **CODD-02**: The Codd pattern — GitHub App plus Linux user plus OpenCode, herdr-controlled, on a dedicated or shared VM — is the repeatable setup for coding agents and compute split for long-running tasks; it is documented in the runbook and covered by fleet onboarding.
 - [ ] **CODD-03**: Until the work moves under the company, the free-tier model, cost and data terms are checked monthly against the Zen model list (model, price, training-data use); on the move, Codd's model binding changes to protective terms by configuration, without retiring the agent.
 
@@ -125,26 +125,26 @@ Terms: **A0–A3** are autonomy levels (spec §9); **M1–M3** are milestones (R
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POL-01 | Phase 1 | Pending |
+| POL-01 | Phase 1 | Complete |
 | POL-02 | Phase 7 | Pending |
-| POL-03 | Phase 1 | Pending |
-| POL-04 | Phase 1 | Pending |
-| GHE-01 | Phase 1 | Pending |
-| GHE-03 | Phase 1 | Pending |
-| EGR-01 | Phase 1 | Pending |
-| DET-01 | Phase 1 | Pending |
-| DET-02 | Phase 1 | Pending |
-| SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
+| POL-03 | Phase 1 | Complete |
+| POL-04 | Phase 1 | Complete (live refusal test pending) |
+| GHE-01 | Phase 1 | Deferred (Team plan) |
+| GHE-03 | Phase 1 | Partial: deny rules; ruleset with GHE-01 |
+| EGR-01 | Phase 1 | Partial: observing; drop after review 2026-10-21 |
+| DET-01 | Phase 1 | Complete |
+| DET-02 | Phase 1 | Partial: project verified; folder path pending |
+| SEC-01 | Phase 1 | Pending (owner) |
+| SEC-02 | Phase 1 | Complete |
 | DOC-01 | Phase 1 | Complete |
-| ACC-01 | Phase 1 | Pending |
-| ACC-02 | Phase 1 | Pending |
-| ACC-03 | Phase 1 | Pending |
-| ACC-04 | Phase 1 | Pending |
-| ACC-05 | Phase 1 | Pending |
-| ACC-06 | Phase 1 | Pending |
-| ACC-08 | Phase 1 | Pending |
-| CODD-01 | Phase 1 | Pending |
+| ACC-01 | Phase 1 | Deferred (owner) |
+| ACC-02 | Phase 1 | Deferred (owner) |
+| ACC-03 | Phase 1 | Deferred (owner) |
+| ACC-04 | Phase 1 | Complete |
+| ACC-05 | Phase 1 | Complete |
+| ACC-06 | Phase 1 | Complete |
+| ACC-08 | Phase 1 | Complete |
+| CODD-01 | Phase 1 | Complete |
 | GH-01 | Phase 2 | Pending |
 | GH-02 | Phase 2 | Pending |
 | GH-03 | Phase 2 | Complete |

@@ -20,12 +20,12 @@ See: .planning/PROJECT.md (updated 2026-10-13)
 
 ## Current Position
 
-Phase: 1 of 7 (Security baseline, M1)
-Plan: 0 of 0 in current phase
-Status: Ready to plan
-Last activity: 2026-10-13 - Documents reviewed: spec, ADR-0006, requirements (57) and roadmap aligned; Boole named as the operations agent
+Phase: 1 of 7 (Security baseline, M1) — delivered; closing items listed under Pending Todos
+Plan: 1a (#16–#18) and 1b (#19, #20) merged and applied
+Status: Phase 2 next (engineering workflow)
+Last activity: 2026-10-14 - Phase 1 delivered: Claude policy live, ruleset defined, misuse alerts emailing, egress observed through the proxy, 52 host checks and 17 owner checks pass
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 
@@ -61,7 +61,7 @@ Decisions are logged in PROJECT.md (Key Decisions). Recent decisions affecting c
 - Egress observe-first (2026-10-14): Phase 1b logs and never refuses; agents move onto the proxy with `hyprn-egress-proxy on` and back with `off`; dropping direct connections comes after a week of observation.
 - Codd stays on `hyprn-platform` only (owner, 2026-10-14); `hyprn-mvp` is removed from its App installation.
 - Pull request 15 (Codd's Phases 1–7 build) is not merged: its Phase 1 work is reviewed and brought over in 1a and 1b, later phases piece by piece. On 2026-10-14 its unmerged host changes and console policy were applied and broke the agents' network and policy; the host was restored from `main` (runbooks `claude.md`, `host.md`).
-- Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` and `hyprn-mvp`, enforced by its GitHub App being installed on those two repositories only (verified 2026-10-13 by a branch push to each) and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
+- Codd (AI agent), Linux user `codd`, runs OpenCode 1.19.0 with Muse Spark 1.3 Contributor Free on OpenCode Zen, steered by the owner in the terminal or herdr. Meta may train on its prompts and completions; accepted for `hyprn-platform` only, enforced by its GitHub App being installed there only (host check) and by the Linux user boundary. No Slack app and no Workspace user (Codd pattern, spec §2–§3). Not retired: model moves to protective terms on the company move (`runbooks/agents/opencode.md`).
 - Meeting loop targets: at least 10 meetings in two weeks, 30 USD a month; promotion to A2 at ≥ 90 % eval pass over the last 10 runs and < 1 correction per meeting.
 
 ### Inventory
@@ -98,16 +98,16 @@ Gotchas met while building the fleet; read before operating it.
 - Monthly until company terms: re-check Codd's free-tier model, cost and data terms against the Zen list (CODD-03).
 - On the company move: shift Codd's model binding to protective terms by configuration; IP transfers to the company (CODD-03). Codd is not retired.
 - Purchases arrive later (owner, 2026-10-13): GitHub Team plan, revised budget (COST-01), Fireworks/Anthropic/OpenAI keys; phases proceed on deny-rules and prototyping terms until then.
+- Phases 2–7: unreviewed reference material is on branch `agent/codd/phase-1-discuss` (closed pull request 15); bring pieces over per phase, each reviewed, applied with a way back, and checked. Never apply its host files or paste its policy directly.
 - Before Phase 3: accept ADR-0006; Fireworks account and key; Anthropic Console organization linked to the Team plan, with its key; OpenAI API key; Boole's Slack app; revised budget (COST-01). Choose the harness for Boole's runs (OpenCode or a workflow script) during Phase 3 planning (RT-01).
 - Before Phase 4: settle how Granola notes reach Notion (LOOP-01).
-- Phase 1: GitHub Team plan (owner purchase).
+- Phase 1 remaining: break-glass administrator (SEC-01, owner); folder IAM alert test after the sink fix (DET-02); egress review on 2026-10-21, then drop direct connections (EGR-01); live Slack relay and refusal tests when convenient (ACC-01..03, POL-04). Deferred: ruleset (GHE-01) with the Team plan.
 - Phase 6 spikes: channels with a `setup-token` sign-in (FLT-05); Slack icon through `apps.icon.set` (FLT-03); Workspace user creation by API (FLT-02).
 
 ### Blockers/Concerns
 
-- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories and Codd's to `hyprn-platform` and `hyprn-mvp`, so deny rules are the only control until the Team plan (purchases arrive later).
+- GitHub Free: no ruleset on private repositories; Ada's App writes to all repositories and Codd's to `hyprn-platform`, so the Claude Code deny rules and Codd's OpenCode policy are the only control on `main` until the Team plan (deferred).
 - Prototyping accounts: all current development is under the owner's personal accounts with free-tier training-use terms; IP moves to the future company, then bindings move to protective terms.
-- `strictKnownMarketplaces` is not evidenced as set (POL-03).
 - Slack Free allows 10 apps in total: the fleet tops out around eight agents (FLEET-05).
 - Vendor limits on automation (checked 2026-10-13): no Claude Team member API; Slack Socket Mode tokens and app installs need a human; GitHub App installation and logo need a human.
 - Owner steps (admin console, GitHub settings, Secret Manager values) need the platform owner's explicit go for each step; infrastructure applies need authorization for the exact plan.

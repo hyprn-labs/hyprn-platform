@@ -1,17 +1,17 @@
 # Codd: OpenCode on the agent host
 
-Codd (AI agent) is an interim engineering agent for `hyprn-platform` and `hyprn-mvp`. It runs OpenCode under its own Linux user `codd`, steered by the platform owner in the terminal, with Meta's Muse Spark 1.3 on OpenCode Zen's free tier as its default model. It speeds up the platform and product build until the model gateway exists (milestone M2).
+Codd (AI agent) is an interim engineering agent for `hyprn-platform`. It runs OpenCode under its own Linux user `codd`, steered by the platform owner in the terminal, with Meta's Muse Spark 1.3 on OpenCode Zen's free tier as its default model. It speeds up the platform and product build until the model gateway exists (milestone M2).
 
 ## Data use
 
-The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything a Codd session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` (2026-10-13) and extended it to `hyprn-mvp` (2026-10-13): current development is rapid prototyping under personal accounts, and the IP moves to the future company, at which point the model binding moves to protective terms. Codd reaches the product repository `hyprn-mvp`, but no staging, prod, or secret values.
+The free Muse Spark model is offered in exchange for Meta's use of prompts and completions to train future models ([OpenCode Zen](https://opencode.ai/docs/zen/)). Everything a Codd session reads can therefore reach Meta. The platform owner accepted this for `hyprn-platform` only (2026-10-13; a one-day extension to `hyprn-mvp` was withdrawn on 2026-10-14 so product code stays off a model that trains on prompts): current development is rapid prototyping under personal accounts, and the IP moves to the future company, at which point the model binding moves to protective terms. Codd reaches the product repository `hyprn-mvp`, but no staging, prod, or secret values.
 
 ## Identity and limits
 
 | Item | Value |
 |---|---|
 | Linux user | `codd` (UID 20002): private home, no sudo, rootless Docker, metadata server unreachable |
-| GitHub | App `codd-agent-hyprn`, installed on `hyprn-platform` and `hyprn-mvp`; commits as `codd-agent-hyprn[bot]` |
+| GitHub | App `codd-agent-hyprn`, installed on `hyprn-platform` only; commits as `codd-agent-hyprn[bot]` |
 | Slack, Workspace | None: Codd is steered in the terminal and signs in nowhere |
 | Model | `opencode/muse-spark-1.3-contributor-free`, no API key (Zen's free tier) |
 
@@ -63,3 +63,4 @@ If an agent is ever removed outright: remove its line from `agents/host/agents.t
 | 2026-10-13 | Codd prepared: Linux user, policy relaxed to the Linux user boundary; OpenCode removed from Ada | App `codd-agent-hyprn` (App 5306008, installation 171119571, bot 342187193) created by the owner, installed on selected repositories. `infra/agents/` applied: secret `codd-agent-github-app-key` and the host's read access (2 added). Key loaded as v1 by the owner. |
 | 2026-10-13 | `apply.sh` | Host checks: 40 pass. Codd clones `hyprn-platform` and gets "Repository not found" for `hyprn-mvp`; the default model answers. Ada's `platform-opencode` worktree and branch removed; Ada has no OpenCode token |
 | 2026-10-13 | MVP reach | Owner extended Codd's reach to `hyprn-mvp` (decision, same prototyping terms; no staging, prod, or secret values). Verified same day: a branch push to `hyprn-mvp` as `codd-agent-hyprn[bot]` is accepted, so the App installation covers both repositories. Worktree `~/work/mvp-resume` on branch `agent/codd/mvp-resume` created for the resume. |
+| 2026-10-14 | Platform only | Owner removed `hyprn-mvp` from Codd's App installation (decision: product code stays off a model that trains on prompts); Codd's App sees `hyprn-platform` only (host check). Role file, spec, ADR-0007 and requirements aligned |

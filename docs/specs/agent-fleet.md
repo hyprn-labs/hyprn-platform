@@ -31,7 +31,7 @@ Each agent has one identity per system, named by [`conventions/`](../../conventi
 | Google Workspace | User `<name>@agents.hyprn.ai`; password and second factor in the company password manager. Ada's address is a Google group until its move to a user (M3) |
 | Model access | A Claude Team seat (engineering) or a gateway key (operations) |
 | Slack | Its own app and bot `<Name> (AI agent)`, Socket Mode |
-| GitHub | Its own GitHub App `<name>-agent-hyprn` with one-hour tokens (ADR-0005); never a machine account. Engineering Apps are installed on all `hyprn-labs` repositories (Codd: `hyprn-platform` and `hyprn-mvp`); an operations App only on the repositories its loops change (Boole: `hyprn-platform`) |
+| GitHub | Its own GitHub App `<name>-agent-hyprn` with one-hour tokens (ADR-0005); never a machine account. Engineering Apps are installed on all `hyprn-labs` repositories (Codd: `hyprn-platform` only); an operations App only on the repositories its loops change (Boole: `hyprn-platform`) |
 | Notion | Its own integration, limited to the pages it serves |
 | Agent host | Its own Linux user with a private home and rootless Docker |
 
@@ -52,7 +52,7 @@ A runtime is a **harness × credential × model** binding declared per agent.
 - Claude subscriptions are used only in Anthropic's own applications; third-party harnesses use API keys only.
 - Claude Code is not pointed at non-Claude models.
 - Changing an agent's model or provider MUST be a change of its binding only.
-- Codd pattern, until company terms: Codd, an engineering agent on OpenCode with OpenCode Zen's free tier, steered by the owner in the terminal or herdr, with a GitHub App on `hyprn-platform` and `hyprn-mvp` and no Slack app or Workspace user ([runbook](../../runbooks/agents/opencode.md)). Model: Muse Spark; prompts may train Meta (runbook §Data use). Codd is not retired: its model binding moves to protective terms when the work moves under the company.
+- Codd pattern, until company terms: Codd, an engineering agent on OpenCode with OpenCode Zen's free tier, steered by the owner in the terminal or herdr, with a GitHub App on `hyprn-platform` only and no Slack app or Workspace user ([runbook](../../runbooks/agents/opencode.md)). Model: Muse Spark; prompts may train Meta (runbook §Data use). Codd is not retired: its model binding moves to protective terms when the work moves under the company.
 - In reserve, outside the fleet's core: Claude Code cloud sessions and Claude Tag for occasional work away from the host; they bill per use.
 
 ## 4. Compute
