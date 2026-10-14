@@ -1,0 +1,19 @@
+# Google Cloud Ops Agent on the agent host: ships the egress proxy's access log
+# to Cloud Logging (log name "squid_access"), nothing else (EGR-01).
+logging:
+  receivers:
+    squid_access:
+      type: files
+      include_paths:
+        - /var/log/squid/access.log
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: []
+      egress:
+        receivers: [squid_access]
+metrics:
+  service:
+    pipelines:
+      default_pipeline:
+        receivers: []

@@ -105,6 +105,38 @@ install_opencode() {
   install -m 0755 "$HERE/files/bin/opencode" "$HERE/files/bin/opencode-task" /usr/local/libexec/hyprn-agent-bin/
 }
 
+# Egress observation (EGR-01): Squid logs every agent request, the Ops Agent
+# ships its log to Cloud Logging; agents use it once hyprn-egress-proxy is on.
+install_egress() {
+  log "egress observation"
+  apt-get install -y -q squid
+  if [ ! -f /etc/apt/sources.list.d/google-cloud-ops-agent.list ]; then
+    echo "deb https://packages.cloud.google.com/apt google-cloud-ops-agent-bookworm-all main" \
+      > /etc/apt/sources.list.d/google-cloud-ops-agent.list
+    apt-get update -q
+  fi
+  apt-get install -y -q google-cloud-ops-agent
+  curl -sf -H 'Metadata-Flavor: Google' \
+    http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip > /etc/hyprn-agents/host-ip
+  install -m 0644 "$HERE/files/squid.conf" /etc/squid/squid.conf
+  install -m 0644 "$HERE/files/ops-agent.yaml" /etc/google-cloud-ops-agent/config.yaml
+  install -m 0755 "$HERE/files/hyprn-egress-proxy" /usr/local/sbin/hyprn-egress-proxy
+  local host_ip conf=/etc/hyprn-agents/squid-agents.conf.tmp
+  host_ip="$(cat /etc/hyprn-agents/host-ip)"
+  printf 'acl from_host src %s/32\n' "$host_ip" > "$conf"
+  grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid _; do
+    local port=$((3100 + uid - 20000))
+    printf 'http_port 127.0.0.1:%s\nhttp_port %s:%s\nacl port_%s localport %s\nnote agent %s port_%s\n' \
+      "$port" "$host_ip" "$port" "$name" "$port" "$name" "$name" >> "$conf"
+    echo "$port" > "/etc/hyprn-agents/agents/$name.proxy-port"
+    chmod 0644 "/etc/hyprn-agents/agents/$name.proxy-port"
+  done
+  mv "$conf" /etc/hyprn-agents/squid-agents.conf
+  squid -k parse 2>&1 | grep -iE 'FATAL|ERROR' && { echo "squid configuration invalid" >&2; exit 1; }
+  systemctl enable squid google-cloud-ops-agent >/dev/null 2>&1
+  systemctl restart squid google-cloud-ops-agent
+}
+
 add_agent() {
   local name="$1" uid="$2" harness="$3" app_slug="$4" app_id="$5" installation_id="$6" bot_id="$7" display="$8"
   local home="/home/$name" sub=$((100000 + (uid - 20000) * 65536))
@@ -188,6 +220,7 @@ add_agent() {
 install_base
 install_host_files
 install_opencode
+install_egress
 grep -vE '^\s*(#|$)' "$HERE/agents.txt" | while read -r name uid harness app_slug app_id installation_id bot_id display; do
   add_agent "$name" "$uid" "$harness" "$app_slug" "$app_id" "$installation_id" "$bot_id" "$display"
 done

@@ -1,5 +1,5 @@
 [Unit]
-Description=hyprn agents: block metadata server for agent users
+Description=hyprn agents: metadata block and direct-connection log for agent users
 After=nftables.service
 Before=network-online.target
 
