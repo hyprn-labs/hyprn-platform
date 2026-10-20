@@ -157,3 +157,11 @@ Agent creation was definitively rejected because the provider API balance is
 too low; the key transfer does not resolve that billing prerequisite. No
 conversation/model request or application activation occurred. Live Linux
 consumer delivery remains a separate uncompleted acceptance step.
+
+The owner subsequently replenished API credit. The same approved plan resumed
+with its existing durable journal, reused the environment and created the agent
+at version1. Exact provider readbacks matched the reviewed definition; both
+resource entries are confirmed. The numeric provider-key version remains1 and
+the completed transfer was not repeated. Runtime bindings are held privately
+for later activation. No model request or conversation started, and the existing
+shared allowance still requires prior-usage reconciliation before use.
