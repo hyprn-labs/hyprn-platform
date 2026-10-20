@@ -111,3 +111,12 @@ No new endpoint, credential reader, arbitrary command or cloud authority exists.
 All seven implementation paths exist. All three task commits are ancestors of the
 delivery commit. Contract suite passed on that commit. Exact hashes and handoff
 commands are recorded in `08-01-CHECKPOINT.md`.
+
+## Integration follow-up: private-services DNS
+
+`edc022f` corrects the allowed Cloud SQL DNS identity formats using current official
+documentation: private services access uses `sql-psa.goog`, while PSC/public-IP
+uses `sql.goog`. Both require the actual instance/project/region SAN name; exact
+TLS verification and CA pinning remain mandatory. The committed-tree contract
+suite now passes 12 tests. Current consumer hashes are in the checkpoint; the
+original task metrics above remain the original delivery record.

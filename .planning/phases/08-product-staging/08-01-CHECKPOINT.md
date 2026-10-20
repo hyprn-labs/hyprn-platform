@@ -4,15 +4,15 @@ Task complete: offline contract/preview only. No hosted environment exists as a
 result of this task.
 
 Branch: `codex/platform-contract`.
-Code commit: `408ed98b61ffe57de565e0a79a5493a66ddff05c`.
+Code commit: `edc022fac9c40b06ead53706e53c005e61f71122`.
 Starting commit: `8ffbdf92c28eb607f753fed4e603a10cc44865e6`.
 Test commit: `3b28d6e`.
 
 | Artifact | SHA-256 |
 |---|---|
-| `contracts/v1/deployment.schema.json` | `bf0220439ae678edf09fef248d790fd9d479449599fadf047d4c80ea24af7c8c` |
+| `contracts/v1/deployment.schema.json` | `4ff906236862ea93d7ab540f67fe74fcb587291ce71c97dd78b48943acac6d0a` |
 | `host/contract.py` | `a49b0ed119ed721bcad6fcf5da1cf3822999613ac571008635e2064a91bfca6a` |
-| Golden rendered configuration | `e9daeb2f5ded8f163cfd2d0ca4f56cb6acbea1cf1d454e484854a1dc2b949907` |
+| Golden rendered configuration | `63f2ab029e145c5efae8a711b7b301818aafd6686296d6da73cea3861b82710f` |
 
 ## Commands and results
 
@@ -75,3 +75,21 @@ were not staged, reverted or reformatted. No runtime installation was touched.
 Parent owns integrating scoped 08-01 state because the global pointer still
 tracks the independent engineering fleet. GitHub/cloud changes remain blocked
 on exact operational approval and effective branch protections, not on this CLI.
+
+## Cloud SQL private-services identity correction
+
+Infrastructure integration identified the documented private services access
+DNS suffix `sql-psa.goog`. Verified Google's [server identity documentation](https://docs.cloud.google.com/sql/docs/postgres/configure-ssl-instance#server-identity-verification)
+on 2026-10-20. Commit `edc022f` accepts the exact three-label Cloud SQL name
+formats for `sql.goog` and `sql-psa.goog`; arbitrary hosts, IP literals, malformed
+labels, suffix extensions and trailing DNS root dots remain rejected. Bindings
+must preserve the actual instance SAN identity; CA pinning and `verify-full` are
+unchanged. The renderer uses the schema directly, so no renderer source change
+was necessary.
+
+`tests/platform/run.sh contracts`: 12 passed, 0 failed before commit (2.188s),
+and 12 passed, 0 failed on committed `edc022f` (2.309s). New coverage exercises
+both accepted suffixes and eight rejected identities through the public CLI.
+Schema, fixture release/config hashes and the current hash table were updated.
+No cloud mutations or live TLS qualification occurred. Other agents' staged and
+untracked files were preserved using a path-scoped commit.
