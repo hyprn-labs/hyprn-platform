@@ -75,6 +75,10 @@ server name and pins the CA file bytes. A matching Cloud SQL certificate/DNS
 configuration and cloud database adapter are required; disabling certificate
 verification is not an alternative. The CA is public trust configuration,
 mounted read-only at `/etc/hyprn/trust/cloudsql-server-ca.pem`.
+Infrastructure must select a Cloud SQL server-CA mode that supports the chosen
+verified DNS name, then obtain and verify the actual instance certificate SAN
+and CA bytes. A default self-signed certificate's common name is not assumed
+to match a `*.sql.goog` name.
 
 The embedded Assistant runs inside the application. No external MCP, ChatGPT
 transport or Managed OAuth scope is part of this contract, following

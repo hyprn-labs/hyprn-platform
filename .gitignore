@@ -48,3 +48,6 @@ application_default_credentials.json
 *.db-*
 *.log
 .pytest_cache/
+
+# Raw local test evidence can contain machine paths
+.planning/**/*-RED.json
