@@ -9,6 +9,9 @@ Reviewed 2026-10-20, before binary acquisition.
 - darwin_arm64 archive: terraform-provider-cloudflare_5.28.0_darwin_arm64.zip
 - Archive SHA256: 886714cfd9ada7876dd39ed857661766d9b75ba205079c3b70c4d5b56e9955b8
 - Publisher checksums: https://github.com/cloudflare/terraform-provider-cloudflare/releases/download/v5.28.0/terraform-provider-cloudflare_5.28.0_SHA256SUMS
+- Verified extracted darwin_arm64 executable SHA256:
+  7f2ed119cddfbf94c3cca4171080a1e9735856bde4d3a6cc63c43e3467244632
+- Offline lock h1: TU/V8MCPOw5OhdVmt0f2KD4Xoggq1qEa5YIZM/FYLkA=
 - Verification uses the exact publisher HTTPS checksum; this is not an independent
   signing-key verification. No transitive package installation is needed.
 - Terraform 1.16.5 is the existing reviewed executable documented in
@@ -22,6 +25,8 @@ restore the configured secret. Omitting tunnel_secret for config_src=cloudflare
 keeps it null. No tunnel-token data source is used. The provider API token is
 supplied through CLOUDFLARE_API_TOKEN by the operator, never as a Terraform variable.
 The pinned schema and evaluated plans are checked by access-infrastructure.
+Disable Terraform/provider debug logging during live operations: HTTP response
+diagnostics may contain sensitive material even when state does not.
 
 The future approved runtime step obtains the remotely managed tunnel token
 directly from the Cloudflare token endpoint into Secret Manager through a

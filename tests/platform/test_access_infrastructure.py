@@ -1,7 +1,7 @@
 """Validate the real Cloudflare schema and evaluated plans without cloud credentials."""
-import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -9,7 +9,122 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = "\nmock_provider \"cloudflare\" {\n  override_during = plan\n  mock_resource \"cloudflare_zero_trust_access_identity_provider\" {\n    defaults = { id = \"11111111-1111-4111-8111-111111111111\" }\n  }\n  mock_resource \"cloudflare_zero_trust_access_policy\" {\n    defaults = { id = \"22222222-2222-4222-8222-222222222222\" }\n  }\n  mock_resource \"cloudflare_zero_trust_access_application\" {\n    defaults = { id = \"33333333-3333-4333-8333-333333333333\", aud = \"test-audience\" }\n  }\n  mock_resource \"cloudflare_zero_trust_tunnel_cloudflared\" {\n    defaults = { id = \"44444444-4444-4444-8444-444444444444\" }\n  }\n}\nvariables {\n  account_id = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  zone_id = \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n  team_name = \"synthetic-staging\"\n  admitted_emails = [\"operator@example.invalid\", \"reviewer@example.invalid\"]\n  loopback_origin = \"http://127.0.0.1:8080\"\n}\nrun \"named_email_boundary\" {\n  command = plan\n  assert {\n    condition = output.review.policy.decision == \"allow\" && length(output.review.policy.include) == 2 && toset([for rule in output.review.policy.include : rule.email.email]) == toset(var.admitted_emails)\n    error_message = \"Only exact named emails may be admitted.\"\n  }\n  assert {\n    condition = alltrue(flatten([for rule in output.review.policy.include : [for key, value in rule : key == \"email\" || value == null]]))\n    error_message = \"Domain, everyone, token, IP and other bypass selectors are forbidden.\"\n  }\n  assert {\n    condition = length(output.review.policy.exclude) == 0 && length(output.review.policy.require) == 0 && output.review.idp.type == \"onetimepin\"\n    error_message = \"Use the one-time email PIN provider and explicit named admission.\"\n  }\n  assert {\n    condition = output.review.application.domain == \"staging.app.hyprn.ai\" && output.review.application.type == \"self_hosted\" && output.review.application.allowed_idps == toset([output.review.idp.id]) && length(output.review.application.policies) == 1 && output.review.application.policies[0].id == output.review.policy.id\n    error_message = \"The complete application hostname must use the one reviewed IdP and policy.\"\n  }\n  assert {\n    condition = !output.review.application.options_preflight_bypass && output.review.application.oauth_configuration == null && output.review.application.session_duration == \"8h\"\n    error_message = \"No preflight bypass or external OAuth is admitted.\"\n  }\n}\nrun \"tunnel_origin_and_dns\" {\n  command = plan\n  assert {\n    condition = output.review.tunnel.config_src == \"cloudflare\" && output.review.tunnel.tunnel_secret == null\n    error_message = \"Remote tunnel metadata must not put credentials in state.\"\n  }\n  assert {\n    condition = length(output.review.config.config.ingress) == 2 && output.review.config.config.ingress[0].hostname == output.review.application.domain && output.review.config.config.ingress[0].service == var.loopback_origin && output.review.config.config.ingress[0].path == null && output.review.config.config.ingress[1].service == \"http_status:404\" && output.review.config.config.ingress[1].hostname == null\n    error_message = \"Route only the exact host to loopback, with a final fail-closed 404.\"\n  }\n  assert {\n    condition = output.review.config.config.ingress[0].origin_request.access.required && output.review.config.config.ingress[0].origin_request.access.aud_tag == tolist([output.review.application.aud]) && output.review.config.config.ingress[0].origin_request.access.team_name == var.team_name\n    error_message = \"The connector must verify Access JWTs against the exact team and audience.\"\n  }\n  assert {\n    condition = output.review.dns.proxied && output.review.dns.type == \"CNAME\" && output.review.dns.name == output.review.application.domain && output.review.dns.content == \"${output.review.tunnel.id}.cfargotunnel.com\" && output.review.dns.ttl == 1\n    error_message = \"Publish only the proxied tunnel hostname.\"\n  }\n}\nrun \"reject_empty_allowlist\" {\n command = plan\n variables { admitted_emails = [] }\n expect_failures = [var.admitted_emails]\n}\nrun \"reject_wildcard_email\" {\n command = plan\n variables { admitted_emails = [\"*@example.invalid\"] }\n expect_failures = [var.admitted_emails]\n}\nrun \"reject_domain_only\" {\n command = plan\n variables { admitted_emails = [\"example.invalid\"] }\n expect_failures = [var.admitted_emails]\n}\nrun \"reject_wildcard_domain\" {\n command = plan\n variables { admitted_emails = [\"user@*.invalid\"] }\n expect_failures = [var.admitted_emails]\n}\nrun \"reject_public_origin\" {\n command = plan\n variables { loopback_origin = \"http://0.0.0.0:8080\" }\n expect_failures = [var.loopback_origin]\n}\nrun \"reject_remote_origin\" {\n command = plan\n variables { loopback_origin = \"http://169.254.169.254:80\" }\n expect_failures = [var.loopback_origin]\n}\nrun \"reject_origin_userinfo\" {\n command = plan\n variables { loopback_origin = \"http://127.0.0.1:8080@evil.invalid\" }\n expect_failures = [var.loopback_origin]\n}\nrun \"reject_origin_path\" {\n command = plan\n variables { loopback_origin = \"http://127.0.0.1:8080/mcp\" }\n expect_failures = [var.loopback_origin]\n}\nrun \"reject_origin_port\" {\n command = plan\n variables { loopback_origin = \"http://127.0.0.1:65536\" }\n expect_failures = [var.loopback_origin]\n}\nrun \"reject_invalid_account\" {\n command = plan\n variables { account_id = \"wrong-account\" }\n expect_failures = [var.account_id]\n}\n"
+FIXTURE = r"""
+mock_provider "cloudflare" {
+  override_during = plan
+  mock_resource "cloudflare_zero_trust_access_identity_provider" {
+    defaults = { id = "11111111-1111-4111-8111-111111111111" }
+  }
+  mock_resource "cloudflare_zero_trust_access_policy" {
+    defaults = { id = "22222222-2222-4222-8222-222222222222" }
+  }
+  mock_resource "cloudflare_zero_trust_access_application" {
+    defaults = { id = "33333333-3333-4333-8333-333333333333", aud = "test-audience" }
+  }
+  mock_resource "cloudflare_zero_trust_tunnel_cloudflared" {
+    defaults = { id = "44444444-4444-4444-8444-444444444444" }
+  }
+}
+variables {
+  account_id = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  zone_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  team_name = "synthetic-staging"
+  admitted_emails = ["operator@example.invalid", "reviewer@example.invalid"]
+  loopback_origin = "http://127.0.0.1:8080"
+}
+run "named_email_boundary" {
+  command = plan
+  assert {
+    condition = output.review.policy.decision == "allow" && length(output.review.policy.include) == 2 && toset([for rule in output.review.policy.include : rule.email.email]) == toset(var.admitted_emails)
+    error_message = "Only exact named emails may be admitted."
+  }
+  assert {
+    condition = alltrue(flatten([for rule in output.review.policy.include : [for key, value in rule : key == "email" || value == null]]))
+    error_message = "Domain, everyone, token, IP and other bypass selectors are forbidden."
+  }
+  assert {
+    condition = length(output.review.policy.exclude) == 0 && length(output.review.policy.require) == 0 && output.review.idp.type == "onetimepin"
+    error_message = "Use the one-time email PIN provider and explicit named admission."
+  }
+  assert {
+    condition = output.review.application.domain == "staging.app.hyprn.ai" && output.review.application.type == "self_hosted" && output.review.application.allowed_idps == toset([output.review.idp.id]) && length(output.review.application.policies) == 1 && output.review.application.policies[0].id == output.review.policy.id
+    error_message = "The complete application hostname must use the one reviewed IdP and policy."
+  }
+  assert {
+    condition = !output.review.application.options_preflight_bypass && output.review.application.oauth_configuration == null && output.review.application.session_duration == "8h"
+    error_message = "No preflight bypass or external OAuth is admitted."
+  }
+}
+run "tunnel_origin_and_dns" {
+  command = plan
+  assert {
+    condition = output.review.tunnel.config_src == "cloudflare" && output.review.tunnel.tunnel_secret == null
+    error_message = "Remote tunnel metadata must not put credentials in state."
+  }
+  assert {
+    condition = length(output.review.config.config.ingress) == 2 && output.review.config.config.ingress[0].hostname == output.review.application.domain && output.review.config.config.ingress[0].service == var.loopback_origin && output.review.config.config.ingress[0].path == null && output.review.config.config.ingress[1].service == "http_status:404" && output.review.config.config.ingress[1].hostname == null
+    error_message = "Route only the exact host to loopback, with a final fail-closed 404."
+  }
+  assert {
+    condition = output.review.config.config.ingress[0].origin_request.access.required && output.review.config.config.ingress[0].origin_request.access.aud_tag == tolist([output.review.application.aud]) && output.review.config.config.ingress[0].origin_request.access.team_name == var.team_name
+    error_message = "The connector must verify Access JWTs against the exact team and audience."
+  }
+  assert {
+    condition = output.review.dns.proxied && output.review.dns.type == "CNAME" && output.review.dns.name == output.review.application.domain && output.review.dns.content == "${output.review.tunnel.id}.cfargotunnel.com" && output.review.dns.ttl == 1
+    error_message = "Publish only the proxied tunnel hostname."
+  }
+}
+run "reject_empty_allowlist" {
+ command = plan
+ variables { admitted_emails = [] }
+ expect_failures = [var.admitted_emails]
+}
+run "reject_wildcard_email" {
+ command = plan
+ variables { admitted_emails = ["*@example.invalid"] }
+ expect_failures = [var.admitted_emails]
+}
+run "reject_domain_only" {
+ command = plan
+ variables { admitted_emails = ["example.invalid"] }
+ expect_failures = [var.admitted_emails]
+}
+run "reject_wildcard_domain" {
+ command = plan
+ variables { admitted_emails = ["user@*.invalid"] }
+ expect_failures = [var.admitted_emails]
+}
+run "reject_public_origin" {
+ command = plan
+ variables { loopback_origin = "http://0.0.0.0:8080" }
+ expect_failures = [var.loopback_origin]
+}
+run "reject_remote_origin" {
+ command = plan
+ variables { loopback_origin = "http://169.254.169.254:80" }
+ expect_failures = [var.loopback_origin]
+}
+run "reject_origin_userinfo" {
+ command = plan
+ variables { loopback_origin = "http://127.0.0.1:8080@evil.invalid" }
+ expect_failures = [var.loopback_origin]
+}
+run "reject_origin_path" {
+ command = plan
+ variables { loopback_origin = "http://127.0.0.1:8080/mcp" }
+ expect_failures = [var.loopback_origin]
+}
+run "reject_origin_port" {
+ command = plan
+ variables { loopback_origin = "http://127.0.0.1:65536" }
+ expect_failures = [var.loopback_origin]
+}
+run "reject_invalid_account" {
+ command = plan
+ variables { account_id = "wrong-account" }
+ expect_failures = [var.account_id]
+}
+"""
 
 class AccessInfrastructureTests(unittest.TestCase):
     def test_evaluated_access_boundary(self):
@@ -31,6 +146,8 @@ class AccessInfrastructureTests(unittest.TestCase):
                         shutil.copy2(path, target / path.name)
             root = scratch / "infra/environments/staging-access"
             (root / "policy.tftest.hcl").write_text(FIXTURE)
+            # Override only persistence inside scratch; never initialize the GCS backend.
+            (root / "test_backend_override.tf").write_text('terraform {\n  backend "local" {}\n}\n')
             config = scratch / "terraform.rc"
             config.write_text("disable_checkpoint = true\n")
             env = {key: value for key, value in os.environ.items()
@@ -49,7 +166,7 @@ class AccessInfrastructureTests(unittest.TestCase):
                 return result
             version = json.loads(run("version", "-json").stdout)
             self.assertEqual(version["terraform_version"], "1.16.5")
-            run("init", "-backend=false", "-input=false", "-lockfile=readonly",
+            run("init", "-input=false", "-lockfile=readonly",
                 "-plugin-dir=" + str(Path(cache).resolve()))
             self.assertTrue(json.loads(run("validate", "-json").stdout)["valid"])
             schemas = json.loads(run("providers", "schema", "-json").stdout)
@@ -66,7 +183,6 @@ class AccessInfrastructureTests(unittest.TestCase):
             self.assertEqual(summary["skipped"], 0)
             graph = run("graph").stdout
             edges = {}
-            import re
             for start, end in re.findall(r'"([^"]+)" -> "([^"]+)"', graph):
                 edges.setdefault(start, set()).add(end)
             def reaches(start, end, visited=None):
@@ -87,8 +203,9 @@ class AccessInfrastructureTests(unittest.TestCase):
             # A bypass regression must fail the evaluated assertion, not just a text scan.
             module = scratch / "infra/modules/access/main.tf"
             original = module.read_text()
-            self.assertIn('decision = "allow"', original)
-            module.write_text(original.replace('decision = "allow"', 'decision = "bypass"'))
+            changed, count = re.subn(r'decision\s*=\s*"allow"', 'decision = "bypass"', original)
+            self.assertEqual(count, 1)
+            module.write_text(changed)
             bad = run("test", "-json", success=False)
             self.assertNotEqual(bad.returncode, 0)
             diagnostics = [json.loads(line) for line in bad.stdout.splitlines()]
