@@ -141,3 +141,19 @@ Official CLI behavior checked on 2026-10-20:
 and [stdin version creation](https://docs.cloud.google.com/sdk/gcloud/reference/secrets/versions/add).
 Attached identity follows [Google metadata](https://docs.cloud.google.com/compute/docs/metadata/querying-metadata)
 and [Secret Manager access/integrity](https://docs.cloud.google.com/secret-manager/docs/access-secret-version).
+
+## Approved staging provider transfer — 2026-10-20
+
+After explicit owner approval of the exact resource and source file, the
+`transfer-provider` CLI copied the existing provider key to the staging
+assistant-provider container. It exited0 and produced numeric version1;
+read-only Google metadata confirms that version is ENABLED. The source remains
+intact. The receipt and target identifiers are retained in the owner's private
+credential directory, not Git. Verification did not retrieve the payload.
+Do not repeat this transfer or bypass the receipt on resumed work.
+
+The separately approved restricted Claude environment was created and verified.
+Agent creation was definitively rejected because the provider API balance is
+too low; the key transfer does not resolve that billing prerequisite. No
+conversation/model request or application activation occurred. Live Linux
+consumer delivery remains a separate uncompleted acceptance step.
