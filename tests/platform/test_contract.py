@@ -73,6 +73,36 @@ class ContractTests(unittest.TestCase):
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
         self.assertEqual(first["config_sha256"], hashlib.sha256(encoded).hexdigest())
 
+    def test_dispatcher_has_only_scoped_credentials_and_host_owned_bridge(self):
+        preview = self.success(self.command())["preview"]
+        services = preview["compose"]["services"]
+        self.assertIn("dispatcher", services)
+        dispatcher = services["dispatcher"]
+        self.assertEqual(dispatcher["image"], services["app"]["image"])
+        self.assertEqual(dispatcher["user"], "10002:10002")
+        aliases = {
+            row["consumer"]: {entry["alias"] for entry in preview["secret_loads"]
+                              if entry["consumer"] == row["consumer"]}
+            for row in preview["secret_loads"]
+        }
+        self.assertEqual(aliases["dispatcher"],
+                         {"db-app-request", "db-dispatcher-background", "modeling-auth"})
+        self.assertIn("db-assistant-background", aliases["app"])
+        self.assertNotIn("db-dispatcher-background", aliases["app"])
+        environment = dispatcher["environment"]
+        self.assertEqual(environment["HYPRN_MVP_DATABASE_DISPATCHER_BACKGROUND_ROLE"],
+                         "hyprn_dispatcher_background")
+        self.assertNotIn("HYPRN_MVP_DATABASE_AUTH_ROLE", environment)
+        self.assertEqual(services["app"]["environment"]["HYPRN_MVP_DATABASE_ASSISTANT_BACKGROUND_ROLE"],
+                         "hyprn_assistant_background")
+        self.assertEqual(dispatcher["networks"], ["modeling", "dispatcher"])
+        self.assertTrue(preview["compose"]["networks"]["dispatcher"]["internal"])
+        self.assertNotIn("ports", dispatcher)
+        self.assertNotIn("assistant-provider", json.dumps(dispatcher))
+        self.assertNotIn("docker.sock", json.dumps(services))
+        self.assertEqual(preview["execution"]["application_secrets"], [])
+        self.assertEqual(preview["worker"]["secrets"], [])
+
     def test_negative_fixtures_fail_before_rendering(self):
         for row in self.fixtures["negative"]:
             with self.subTest(row["name"]):
