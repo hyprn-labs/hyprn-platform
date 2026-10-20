@@ -289,3 +289,27 @@ actual GCP API storageAutoResizeLimit field allowed all resource assertions to
 pass. This did not change infrastructure or weaken the growth-cap assertion.
 Application availability, actual sign-in, Linux runtime containment, backup
 restore and automatic deployment remain unverified.
+
+## Approved hostname correction — 2026-10-20
+
+The owner approved saved plan SHA256
+`0d9ad1c5f34ed8e7c488a665a62bec1270e5533b1d5309e93010a1497ebf5993`.
+Three in-place updates renamed the DNS record, Access domain and tunnel route
+to staging.hyprn.ai. Apply exited 0; there were no creates, deletes or replacements.
+Verified HTTPS returns 302 to the configured Access team; no redirect was followed
+and no login email was sent. Post-apply Access plan exits 0 with no changes.
+Resource readback still confirms the approved policy, stopped private VM and
+protected storage/database. Application activation remains pending.
+
+Platform source `da47395`, with derived fixture pins completed at `fb7bf11`,
+aligns Terraform, deployment contract and review template. Acceptance on that
+source: `tests/platform/run.sh contracts` 20 passed (11.463 seconds);
+`HYPRN_TF_PROVIDER_DIR=<reviewed-cache> tests/platform/run.sh infrastructure`
+2 passed/eight mocked plans (2.318 seconds);
+`HYPRN_CF_PROVIDER_DIR=<reviewed-cache> tests/platform/run.sh access-infrastructure`
+1 passed/twelve mocked plans (2.498 seconds). Initial sandbox runs could not
+start provider IPC; reruns outside that filesystem sandbox passed. Initial
+contract tests correctly rejected a stale synthetic schema hash; schema, release
+and rendered configuration hashes were regenerated, without loosening validation.
+Temporary test scopes were released. No product/native checks were repeated
+for this platform-only hostname correction.
