@@ -116,6 +116,25 @@ class ContractTests(unittest.TestCase):
                 self.rejected(self.command(desired=True), code)
                 self.documents["desired"] = saved
 
+    def test_only_documented_cloudsql_dns_identities_are_accepted(self):
+        for suffix in ("sql.goog", "sql-psa.goog"):
+            with self.subTest(suffix=suffix):
+                server = "1a23b4cd5e67.1a2b345c6d27.europe-west1." + suffix
+                self.documents["runtime"]["database"]["server_name"] = server
+                preview = self.success(self.command())["preview"]
+                app = preview["compose"]["services"]["app"]
+                self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_TLS_SERVER_NAME"], server)
+                self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_SSLMODE"], "verify-full")
+        for server in (
+            "metadata.google.internal", "10.20.0.3", "attacker.example",
+            "a.b.europe-west1.sql-psa.goog.attacker.example",
+            "a..europe-west1.sql-psa.goog", "a.b.europe-west1.sql-evil.goog",
+            "-a.b.europe-west1.sql-psa.goog", "a.b.europe-west1.sql-psa.goog.",
+        ):
+            with self.subTest(server=server):
+                self.documents["runtime"]["database"]["server_name"] = server
+                self.rejected(self.command(), "schema_value")
+
     def test_store_compatibility_and_registry_are_enforced(self):
         self.documents["release"]["stores"]["application"]["write_version"] = 2
         self.rejected(self.command(), "store_compatibility")

@@ -78,7 +78,7 @@ mounted read-only at `/etc/hyprn/trust/cloudsql-server-ca.pem`.
 Infrastructure must select a Cloud SQL server-CA mode that supports the chosen
 verified DNS name, then obtain and verify the actual instance certificate SAN
 and CA bytes. A default self-signed certificate's common name is not assumed
-to match a `*.sql.goog` name.
+to match a Cloud SQL DNS name.
 
 The embedded Assistant runs inside the application. No external MCP, ChatGPT
 transport or Managed OAuth scope is part of this contract, following
@@ -93,3 +93,14 @@ verify image bytes, authenticate evidence, verify a host attestation, establish
 database permissions, enforce a firewall, or prove the images boot successfully.
 `artifact_bytes_verified` therefore remains false. Those are host/release
 acceptance obligations; this preview alone is never authorization to start.
+
+For shared-CA server identity, the binding accepts the documented
+`INSTANCE_UID.PROJECT_DNS_LABEL.REGION.sql-psa.goog` name for private services
+access, or `INSTANCE_UID.PROJECT_DNS_LABEL.REGION.sql.goog` for Private Service
+Connect/public IP. Record the actual instance SAN name, without a terminal DNS
+root dot; arbitrary hostnames, IP literals and suffix extensions are rejected.
+The private connection address remains separate and `verify-full` remains
+mandatory. These formats follow Google's
+[server identity verification documentation](https://docs.cloud.google.com/sql/docs/postgres/configure-ssl-instance#server-identity-verification),
+verified on 2026-10-20. This is a structural allowlist, not a substitute for the
+live certificate and CA check.
