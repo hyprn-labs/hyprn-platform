@@ -204,6 +204,8 @@ def assistant_environment(runtime):
     )}
     values.update({
         "KEY_FILE": "/run/secrets/assistant-provider",
+        "PLAN_FILE": "/run/hyprn-control/assistant-plan.json",
+        "CONTINUITY_FILE": "/run/hyprn-control/assistant-continuity.json",
         "TOTAL_CENTS": str(binding["budget"]["total_cents"]),
         "PRIOR_CENTS": str(binding["budget"]["prior_cents"]),
         "APPROVED_MINOR": str(binding["budget"]["approved_minor"]),
@@ -213,12 +215,30 @@ def assistant_environment(runtime):
     return {"HYPRN_MVP_ASSISTANT_" + key: value for key, value in values.items()}
 
 
+def application_environment(runtime):
+    """Fixed product paths; host-owned identity avoids a self-referential config hash."""
+    return {
+        "HYPRN_MVP_DATABASE_CA_SHA256": runtime["database"]["ca_sha256"],
+        "HYPRN_MVP_HOST_IDENTITY_FILE": "/run/hyprn-control/runtime-identity.json",
+        "HYPRN_MVP_ADMISSION_FILE": "/run/hyprn-control/admission.json",
+        "HYPRN_MVP_ARTIFACT_ROOT": "/data/artifacts",
+        "HYPRN_MVP_MODEL_URL": "http://modeling:3000/modeling/1",
+        "HYPRN_MVP_MODEL_KEY_FILE": "/run/secrets/modeling-auth",
+    }
+
+
 def assistant_policy(runtime):
     return {
         "consumer": "app", "provider": "claude-managed-agents",
         "configuration_sha256": runtime["assistant"]["configuration_sha256"],
         "budget": runtime["assistant"]["budget"],
     }
+
+
+def secret_target(component, alias):
+    if component == "modeling":
+        return {"modeling-auth": "/run/model.key", "modeling-rails": "/run/rails.key"}[alias]
+    return "/run/secrets/" + alias
 
 
 def bind(source, target, readonly=False):
@@ -246,19 +266,24 @@ def render(release, runtime):
             "networks": ["modeling"] + (["application"] if component == "app" else
                             ["dispatcher"] if component == "dispatcher" else []),
             "volumes": [bind(root + "/" + area + "/artifacts", "/data/artifacts")]
-                if component == "dispatcher" else [bind(root + "/" + area, "/data")],
+                if component == "dispatcher" else
+                [bind(root + "/" + area, "/store" if component == "modeling" else "/data")],
             **limits[component],
         }
         environment = {}
         for alias in SECRET_CONSUMERS[component]:
             service["volumes"].append(bind(
                 "/run/hyprn/secrets/" + component + "/" + alias,
-                "/run/secrets/" + alias, True,
+                secret_target(component, alias), True,
             ))
             environment["HYPRN_SECRET_" + alias.upper().replace("-", "_") + "_FILE"] = (
-                "/run/secrets/" + alias
+                secret_target(component, alias)
             )
         if component in ("app", "dispatcher"):
+            service["volumes"].append(bind(
+                "/run/hyprn/control", "/run/hyprn-control", True,
+            ))
+            environment.update(application_environment(runtime))
             service["volumes"].append(bind(
                 "/etc/hyprn/trust/cloudsql-server-ca.pem",
                 "/etc/hyprn/trust/cloudsql-server-ca.pem", True,
@@ -273,9 +298,12 @@ def render(release, runtime):
                 "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
                 "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
             })
+        if component == "modeling":
+            environment["HYPRN_MVP_EDITION"] = "cloud"
         if component == "app":
             environment.update(assistant_environment(runtime))
             environment.update({
+                "HYPRN_MVP_UI_ROOT": "/app/ui",
                 "HYPRN_MVP_EXTERNAL_ORIGIN": runtime["external_origin"],
                 "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
                 "HYPRN_MVP_DATABASE_ASSISTANT_BACKGROUND_ROLE":
@@ -403,18 +431,32 @@ def check_render(value, runtime, release):
         area = "application" if component in ("app", "dispatcher") else "modeling"
         expected_mounts = (
             [bind(runtime["mounts"][area] + "/artifacts", "/data/artifacts")]
-            if component == "dispatcher" else [bind(runtime["mounts"][area], "/data")]
+            if component == "dispatcher" else
+            [bind(runtime["mounts"][area], "/store" if component == "modeling" else "/data")]
         )
         expected_mounts += [
             bind(runtime["mounts"]["secrets"] + "/" + component + "/" + alias,
-                 "/run/secrets/" + alias, True)
+                 secret_target(component, alias), True)
             for alias in SECRET_CONSUMERS[component]
         ]
         if component in ("app", "dispatcher"):
             expected_mounts.append(bind(
+                "/run/hyprn/control", "/run/hyprn-control", True,
+            ))
+            for key, setting in application_environment(runtime).items():
+                if service["environment"].get(key) != setting:
+                    raise Invalid("render_policy")
+            if component == "app" and service["environment"].get("HYPRN_MVP_UI_ROOT") != "/app/ui":
+                raise Invalid("render_policy")
+            expected_mounts.append(bind(
                 "/etc/hyprn/trust/cloudsql-server-ca.pem",
                 "/etc/hyprn/trust/cloudsql-server-ca.pem", True,
             ))
+        if component == "modeling" and service["environment"] != {
+                "HYPRN_MVP_EDITION": "cloud",
+                **{"HYPRN_SECRET_" + alias.upper().replace("-", "_") + "_FILE":
+                   secret_target(component, alias) for alias in SECRET_CONSUMERS[component]}}:
+            raise Invalid("render_policy")
         if service["volumes"] != expected_mounts:
             raise Invalid("render_policy")
         expected_networks = ["modeling"] + (["application"] if component == "app" else
@@ -457,6 +499,7 @@ def check_render(value, runtime, release):
         "HYPRN_MVP_MODEL_URL": "http://modeling:3000/modeling/1",
         "HYPRN_MVP_MODEL_KEY_FILE": "/run/secrets/modeling-auth",
     })
+    expected_environment.update(application_environment(runtime))
     if environment != expected_environment:
         raise Invalid("render_policy")
     if (value["dispatcher_bridge"] != {

@@ -74,6 +74,26 @@ class ContractTests(unittest.TestCase):
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
         self.assertEqual(first["config_sha256"], hashlib.sha256(encoded).hexdigest())
 
+    def test_runtime_controls_are_read_only_and_not_given_to_modeling(self):
+        services = self.success(self.command())["preview"]["compose"]["services"]
+        for name in ("app", "dispatcher"):
+            service = services[name]
+            controls = [m for m in service["volumes"] if m["target"] == "/run/hyprn-control"]
+            self.assertEqual(len(controls), 1)
+            self.assertTrue(controls[0]["read_only"])
+            self.assertFalse(controls[0]["bind"]["create_host_path"])
+            self.assertEqual(service["environment"]["HYPRN_MVP_DATABASE_CA_SHA256"],
+                             self.documents["runtime"]["database"]["ca_sha256"])
+            self.assertEqual(service["environment"]["HYPRN_MVP_HOST_IDENTITY_FILE"],
+                             "/run/hyprn-control/runtime-identity.json")
+        modeling = services["modeling"]
+        self.assertEqual({m["target"] for m in modeling["volumes"]},
+                         {"/store", "/run/model.key", "/run/rails.key"})
+        self.assertEqual(modeling["environment"]["HYPRN_MVP_EDITION"], "cloud")
+        self.assertNotIn("hyprn-control", json.dumps(modeling))
+        self.assertNotIn("HYPRN_MVP_ASSISTANT_PLAN_FILE", services["dispatcher"]["environment"])
+        self.assertEqual(services["app"]["environment"]["HYPRN_MVP_UI_ROOT"], "/app/ui")
+
     def test_dispatcher_has_only_scoped_credentials_and_host_owned_bridge(self):
         preview = self.success(self.command())["preview"]
         services = preview["compose"]["services"]
@@ -134,6 +154,8 @@ class ContractTests(unittest.TestCase):
         binding = self.documents["runtime"]["assistant"]
         expected = {
             "KEY_FILE": "/run/secrets/assistant-provider",
+            "PLAN_FILE": "/run/hyprn-control/assistant-plan.json",
+            "CONTINUITY_FILE": "/run/hyprn-control/assistant-continuity.json",
             "AGENT_ID": binding["agent_id"],
             "AGENT_VERSION": binding["agent_version"],
             "ENVIRONMENT_ID": binding["environment_id"],

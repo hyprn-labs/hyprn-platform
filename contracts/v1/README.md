@@ -102,6 +102,30 @@ implementation and boundary evidence; unimplemented operations cannot return
 success or establish release conformance. Cloud resource/IAM changes remain
 outside this CLI and require the platform owner's reviewed operational approval.
 
+## Runtime control inputs
+
+The application and dispatcher receive `/run/hyprn/control` read-only at
+`/run/hyprn-control`. The host owns this directory and all its files; containers
+cannot create or renew admission. `runtime-identity.json` binds installation,
+release and configuration hashes without placing the configuration hash inside
+its own rendered input. `admission.json` carries separate browser/scientific
+admission with an expiry of at most 300 seconds. Missing, expired or mismatched
+records keep admission closed.
+
+The application additionally reads the exact released `assistant-plan.json` and
+`assistant-continuity.json` from this directory before starting delivery. The
+continuity review classifies retained and carried provider sessions without
+overlap, accounts explicitly for any reviewed untracked prior cost, and must
+match the configured shared allowance. Moving to an empty application database
+never resets the allowance. Before enabling a new installation, prior delivery
+must be fenced so two installations cannot spend the same remaining budget.
+
+The modeling image retains its native `/store`, `/run/model.key` and
+`/run/rails.key` paths. Its cloud startup refuses an uninitialized store;
+initialization is an explicit lifecycle operation. Credentials remain separate
+read-only file mounts; modeling receives no application control files or
+Assistant credentials.
+
 ## Runtime boundaries
 
 The Compose portion declares the app and modeling services plus a dispatcher

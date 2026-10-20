@@ -313,3 +313,24 @@ contract tests correctly rejected a stale synthetic schema hash; schema, release
 and rendered configuration hashes were regenerated, without loosening validation.
 Temporary test scopes were released. No product/native checks were repeated
 for this platform-only hostname correction.
+
+## Product runtime wiring — 2026-10-20
+
+Admission contract source `e3ca6d2` and invocation documentation `8a1cb19`
+passed parent checks: contracts 20 passed (5.052 seconds), secrets 18 passed
+(8.541 seconds). These are offline checks, not application activation.
+
+Linux composition inspection found missing application control/Assistant inputs
+and modeling mount targets that differed from the actual image entrypoint.
+The renderer now binds host-owned read-only control records and explicit model,
+artifact, UI and database CA settings. Modeling uses its existing store/key paths.
+No cloud resources changed. Initial updated contracts check failed one exact
+Assistant-settings expectation; the fixture was extended for the two required
+control-file paths, without dropping exactness assertions.
+
+A read-only provider inventory and retained local ledger reconcile five idle
+HYPRN sessions: 476 USD cents in the local ledger plus the same 25-cent session
+already carried by the local allowance, total 501 cents. It must not be counted
+twice. The existing approved EUR 100 conversion ceiling is preserved. This is a
+provisional transition review: refresh usage and fence old local delivery before
+new cloud admission. Private session identities and evidence remain outside Git.
