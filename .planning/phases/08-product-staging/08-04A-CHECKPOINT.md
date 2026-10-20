@@ -112,3 +112,26 @@ checkpoint without changing implementation or invalidating its checks.
 ## Refinement self-check
 
 Verified commit exists, modified seven owned files, and deleted no tracked files.
+
+
+## Private proposed inputs ready for plan review
+
+The same private inventory directory now contains proposed tfvars and backend
+configuration, with review notes. Their exact names and digests follow.
+All four proposed bucket-name probes returned 404. This does not reserve names.
+The proposed new VPC ranges do not overlap each other; future peering/VPN ranges
+must be reviewed before any connection is added. Runtime HTTPS addresses are
+dated DNS observations for the code-confirmed Assistant API and Access issuer,
+not permanent provider ranges or evidence of effective hostname isolation.
+
+The proposed egress does not yet cover host package/image bootstrap destinations;
+08-02 must settle image assembly and the bounded proxy before declaring boot
+readiness. Google service calls use the already modeled private VIP.
+Cloudflare resource-as-code implementation is assigned to a separate executor.
+No cloud mutation, secret read, plan/apply, or extra check run occurred.
+
+- dns-inventory.json: 05130ef75178e5a93fcc90463bed41f648ead5a6be565e9e2bfaeac5fc8c8318
+- bucket-name-probes.json: 993172f2b38b47e90f2085d8ef79a935a2aaad8b8b360235cb3e1cdf68b5dad2
+- staging-proposed.tfvars.json: 5a98eb9dfe79af23706d8dfc97b7b2ec6b730e691ca8eafc7e10dd5295a41aa0
+- staging-proposed.backend.hcl: f74e567c1bdef6c624eb23280ae05db4359bb2af2625c6c7a0d8dc72abc59ca9
+- REVIEW.txt: 18771fa91793f4b15ef8f11370993871ca8057c6e4383170815e8064caaa23bd
