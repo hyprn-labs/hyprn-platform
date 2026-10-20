@@ -43,6 +43,65 @@ by this stateless validator.
 Its names, commits, addresses and digest pins are examples, not deployed resources
 or evidence of scientific qualification.
 
+## Product lifecycle invocation
+
+The product release supplies the fixed host-only command:
+
+```sh
+python -B deployment/cloud_lifecycle.py OPERATION \
+  --binding binding.json --operation-id UUID --timeout SECONDS
+```
+
+`OPERATION` is an entry in the pinned workload's closed lifecycle list, including
+`admission`. `--timeout` is an explicit integer from 1 through 3600 seconds; the
+normal drain budget is 120 seconds. Only `admission` accepts the additional
+required `--surface browser|scientific --state open|closed` arguments. Unknown
+arguments and arguments belonging to another operation are rejected.
+
+The binding file is a closed JSON object with `schema: hyprn-product-binding/v1`
+and absolute path fields `platform_root`, `workload`, `release`, `runtime`,
+`desired`, `payload_inventory`, and `control_root`. `migration_secret_file` is
+permitted only for initialize/migrate and absent otherwise. It references the
+operation-scoped credential file; credential bytes, shell fragments and arbitrary
+commands are forbidden. Duplicate keys, unknown fields and non-finite values are
+invalid. These are trusted host inputs, never browser or agent-supplied paths.
+The product validates the binding before imports or effects. The supplied platform
+bundle/directory is separately pinned by commit and exact schema/renderer bytes;
+the product consumes it without vendoring a second renderer. Deployment documents
+are validated by that reviewed renderer before lifecycle work.
+
+The command emits one bounded JSON result with exactly the specification's fields:
+`operation_id`, `operation`, `installation_id`, `status`, `reason_code`,
+`observed_schema_versions`, and `evidence_refs`. Status is `success`, `noop`,
+`refused`, `failed`, or `recovery_required`; reason codes are fixed machine tokens,
+never raw exceptions, provider responses or input values. Identity/schema fields
+remain unknown when validation cannot establish them; do not invent successful
+observations. Evidence references identify bounded, nonsecret operation records
+under the reviewed control scope. Exit codes retain the specification's meaning:
+0 success/no-op, 2 invalid input/identity, 3 incompatible release/schema,
+4 admission/drain conflict, 5 failed verification, 6 operator recovery required.
+A caller timeout or missing/malformed result is uncertain; reconcile before retry.
+
+`control_root` is a private platform-owned location. The product may record its
+bounded operation receipts there under the host invocation, but cannot create a
+second desired-state/reconciliation authority. Admission-opening evidence is
+produced by trusted host qualification and must not be writable by the application.
+It binds exact release, rendered configuration, installation/store/disk identity,
+effective network policy and, for scientific admission, the current runtime
+attestation. Assistant-enabled admission additionally requires exact provider
+readback and shared prior-spending reconciliation. Missing or stale evidence
+keeps the corresponding admission closed. `start` may start services behind
+closed admission so they can be qualified; process liveness never opens access.
+The host reconciler still owns deployment sequencing, coherent backups and fencing.
+
+The host-only product CLI may invoke fixed Compose operations from the validated
+preview. It never passes a host socket to application/modeling containers.
+Native launcher, dispatcher stdio bridge, worker qualification and their lifetime
+remain trusted-host responsibilities. Each advertised operation needs real
+implementation and boundary evidence; unimplemented operations cannot return
+success or establish release conformance. Cloud resource/IAM changes remain
+outside this CLI and require the platform owner's reviewed operational approval.
+
 ## Runtime boundaries
 
 The Compose portion declares the app and modeling services plus a dispatcher
