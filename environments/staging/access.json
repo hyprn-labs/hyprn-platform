@@ -1,0 +1,77 @@
+{
+  "schema": "hyprn-staging-access-review/v1",
+  "status": "review-template",
+  "parameters": [
+    "cloudflare_account_id",
+    "cloudflare_zone_id",
+    "tunnel_id",
+    "email_pin_idp_id",
+    "admitted_email",
+    "loopback_origin"
+  ],
+  "application_origin": "https://staging.app.hyprn.ai",
+  "required_permissions": [
+    "Account: Cloudflare Tunnel Edit",
+    "Account: Access: Apps and Policies Edit",
+    "Account: Access: Identity Providers and Groups Edit (only if PIN IdP must be created)",
+    "Zone: DNS Edit"
+  ],
+  "request_templates": {
+    "email_pin_idp": {
+      "name": "HYPRN email PIN",
+      "type": "onetimepin",
+      "config": {}
+    },
+    "application": {
+      "name": "HYPRN staging",
+      "type": "self_hosted",
+      "domain": "staging.app.hyprn.ai",
+      "session_duration": "8h",
+      "allowed_idps": [
+        "${email_pin_idp_id}"
+      ],
+      "auto_redirect_to_identity": true
+    },
+    "policy": {
+      "name": "Invited staging users",
+      "decision": "allow",
+      "include": [
+        {
+          "email": {
+            "email": "${admitted_email}"
+          }
+        }
+      ],
+      "exclude": [],
+      "require": []
+    },
+    "tunnel_configuration": {
+      "config": {
+        "ingress": [
+          {
+            "hostname": "staging.app.hyprn.ai",
+            "service": "${loopback_origin}"
+          },
+          {
+            "service": "http_status:404"
+          }
+        ]
+      }
+    },
+    "dns_record": {
+      "type": "CNAME",
+      "name": "staging.app",
+      "content": "${tunnel_id}.cfargotunnel.com",
+      "proxied": true,
+      "ttl": 1
+    }
+  },
+  "review_gates": [
+    "Resolve actual account, zone, existing PIN provider, exact named allowlist and tunnel IDs before any API write.",
+    "Render one include email entry per invited user; never use a whole-domain wildcard.",
+    "Require a loopback-only origin bound by the reviewed host renderer; verify Access JWT issuer and app AUD at origin.",
+    "Create Access policy before publishing tunnel ingress and DNS; test unauthorized denial and revocation.",
+    "No external MCP, ChatGPT, Managed OAuth, discovery routes or bypass policy.",
+    "Token and tunnel secret values are not part of this document. Dedicated token is revoked after settings operation."
+  ]
+}
