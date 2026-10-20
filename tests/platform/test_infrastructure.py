@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE = """
+FIXTURE = r"""
 mock_provider "google" {
   override_during = plan
   mock_resource "google_project" {
@@ -77,6 +77,23 @@ run "private_stopped_host_and_database" {
   assert {
     condition = contains(output.offline_policy.environment.secrets, "db-app-auth") && contains(output.offline_policy.environment.secrets, "db-app-migration") && contains(output.offline_policy.environment.secrets, "db-assistant-background") && contains(output.offline_policy.environment.secrets, "db-dispatcher-background")
     error_message = "Request, authentication, migration and background roles need separate secret metadata."
+  }
+}
+run "database_backup_authority" {
+  command = plan
+  assert {
+    condition = output.offline_policy.environment.database_backup_permissions == toset([
+      "cloudsql.backupRuns.create", "cloudsql.backupRuns.get",
+      "cloudsql.backupRuns.list", "cloudsql.instances.get"
+    ])
+    error_message = "Runtime backup authority must exclude restore, deletion and configuration changes."
+  }
+  assert {
+    condition = output.offline_policy.environment.database_backup_condition == join(" || ", [
+      "(resource.type == \"sqladmin.googleapis.com/Instance\" && resource.name == \"projects/hyprn-staging-test/instances/hyprn-staging-app\")",
+      "(resource.type == \"sqladmin.googleapis.com/BackupRun\" && (resource.name == \"projects/hyprn-staging-test/instances/hyprn-staging-app\" || resource.name.startsWith(\"projects/hyprn-staging-test/instances/hyprn-staging-app/\")))",
+    ])
+    error_message = "Backup permissions must be restricted to the exact staging instance and bounded child path."
   }
 }
 run "organization_root" {
@@ -175,7 +192,7 @@ class InfrastructureTests(unittest.TestCase):
                     events = [json.loads(line) for line in result.stdout.splitlines()]
                     summary = next(event["test_summary"] for event in events
                                    if event.get("type") == "test_summary")
-                    self.assertEqual(summary["passed"], 8)
+                    self.assertEqual(summary["passed"], 9)
                     self.assertEqual(summary["failed"], 0)
 
     def test_access_template_has_no_bypass_and_requires_explicit_admission(self):

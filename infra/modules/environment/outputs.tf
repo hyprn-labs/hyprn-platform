@@ -16,18 +16,20 @@ output "database" {
 }
 output "policy" {
   value = {
-    organization_id       = google_project.staging.org_id
-    public_database       = google_sql_database_instance.app.settings[0].ip_configuration[0].ipv4_enabled
-    private_google_access = google_compute_subnetwork.staging.private_ip_google_access
-    pitr                  = google_sql_database_instance.app.settings[0].backup_configuration[0].point_in_time_recovery_enabled
-    ingress_ranges        = google_compute_firewall.iap.source_ranges
-    ingress_ports         = one(google_compute_firewall.iap.allow).ports
-    backup_runtime_role   = google_storage_bucket_iam_member.runtime["backup"].role
-    desired_runtime_role  = google_storage_bucket_iam_member.runtime["desired"].role
-    public_buckets        = [for bucket in google_storage_bucket.purpose : bucket.public_access_prevention]
-    google_api_addresses  = google_dns_record_set.google_apis_address.rrdatas
-    registry_alias        = google_dns_record_set.registry_wildcard.rrdatas
-    secrets               = keys(google_secret_manager_secret.runtime)
+    database_backup_permissions = google_project_iam_custom_role.runtime_database_backup.permissions
+    database_backup_condition   = google_project_iam_member.runtime_database_backup.condition[0].expression
+    organization_id             = google_project.staging.org_id
+    public_database             = google_sql_database_instance.app.settings[0].ip_configuration[0].ipv4_enabled
+    private_google_access       = google_compute_subnetwork.staging.private_ip_google_access
+    pitr                        = google_sql_database_instance.app.settings[0].backup_configuration[0].point_in_time_recovery_enabled
+    ingress_ranges              = google_compute_firewall.iap.source_ranges
+    ingress_ports               = one(google_compute_firewall.iap.allow).ports
+    backup_runtime_role         = google_storage_bucket_iam_member.runtime["backup"].role
+    desired_runtime_role        = google_storage_bucket_iam_member.runtime["desired"].role
+    public_buckets              = [for bucket in google_storage_bucket.purpose : bucket.public_access_prevention]
+    google_api_addresses        = google_dns_record_set.google_apis_address.rrdatas
+    registry_alias              = google_dns_record_set.registry_wildcard.rrdatas
+    secrets                     = keys(google_secret_manager_secret.runtime)
   }
 }
 output "runtime_service_account" { value = google_service_account.runtime.email }
