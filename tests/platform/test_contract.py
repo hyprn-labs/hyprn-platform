@@ -224,6 +224,11 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(environment["HYPRN_MVP_ASSISTANT_APPROVED_CURRENCY"], "EUR")
         budget["total_cents"] = 11235
         self.rejected(self.command(), "assistant_conversion")
+        budget.update(approved_minor=15000, total_cents=15000,
+                      approved_currency="USD", usd_per_approved_currency="1.0")
+        self.success(self.command())
+        budget.update(total_cents=16500, usd_per_approved_currency="1.1")
+        self.rejected(self.command(), "assistant_conversion")
 
     def test_effective_render_preserves_assistant_settings_and_accounting_gate(self):
         spec = importlib.util.spec_from_file_location("contract", CLI)

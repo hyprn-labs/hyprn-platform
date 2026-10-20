@@ -1136,10 +1136,16 @@
                   "const": "preserve-and-reconcile-all-sessions"
                 },
                 "approved_minor": {
-                  "const": 10000
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
                 },
                 "approved_currency": {
-                  "const": "EUR"
+                  "type": "string",
+                  "enum": [
+                    "EUR",
+                    "USD"
+                  ]
                 },
                 "usd_per_approved_currency": {
                   "type": "string",

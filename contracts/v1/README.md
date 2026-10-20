@@ -150,14 +150,15 @@ session, child agent, restart or release. Prior cents cover spending outside
 the retained session inventory and must not double-count those sessions.
 Provider session caps are derived by the product from remaining shared allowance.
 
-The staging approval is explicitly EUR 100: `approved_minor: 10000` and
-`approved_currency: EUR`. Provider billing is USD. The binding therefore requires
+`approved_minor` is a positive integer up to 1,000,000; `approved_currency` is
+EUR or USD, both with cents as their minor unit. Provider billing is USD. The binding requires
 an explicit decimal-string `usd_per_approved_currency`, UTC
 `conversion_timestamp` and `conversion_policy: floor-to-provider-cent`.
 `total_cents` must equal the exact decimal product of approved minor units and
 the conversion rate, rounded down to a USD cent. The validator neither obtains
 an exchange rate nor treats EUR cents as USD cents. The fixture's 1.10 rate and
-timestamp are synthetic, not a live conversion decision. The startup review must
+timestamp and EUR 100 approval are synthetic, not live spending authorization.
+For USD approval the rate must equal one. The startup review must
 verify the rate's provenance and the approved conversion before activation.
 
 Startup requires `assistant-resource-readback-and-release-definition-match`
@@ -166,8 +167,9 @@ consumer must compare the setup configuration to the pinned release and re-read
 the provider resources, preserve all session accounting across replacement or
 rollback, reconcile uncertain sessions and carried spending, and refuse startup
 if continuity is unknown. Changing a release or resource must not reset prior
-spending. Increasing the EUR approval requires a reviewed contract amendment;
-changing the converted USD ceiling requires a separately reviewed runtime update.
+spending. Changing an approved amount or converted USD ceiling requires a
+separately reviewed runtime update. Actual spending authorization belongs in
+the deployment's private operational review, not the platform schema or fixtures.
 The desired configuration hash changes with every resource or budget
 change. This stateless validator cannot determine whether a supplied zero is
 historically correct or enforce a transition from an earlier runtime.

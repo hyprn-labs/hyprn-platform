@@ -29,8 +29,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "1c2c75f9e0ccd2db0a95085ec8f12335db514a9721f7b8885a25043086b8922d",
-        "renderer_sha256": "0d46a829d9824a51b09be311131c4488f41ef0c9afca2cfddd7cfcef3326d9e5",
+        "schema_sha256": "bf4b15f92dff78f56af18d2e641cf6c28568c1a63e7f04c6891a49dde970b9d5",
+        "renderer_sha256": "b81cb7d2cfcb02ddbea67abcddc7bb032e706f5bf586da1a7c50ef25e6090a02",
         "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
       },
       "product_contracts": {
@@ -235,7 +235,7 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "b1206d72da4f2f8eeb69fb2b05377e0185262984b53a89cb89682ee96b46459e",
+      "release_sha256": "0e132a08214a339897a7eb18b368c010e895892f9cdee4fbc83a1059ab233bfd",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "config_sha256": "33e5695dffbc1095f49606cd37e80092899fab0752fe728bb60ebe802dcf9c6f",
@@ -606,7 +606,7 @@
       "code": "schema_type"
     },
     {
-      "name": "currency approval cannot silently become USD",
+      "name": "USD approval requires unit conversion rate",
       "document": "runtime",
       "path": [
         "assistant",
@@ -614,17 +614,17 @@
         "approved_currency"
       ],
       "value": "USD",
-      "code": "schema_value"
+      "code": "assistant_conversion"
     },
     {
-      "name": "shared EUR approval cannot increase",
+      "name": "approval amount must be positive",
       "document": "runtime",
       "path": [
         "assistant",
         "budget",
         "approved_minor"
       ],
-      "value": 10001,
+      "value": 0,
       "code": "schema_value"
     },
     {

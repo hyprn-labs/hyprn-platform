@@ -186,7 +186,8 @@ def check_documents(documents):
     rate = Decimal(budget["usd_per_approved_currency"])
     converted = (Decimal(budget["approved_minor"]) * rate).to_integral_value(
         rounding=ROUND_FLOOR)
-    if rate <= 0 or converted != budget["total_cents"]:
+    if (rate <= 0 or converted != budget["total_cents"] or
+            (budget["approved_currency"] == "USD" and rate != 1)):
         raise Invalid("assistant_conversion", "runtime.assistant.budget")
     try:
         datetime.strptime(budget["conversion_timestamp"], "%Y-%m-%dT%H:%M:%SZ")
