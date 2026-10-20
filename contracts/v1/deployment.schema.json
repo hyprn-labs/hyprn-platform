@@ -566,6 +566,10 @@
             "definitions_sha256",
             "configuration_sha256"
           ]
+        },
+        "native_environment_lock_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         }
       },
       "required": [
@@ -583,7 +587,8 @@
         "stores",
         "execution",
         "evidence",
-        "assistant"
+        "assistant",
+        "native_environment_lock_sha256"
       ]
     },
     "runtime": {
@@ -1186,6 +1191,26 @@
             "configuration_sha256",
             "budget"
           ]
+        },
+        "execution_host": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "docker_endpoint": {
+              "type": "string",
+              "pattern": "^unix:///[^\\s]+$",
+              "maxLength": 512
+            },
+            "host_home": {
+              "type": "string",
+              "pattern": "^/[^\\s]+$",
+              "maxLength": 512
+            }
+          },
+          "required": [
+            "docker_endpoint",
+            "host_home"
+          ]
         }
       },
       "required": [
@@ -1212,7 +1237,8 @@
         "database",
         "access",
         "admission",
-        "assistant"
+        "assistant",
+        "execution_host"
       ]
     },
     "desired": {

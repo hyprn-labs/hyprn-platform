@@ -30,8 +30,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "fad12a52a0632e3c3b4bdab15ee2ca2f235704d62126f57fc907a09b4565faf5",
-        "renderer_sha256": "8c6e2aebd62961a0874da3e7cc49fd79e83eed6e3feef7a71f075f09a1e1aa3d",
+        "schema_sha256": "718e7467661a15df096f166529ce6fc5aa51bc8f03c25811ee4d0fad9b6b8453",
+        "renderer_sha256": "918a2b4343da2767ceaf82a30e821e02847457e835288640ee6d73de5b7db0ca",
         "workload_sha256": "b01d60cbdc2aaee26fab40cdc5fddb39e6a597ba8c1d1f8027a308e684400096"
       },
       "product_contracts": {
@@ -107,7 +107,8 @@
       "assistant": {
         "definitions_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-      }
+      },
+      "native_environment_lock_sha256": "389a4781dfadb6fb452d9d0806de6282c1517097245375f7c5a0631987ef318e"
     },
     "runtime": {
       "schema": "runtime/v1",
@@ -229,6 +230,10 @@
           "conversion_timestamp": "2026-10-20T00:00:00Z",
           "conversion_policy": "floor-to-provider-cent"
         }
+      },
+      "execution_host": {
+        "docker_endpoint": "unix:///var/run/docker.sock",
+        "host_home": "/srv/hyprn/staging/execution/home"
       }
     },
     "desired": {
@@ -236,10 +241,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "6f7f19f8ba8977ce8f7f7172441194f581a30cd17e1b29673ee3a2183ae82bd3",
+      "release_sha256": "25a2f2d4534e38397f9c60a806b3353d64f8b7854f96e198d77412c0c5bd16db",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "e4e8a77cb361f54ba88b2b31ede63b672ca7482c0921907ea5c013f7e86f17ee",
+      "config_sha256": "700633926afe07db46cd61c5ee3b304705f6290a05c40bfd7bd6f878c56d50e3",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

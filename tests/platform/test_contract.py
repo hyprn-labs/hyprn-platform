@@ -96,6 +96,33 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("HYPRN_MVP_ASSISTANT_PLAN_FILE", services["dispatcher"]["environment"])
         self.assertEqual(services["app"]["environment"]["HYPRN_MVP_UI_ROOT"], "/app/ui")
 
+    def test_execution_projection_is_release_pinned_without_application_credentials(self):
+        preview = self.success(self.command())["preview"]
+        config = preview["execution"]["configuration"]
+        prefix = "/srv/hyprn/staging/releases/" + self.documents["release"]["source_commit"]
+        self.assertEqual(config["source"], prefix + "/source")
+        self.assertEqual(config["native_root"], prefix + "/native")
+        self.assertEqual(config["python"], prefix + "/native/venv-" +
+                         self.documents["release"]["native_environment_lock_sha256"][:16] +
+                         "/bin/python")
+        self.assertEqual(config["store_id"], self.documents["runtime"]["store_ids"]["execution"])
+        self.assertEqual(config["docker"], {"endpoint": "unix:///var/run/docker.sock"})
+        self.assertNotIn("secrets", config)
+        self.assertNotIn("database", config)
+        self.assertNotIn("config_sha256", config)
+
+    def test_execution_host_refuses_network_engine_and_noncanonical_paths(self):
+        for field, value, code in (
+            ("docker_endpoint", "tcp://127.0.0.1:2375", "schema_value"),
+            ("docker_endpoint", "unix:///run/../docker.sock", "execution_path"),
+            ("host_home", "/srv/hyprn/staging/execution/../other", "execution_path"),
+            ("host_home", "/outside", "execution_path"),
+        ):
+            with self.subTest(field=field, value=value):
+                self.documents = copy.deepcopy(self.fixtures["valid"])
+                self.documents["runtime"]["execution_host"][field] = value
+                self.rejected(self.command(), code)
+
     def test_dispatcher_has_only_scoped_credentials_and_host_owned_bridge(self):
         preview = self.success(self.command())["preview"]
         services = preview["compose"]["services"]

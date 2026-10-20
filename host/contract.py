@@ -174,6 +174,13 @@ def check_documents(documents):
         raise Invalid("execution_pin", "release.execution.worker_sha256")
     if release["execution"]["native_sha256"] != release["native_bundle"]["sha256"]:
         raise Invalid("execution_pin", "release.execution.native_sha256")
+    host = runtime["execution_host"]
+    for path in (host["docker_endpoint"][7:], host["host_home"]):
+        if (str(PurePosixPath(path)) != path or ".." in PurePosixPath(path).parts
+                or "\\" in path):
+            raise Invalid("execution_path", "runtime.execution_host")
+    if not host["host_home"].startswith(runtime["mounts"]["execution"] + "/"):
+        raise Invalid("execution_path", "runtime.execution_host.host_home")
     admission = runtime["admission"]
     if admission["execution"] == "qualified" and admission["attestation_sha256"] is None:
         raise Invalid("attestation_required", "runtime.admission")
@@ -193,6 +200,24 @@ def check_documents(documents):
         datetime.strptime(budget["conversion_timestamp"], "%Y-%m-%dT%H:%M:%SZ")
     except ValueError:
         raise Invalid("assistant_conversion", "runtime.assistant.budget") from None
+
+
+def execution_configuration(release, runtime):
+    """Nonsecret native inputs; live store UUIDs are recorded by explicit initialization."""
+    prefix = "/srv/hyprn/staging/releases/" + release["source_commit"]
+    native = prefix + "/native"
+    return {
+        "schema": "hyprn-cloud-execution/v1", "edition": "cloud",
+        "installation_id": runtime["installation_id"],
+        "store_id": runtime["store_ids"]["execution"],
+        "execution_root": runtime["mounts"]["execution"],
+        "host_home": runtime["execution_host"]["host_home"],
+        "docker": {"endpoint": runtime["execution_host"]["docker_endpoint"]},
+        "profile": "hyprn-mvp-cloud-" + runtime["installation_id"],
+        "source": prefix + "/source", "native_root": native,
+        "python": native + "/venv-" + release["native_environment_lock_sha256"][:16]
+                  + "/bin/python",
+    }
 
 
 def assistant_environment(runtime):
@@ -342,6 +367,7 @@ def render(release, runtime):
             "native_bundle": release["native_bundle"], "application_secrets": [],
             "worker_identity": release["execution"],
             "maximum_workers": 2,
+            "configuration": execution_configuration(release, runtime),
         },
         "dispatcher_bridge": {
             "owner": "execution-host", "service": "dispatcher",
@@ -464,6 +490,8 @@ def check_render(value, runtime, release):
                             ["dispatcher"] if component == "dispatcher" else [])
         if service["networks"] != expected_networks:
             raise Invalid("render_policy")
+    if value["execution"].get("configuration") != execution_configuration(release, runtime):
+        raise Invalid("render_policy")
     if value["execution"]["application_secrets"]:
         raise Invalid("render_policy")
     if value["compose"]["networks"] != {

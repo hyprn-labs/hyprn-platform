@@ -284,3 +284,16 @@ mandatory. These formats follow Google's
 [server identity verification documentation](https://docs.cloud.google.com/sql/docs/postgres/configure-ssl-instance#server-identity-verification),
 verified on 2026-10-20. This is a structural allowlist, not a substitute for the
 live certificate and CA check.
+
+## Native execution inputs
+
+The release pins the native environment lock digest. The renderer derives the
+immutable source, native environment and interpreter paths from that digest and
+the release source commit. Runtime execution_host supplies the reviewed Unix
+Docker endpoint and containment-probe home under the execution store. Its
+execution.configuration projection contains only native inputs and the logical
+store identity. Trusted product lifecycle binds release/configuration digests
+after rendering, avoiding a recursive hash. Explicit initialization records real
+AiiDA profile and repository UUIDs in the protected host receipt; these are not
+substitutes for the logical platform store ID. No database or provider credentials
+are present in this projection.
