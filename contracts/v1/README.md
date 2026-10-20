@@ -57,7 +57,7 @@ read-only file:
 
 | Consumer | Aliases |
 |---|---|
-| Application | `modeling-auth`, `assistant-provider`, `db-app-request` |
+| Application | `modeling-auth`, `assistant-provider`, `db-app-request`, `db-app-auth` |
 | Modeling | `modeling-auth`, `modeling-rails` |
 | Migration operation | `db-app-migration` |
 | Backup operation | `db-app-backup` |
@@ -65,7 +65,8 @@ read-only file:
 
 Secret paths are emitted as `HYPRN_SECRET_<ALIAS>_FILE` with uppercase underscore
 alias spelling. They are interface inputs for the cloud adapter, not secret
-values. The application request process never receives migration or backup
+values. `db-app-auth` belongs to the separate read-only credential lookup role
+`hyprn_auth`; study access uses `hyprn_request`. The application never receives migration or backup
 credentials. Platform identity supplies the secret project; descriptors cannot
 add secret consumers or arbitrary paths.
 

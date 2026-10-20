@@ -22,7 +22,7 @@ MAX_BUNDLE_BYTES = 20 * 1024**3
 MAX_EXPANDED_BYTES = 32 * 1024**3
 MAX_MEMBERS = 200000
 SECRET_CONSUMERS = {
-    "app": ("modeling-auth", "assistant-provider", "db-app-request"),
+    "app": ("modeling-auth", "assistant-provider", "db-app-request", "db-app-auth"),
     "modeling": ("modeling-auth", "modeling-rails"),
     "migration": ("db-app-migration",),
     "backup": ("db-app-backup",),
@@ -221,6 +221,7 @@ def render(release, runtime):
                 "HYPRN_MVP_DATABASE_PORT": "5432",
                 "HYPRN_MVP_DATABASE_NAME": runtime["database"]["name"],
                 "HYPRN_MVP_DATABASE_ROLE": runtime["database"]["request_role"],
+                "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
                 "HYPRN_MVP_DATABASE_SSLMODE": "verify-full",
                 "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
                 "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",

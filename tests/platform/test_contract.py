@@ -59,6 +59,8 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(rendered["worker"]["secrets"], [])
         app_secrets = [m["target"] for m in app["volumes"] if "/secrets/" in m["target"]]
         self.assertIn("/run/secrets/assistant-provider", app_secrets)
+        self.assertIn("/run/secrets/db-app-auth", app_secrets)
+        self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_AUTH_ROLE"], "hyprn_auth")
         self.assertNotIn("/run/secrets/db-app-migration", app_secrets)
         self.assertNotIn("/run/secrets/db-app-backup", app_secrets)
         self.assertNotIn("assistant-provider", json.dumps(modeling))
@@ -184,6 +186,7 @@ class ContractTests(unittest.TestCase):
             ("release", ["native_bundle", "size_bytes"], 1.25, "schema_type"),
             ("release", ["source_inventory_sha256"], "../untrusted", "schema_value"),
             ("runtime", ["database", "request_role"], "hyprn_migration", "schema_value"),
+            ("runtime", ["database", "authentication_role"], "hyprn_migration", "schema_value"),
             ("runtime", ["database", "sslmode"], "disable", "schema_value"),
             ("runtime", ["database", "server_name"], "metadata.google.internal", "schema_value"),
             ("release", ["platform_contract", "workload_sha256"], "0" * 64, "workload_pin"),

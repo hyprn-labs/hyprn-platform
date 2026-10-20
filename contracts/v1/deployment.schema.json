@@ -809,6 +809,27 @@
                 "version"
               ]
             },
+            "db-app-auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
             "db-app-migration": {
               "type": "object",
               "additionalProperties": false,
@@ -857,6 +878,7 @@
             "modeling-rails",
             "assistant-provider",
             "db-app-request",
+            "db-app-auth",
             "db-app-migration",
             "db-app-backup"
           ]
@@ -879,6 +901,9 @@
             },
             "request_role": {
               "const": "hyprn_request"
+            },
+            "authentication_role": {
+              "const": "hyprn_auth"
             },
             "migration_role": {
               "const": "hyprn_migration"
@@ -907,6 +932,7 @@
             "port",
             "name",
             "request_role",
+            "authentication_role",
             "migration_role",
             "backup_role",
             "sslmode",
