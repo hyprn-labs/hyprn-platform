@@ -25,6 +25,7 @@
             "initialize",
             "inspect",
             "check",
+            "admission",
             "drain",
             "migrate",
             "start",
