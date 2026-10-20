@@ -52,9 +52,16 @@ run "reject_non_eu_location" {
 }
 """
 REPLACEMENT = VARIABLES + """
+provider "google" {
+  alias = "replacement"
+  project = "hyprn-bootstrap"
+  access_token = "offline-invalid-token"
+}
 run "existing_bucket" { command = apply }
 run "reject_replacement" {
   command = plan
+  providers = { google = google.replacement }
+  plan_options { refresh = false }
   variables { state_bucket_name = "hyprn-staging-replacement-tfstate" }
 }
 """

@@ -13,8 +13,10 @@ files_modified:
 
 ## Task
 Create a separate Terraform root managing only the private, versioned staging
-state bucket in the existing bootstrap project. Use the existing bootstrap
-bucket with the isolated staging-state-bootstrap prefix for this root's state.
+state bucket in the existing bootstrap project. Use an explicitly declared local backend for the initial plan/apply, with state
+in a private external directory. After approved creation, migrate this root to
+the existing bootstrap bucket under isolated staging-state-bootstrap prefix.
+This scope amendment avoids an unapproved initial GCS state write.
 No IAM, existing bootstrap/fleet state or resource edits. Use existing pinned
 Terraform 1.16.5 and Google 8.6.0, with tests written before implementation.
 
