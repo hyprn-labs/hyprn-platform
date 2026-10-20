@@ -1,0 +1,1166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HYPRN staging deployment contract v1",
+  "$defs": {
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "hyprn-workload/v1"
+        },
+        "product": {
+          "const": "hyprn-mvp"
+        },
+        "components": {
+          "const": [
+            "app",
+            "modeling",
+            "execution",
+            "worker"
+          ]
+        },
+        "lifecycle": {
+          "const": [
+            "initialize",
+            "inspect",
+            "check",
+            "drain",
+            "migrate",
+            "start",
+            "stop",
+            "qualify",
+            "backup",
+            "restore"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "product",
+        "components",
+        "lifecycle"
+      ]
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "release/v1"
+        },
+        "product": {
+          "const": "hyprn-mvp"
+        },
+        "source_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "source_inventory_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "platform_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "commit": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            "schema_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "workload_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "commit",
+            "schema_sha256",
+            "workload_sha256"
+          ]
+        },
+        "product_contracts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "api_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "modeling_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "api_sha256",
+            "modeling_sha256"
+          ]
+        },
+        "target": {
+          "const": "linux/amd64"
+        },
+        "images": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "app": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+            },
+            "modeling": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+            },
+            "worker": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "app",
+            "modeling",
+            "worker"
+          ]
+        },
+        "native_bundle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "size_bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 21474836480
+            }
+          },
+          "required": [
+            "sha256",
+            "size_bytes"
+          ]
+        },
+        "ui_manifest_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "build_inputs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "toolchain_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "locks_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "patches_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "base_images": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512,
+                "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+              },
+              "minItems": 1,
+              "maxItems": 100,
+              "uniqueItems": true
+            },
+            "upstream_sources": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sha256": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512,
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "size_bytes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 21474836480
+                  }
+                },
+                "required": [
+                  "sha256",
+                  "size_bytes"
+                ]
+              },
+              "minItems": 1,
+              "maxItems": 100,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "toolchain_sha256",
+            "locks_sha256",
+            "patches_sha256",
+            "base_images",
+            "upstream_sources"
+          ]
+        },
+        "stores": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "application": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read_min": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "read_max": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "write_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "rollback_compatible": {
+                  "type": "boolean"
+                },
+                "backup_required": {
+                  "type": "boolean"
+                },
+                "migrations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "sha256"
+                    ]
+                  },
+                  "minItems": 0,
+                  "maxItems": 100,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "read_min",
+                "read_max",
+                "write_version",
+                "rollback_compatible",
+                "backup_required",
+                "migrations"
+              ]
+            },
+            "modeling": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read_min": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "read_max": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "write_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "rollback_compatible": {
+                  "type": "boolean"
+                },
+                "backup_required": {
+                  "type": "boolean"
+                },
+                "migrations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "sha256"
+                    ]
+                  },
+                  "minItems": 0,
+                  "maxItems": 100,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "read_min",
+                "read_max",
+                "write_version",
+                "rollback_compatible",
+                "backup_required",
+                "migrations"
+              ]
+            },
+            "execution": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "read_min": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "read_max": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "write_version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                },
+                "rollback_compatible": {
+                  "type": "boolean"
+                },
+                "backup_required": {
+                  "type": "boolean"
+                },
+                "migrations": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 512,
+                        "pattern": "^[a-f0-9]{64}$"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "sha256"
+                    ]
+                  },
+                  "minItems": 0,
+                  "maxItems": 100,
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "read_min",
+                "read_max",
+                "write_version",
+                "rollback_compatible",
+                "backup_required",
+                "migrations"
+              ]
+            }
+          },
+          "required": [
+            "application",
+            "modeling",
+            "execution"
+          ]
+        },
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "worker_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "launcher_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "evaluator_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "policy_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "native_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "attestation_format_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "worker_sha256",
+            "launcher_sha256",
+            "evaluator_sha256",
+            "policy_sha256",
+            "native_sha256",
+            "attestation_format_sha256"
+          ]
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tests": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "provenance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "sbom": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "licenses": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "sources": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "tests",
+            "provenance",
+            "sbom",
+            "licenses",
+            "sources"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "product",
+        "source_commit",
+        "source_inventory_sha256",
+        "platform_contract",
+        "product_contracts",
+        "target",
+        "images",
+        "native_bundle",
+        "ui_manifest_sha256",
+        "build_inputs",
+        "stores",
+        "execution",
+        "evidence"
+      ]
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "runtime/v1"
+        },
+        "environment": {
+          "const": "staging"
+        },
+        "project_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
+        },
+        "project_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[1-9][0-9]{5,19}$"
+        },
+        "zone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z]+-[a-z]+[0-9]-[a-z]$"
+        },
+        "host_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{1,62}$"
+        },
+        "installation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{1,62}$"
+        },
+        "disk_uuid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "store_ids": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "application": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z][a-z0-9-]{1,62}$"
+            },
+            "modeling": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z][a-z0-9-]{1,62}$"
+            },
+            "execution": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z][a-z0-9-]{1,62}$"
+            }
+          },
+          "required": [
+            "application",
+            "modeling",
+            "execution"
+          ]
+        },
+        "external_origin": {
+          "const": "https://staging.app.hyprn.ai"
+        },
+        "platform_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "registry": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z0-9-]+-docker.pkg.dev/[a-z0-9-]+/[a-z0-9-]+$"
+        },
+        "artifacts_bucket": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{1,62}$"
+        },
+        "desired_bucket": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{1,62}$"
+        },
+        "backup_bucket": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9-]{1,62}$"
+        },
+        "resource_profile": {
+          "const": "staging-small/v1"
+        },
+        "service_users": {
+          "const": {
+            "app": 10002,
+            "modeling": 10001,
+            "execution": 10003,
+            "worker": 65534
+          }
+        },
+        "mounts": {
+          "const": {
+            "application": "/srv/hyprn/staging/application",
+            "modeling": "/srv/hyprn/staging/modeling",
+            "execution": "/srv/hyprn/staging/execution",
+            "secrets": "/run/hyprn/secrets"
+          }
+        },
+        "quotas_bytes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "application": {
+              "type": "integer",
+              "minimum": 1048576,
+              "maximum": 107374182400
+            },
+            "modeling": {
+              "type": "integer",
+              "minimum": 1048576,
+              "maximum": 107374182400
+            },
+            "execution": {
+              "type": "integer",
+              "minimum": 1048576,
+              "maximum": 107374182400
+            },
+            "exports": {
+              "type": "integer",
+              "minimum": 1048576,
+              "maximum": 107374182400
+            }
+          },
+          "required": [
+            "application",
+            "modeling",
+            "execution",
+            "exports"
+          ]
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "modeling-auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "modeling-rails": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "assistant-provider": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "db-app-request": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "db-app-migration": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "db-app-backup": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            }
+          },
+          "required": [
+            "modeling-auth",
+            "modeling-rails",
+            "assistant-provider",
+            "db-app-request",
+            "db-app-migration",
+            "db-app-backup"
+          ]
+        },
+        "database": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "host": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^10(?:\\.[0-9]{1,3}){3}$"
+            },
+            "port": {
+              "const": 5432
+            },
+            "name": {
+              "const": "hyprn_app"
+            },
+            "request_role": {
+              "const": "hyprn_request"
+            },
+            "migration_role": {
+              "const": "hyprn_migration"
+            },
+            "backup_role": {
+              "const": "hyprn_backup"
+            },
+            "sslmode": {
+              "const": "verify-full"
+            }
+          },
+          "required": [
+            "host",
+            "port",
+            "name",
+            "request_role",
+            "migration_role",
+            "backup_role",
+            "sslmode"
+          ]
+        },
+        "access": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "issuer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^https://[a-z0-9-]+\\.cloudflareaccess\\.com$"
+            },
+            "audience": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "issuer",
+            "audience"
+          ]
+        },
+        "admission": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "browser": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "enum": [
+                "closed",
+                "open"
+              ]
+            },
+            "execution": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "enum": [
+                "closed",
+                "qualified"
+              ]
+            },
+            "attestation_sha256": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "browser",
+            "execution",
+            "attestation_sha256"
+          ]
+        }
+      },
+      "required": [
+        "schema",
+        "environment",
+        "project_id",
+        "project_number",
+        "zone",
+        "host_id",
+        "installation_id",
+        "disk_uuid",
+        "store_ids",
+        "external_origin",
+        "platform_commit",
+        "registry",
+        "artifacts_bucket",
+        "desired_bucket",
+        "backup_bucket",
+        "resource_profile",
+        "service_users",
+        "mounts",
+        "quotas_bytes",
+        "secrets",
+        "database",
+        "access",
+        "admission"
+      ]
+    },
+    "desired": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "hyprn-desired/v1"
+        },
+        "environment": {
+          "const": "staging"
+        },
+        "project_number": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[1-9][0-9]{5,19}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2147483647
+        },
+        "release_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "target": {
+          "const": "linux/amd64"
+        },
+        "platform_commit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "config_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "images": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "app": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+                },
+                "modeling": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+                },
+                "worker": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z0-9][a-z0-9.-]+/[a-z0-9/_-]+@sha256:[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "app",
+                "modeling",
+                "worker"
+              ]
+            },
+            "native_bundle": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "sha256": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                "size_bytes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 21474836480
+                }
+              },
+              "required": [
+                "sha256",
+                "size_bytes"
+              ]
+            },
+            "ui_manifest_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "images",
+            "native_bundle",
+            "ui_manifest_sha256"
+          ]
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tests": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "provenance": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "sbom": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "licenses": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "sources": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "tests",
+            "provenance",
+            "sbom",
+            "licenses",
+            "sources"
+          ]
+        },
+        "maintenance": {
+          "const": "drain"
+        }
+      },
+      "required": [
+        "schema",
+        "environment",
+        "project_number",
+        "sequence",
+        "release_sha256",
+        "target",
+        "platform_commit",
+        "config_sha256",
+        "artifacts",
+        "evidence",
+        "maintenance"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/workload"
+    },
+    {
+      "$ref": "#/$defs/release"
+    },
+    {
+      "$ref": "#/$defs/runtime"
+    },
+    {
+      "$ref": "#/$defs/desired"
+    }
+  ]
+}

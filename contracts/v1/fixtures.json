@@ -1,0 +1,344 @@
+{
+  "valid": {
+    "workload": {
+      "schema": "hyprn-workload/v1",
+      "product": "hyprn-mvp",
+      "components": [
+        "app",
+        "modeling",
+        "execution",
+        "worker"
+      ],
+      "lifecycle": [
+        "initialize",
+        "inspect",
+        "check",
+        "drain",
+        "migrate",
+        "start",
+        "stop",
+        "qualify",
+        "backup",
+        "restore"
+      ]
+    },
+    "release": {
+      "schema": "release/v1",
+      "product": "hyprn-mvp",
+      "source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "platform_contract": {
+        "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "schema_sha256": "b9497dce2bd3bf9c57d480bf402f52207d191c4298abeb6690b12fa57626f5ce",
+        "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
+      },
+      "product_contracts": {
+        "api_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "modeling_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "target": "linux/amd64",
+      "images": {
+        "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "modeling": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/modeling@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "worker": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/worker@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "native_bundle": {
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "size_bytes": 10240
+      },
+      "ui_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "build_inputs": {
+        "toolchain_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "locks_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "patches_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "base_images": [
+          "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/worker@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "upstream_sources": [
+          {
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "size_bytes": 1
+          }
+        ]
+      },
+      "stores": {
+        "application": {
+          "read_min": 1,
+          "read_max": 1,
+          "write_version": 1,
+          "rollback_compatible": false,
+          "backup_required": true,
+          "migrations": []
+        },
+        "modeling": {
+          "read_min": 1,
+          "read_max": 1,
+          "write_version": 1,
+          "rollback_compatible": false,
+          "backup_required": true,
+          "migrations": []
+        },
+        "execution": {
+          "read_min": 1,
+          "read_max": 1,
+          "write_version": 1,
+          "rollback_compatible": false,
+          "backup_required": true,
+          "migrations": []
+        }
+      },
+      "execution": {
+        "worker_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "launcher_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "evaluator_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "native_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "attestation_format_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "evidence": {
+        "tests": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provenance": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sbom": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "licenses": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sources": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    "runtime": {
+      "schema": "runtime/v1",
+      "environment": "staging",
+      "project_id": "hyprn-staging-fixture",
+      "project_number": "123456789012",
+      "zone": "europe-west1-b",
+      "host_id": "hyprn-staging-host-01",
+      "installation_id": "hyprn-staging-fixture",
+      "disk_uuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "store_ids": {
+        "application": "fixture-application",
+        "modeling": "fixture-modeling",
+        "execution": "fixture-execution"
+      },
+      "external_origin": "https://staging.app.hyprn.ai",
+      "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "registry": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product",
+      "artifacts_bucket": "hyprn-staging-fixture-artifacts",
+      "desired_bucket": "hyprn-staging-fixture-desired",
+      "backup_bucket": "hyprn-staging-fixture-backup",
+      "resource_profile": "staging-small/v1",
+      "service_users": {
+        "app": 10002,
+        "modeling": 10001,
+        "execution": 10003,
+        "worker": 65534
+      },
+      "mounts": {
+        "application": "/srv/hyprn/staging/application",
+        "modeling": "/srv/hyprn/staging/modeling",
+        "execution": "/srv/hyprn/staging/execution",
+        "secrets": "/run/hyprn/secrets"
+      },
+      "quotas_bytes": {
+        "application": 1073741824,
+        "modeling": 1073741824,
+        "execution": 1073741824,
+        "exports": 1073741824
+      },
+      "secrets": {
+        "modeling-auth": {
+          "name": "hyprn-staging-modeling-auth",
+          "version": 1
+        },
+        "modeling-rails": {
+          "name": "hyprn-staging-modeling-rails",
+          "version": 1
+        },
+        "assistant-provider": {
+          "name": "hyprn-staging-assistant-provider",
+          "version": 1
+        },
+        "db-app-request": {
+          "name": "hyprn-staging-db-app-request",
+          "version": 1
+        },
+        "db-app-migration": {
+          "name": "hyprn-staging-db-app-migration",
+          "version": 1
+        },
+        "db-app-backup": {
+          "name": "hyprn-staging-db-app-backup",
+          "version": 1
+        }
+      },
+      "database": {
+        "host": "10.20.0.3",
+        "port": 5432,
+        "name": "hyprn_app",
+        "request_role": "hyprn_request",
+        "migration_role": "hyprn_migration",
+        "backup_role": "hyprn_backup",
+        "sslmode": "verify-full"
+      },
+      "access": {
+        "issuer": "https://fixture.cloudflareaccess.com",
+        "audience": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "admission": {
+        "browser": "closed",
+        "execution": "closed",
+        "attestation_sha256": null
+      }
+    },
+    "desired": {
+      "schema": "hyprn-desired/v1",
+      "environment": "staging",
+      "project_number": "123456789012",
+      "sequence": 1,
+      "release_sha256": "643bdd3a24ba1e558400da358292c9777a5f0de60d1dec894ba282975382682b",
+      "target": "linux/amd64",
+      "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "artifacts": {
+        "images": {
+          "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "modeling": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/modeling@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "worker": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/worker@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "native_bundle": {
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "size_bytes": 10240
+        },
+        "ui_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "evidence": {
+        "tests": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "provenance": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sbom": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "licenses": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sources": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "maintenance": "drain"
+    }
+  },
+  "negative": [
+    {
+      "name": "unknown-field",
+      "document": "runtime",
+      "path": [
+        "privileged"
+      ],
+      "value": true,
+      "code": "unknown_field"
+    },
+    {
+      "name": "wrong-environment",
+      "document": "runtime",
+      "path": [
+        "environment"
+      ],
+      "value": "prod",
+      "code": "schema_value"
+    },
+    {
+      "name": "unpinned-image",
+      "document": "release",
+      "path": [
+        "images",
+        "app"
+      ],
+      "value": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app:latest",
+      "code": "schema_value"
+    },
+    {
+      "name": "foreign-secret",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "assistant-provider",
+        "name"
+      ],
+      "value": "hyprn-prod-key",
+      "code": "secret_binding"
+    },
+    {
+      "name": "secret-latest",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "assistant-provider",
+        "version"
+      ],
+      "value": "latest",
+      "code": "schema_type"
+    },
+    {
+      "name": "undeclared-secret",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "root-key"
+      ],
+      "value": {
+        "name": "root",
+        "version": 1
+      },
+      "code": "unknown_field"
+    },
+    {
+      "name": "extra-mount",
+      "document": "runtime",
+      "path": [
+        "mounts",
+        "socket"
+      ],
+      "value": "/var/run/docker.sock",
+      "code": "schema_value"
+    },
+    {
+      "name": "root-user",
+      "document": "runtime",
+      "path": [
+        "service_users",
+        "app"
+      ],
+      "value": 0,
+      "code": "schema_value"
+    },
+    {
+      "name": "schema-pin",
+      "document": "release",
+      "path": [
+        "platform_contract",
+        "schema_sha256"
+      ],
+      "value": "0000000000000000000000000000000000000000000000000000000000000000",
+      "code": "schema_pin"
+    },
+    {
+      "name": "source-short",
+      "document": "release",
+      "path": [
+        "source_commit"
+      ],
+      "value": "abcd",
+      "code": "schema_value"
+    },
+    {
+      "name": "boolean-sequence",
+      "document": "desired",
+      "path": [
+        "sequence"
+      ],
+      "value": true,
+      "code": "schema_type"
+    },
+    {
+      "name": "unqualified-execution",
+      "document": "runtime",
+      "path": [
+        "admission",
+        "execution"
+      ],
+      "value": "qualified",
+      "code": "attestation_required"
+    }
+  ]
+}
