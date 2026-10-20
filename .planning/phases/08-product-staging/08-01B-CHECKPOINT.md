@@ -63,3 +63,9 @@ integration. Those pre-existing dirty records, infrastructure, runner, runbook,
 ADR index, cloud spec and product source were not staged or edited. Subsequent
 metadata commits add only this checkpoint and summary; they do not change the
 tested implementation.
+
+## Parent integrated acceptance
+
+The parent reran `tests/platform/run.sh contracts` on committed implementation
+`4896308`: 15 tests passed in 2.351 seconds, exit 0. No relevant source changed
+between executor acceptance and this run. Runtime lifecycle remains unverified.

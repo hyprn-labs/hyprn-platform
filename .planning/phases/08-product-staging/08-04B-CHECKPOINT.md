@@ -93,3 +93,11 @@ verify invalid/missing/expired/wrong-audience JWT denial, unauthorized and revok
 user denial, no direct origin access, connector fallback, then exact invited
 email login. Embedded Assistant is retained; external MCP/ChatGPT/OAuth remain
 retired. 08-05/06 own deployment and live/human acceptance.
+
+## Parent integrated acceptance
+
+The parent reran the registered access-infrastructure group on the committed
+implementation `c9baa7c`: 1 unittest passed in 2.385 seconds, including the
+12 evaluated mock plans and real provider schema/graph checks; exit 0.
+The audited provider cache is retained for the forthcoming live plan; no cloud
+resource, credential or live state was accessed by this verification.
