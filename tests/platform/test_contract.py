@@ -127,6 +127,39 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(preview["execution"]["application_secrets"], [])
         self.assertEqual(preview["worker"]["secrets"], [])
 
+    def test_assistant_has_exact_release_bound_settings_and_shared_accounting(self):
+        preview = self.success(self.command())["preview"]
+        environment = preview["compose"]["services"]["app"]["environment"]
+        self.assertIn("HYPRN_MVP_ASSISTANT_KEY_FILE", environment)
+        binding = self.documents["runtime"]["assistant"]
+        expected = {
+            "KEY_FILE": "/run/secrets/assistant-provider",
+            "AGENT_ID": binding["agent_id"],
+            "AGENT_VERSION": binding["agent_version"],
+            "ENVIRONMENT_ID": binding["environment_id"],
+            "DEFINITIONS_SHA256": binding["definitions_sha256"],
+            "CONFIGURATION_SHA256": binding["configuration_sha256"],
+            "TOTAL_CENTS": str(binding["budget"]["total_cents"]),
+            "PRIOR_CENTS": str(binding["budget"]["prior_cents"]),
+        }
+        self.assertEqual({k.removeprefix("HYPRN_MVP_ASSISTANT_"): v
+                          for k, v in environment.items()
+                          if k.startswith("HYPRN_MVP_ASSISTANT_")}, expected)
+        self.assertEqual(preview["assistant"], {
+            "consumer": "app", "provider": "claude-managed-agents",
+            "configuration_sha256": binding["configuration_sha256"],
+            "budget": binding["budget"],
+        })
+        self.assertIn("assistant-resource-readback-and-release-definition-match",
+                      preview["start_requires"])
+        self.assertIn("assistant-shared-spending-continuity-reconciled",
+                      preview["start_requires"])
+        for component in ("dispatcher", "modeling"):
+            self.assertNotIn("HYPRN_MVP_ASSISTANT_",
+                             json.dumps(preview["compose"]["services"][component]))
+        for component in ("execution", "worker"):
+            self.assertNotIn("HYPRN_MVP_ASSISTANT_", json.dumps(preview[component]))
+
     def test_background_roles_and_aliases_are_required_and_closed(self):
         for parent, key in (("database", "assistant_background_role"),
                             ("database", "dispatcher_background_role"),
