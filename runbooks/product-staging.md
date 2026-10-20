@@ -248,10 +248,44 @@ The bootstrap plan is no-op. Original local state and backup are retained privat
 Short-lived dedicated CLI tokens were passed only in process environment; backend
 metadata was checked not to retain the token. No existing fleet state was touched.
 
-Actual main staging and Access saved plans were produced, not applied: respectively
+Actual main staging and Access saved plans were produced at this checkpoint: respectively
 76 creates and 6 creates, zero updates/deletes. Main SHA256
 `f28a7719fec047dfd224318afa4a8adb22491c2bdf309bc0c4e8c91e7fc82e40`;
 Access SHA256 `f2e1956b02842ac5f1ea03d9fce9c6c2f0892de68163e866050553c9463c15d2`.
 Source snapshot `8a5ca936e60560132e227eff1c2163757cc55359`; operational inputs,
 plans, logs and cost review stay outside Git. No application infrastructure,
 provider resource, secret transfer, GitHub setting or workload activation occurred.
+
+## Application infrastructure provisioning — 2026-10-20
+
+The owner approved the two exact plans above and the EUR 170–220 monthly
+planning envelope. Both applied successfully: 76 GCP creates and six Cloudflare
+creates, no updates/deletions. GCP readback and refreshed plan show no drift.
+Cloudflare refresh shows no resource changes; the policy's computed app_count
+changed from zero to one after attachment, affecting the review output only.
+No second apply was run to write this computed output.
+
+Independent readback confirms the VM is stopped, private, shielded and
+deletion-protected. PostgreSQL 17 is ready with private IP, encrypted connections,
+shared CA mode, backups/PITR and a 100 GiB growth cap. Product buckets are private,
+uniform-access and versioned. All ten secret containers remain empty. Access
+admits exactly the owner-supplied two addresses through email PIN; the tunnel
+requires the matching Access assertion, has the loopback origin and final 404,
+and has no running connector. No provider resource, secret transfer, GitHub
+setting change or application activation was performed.
+
+The external HTTPS check failed at TLS for the reviewed nested staging hostname.
+The zone is an active full zone on Cloudflare Free: Universal SSL covers only
+the apex and first-level subdomains. Certificate-pack reads are denied by the
+current token, so no certificate inventory is claimed. Prepare the unused
+first-level staging.hyprn.ai as a narrow separately reviewed hostname correction;
+do not buy a subscription or weaken TLS. Source:
+[Universal SSL limits](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/).
+
+Private operation records retain the exact approved plans, source/input hashes,
+apply logs, live readback, post-apply plans and failed edge check. The temporary
+verifier initially used a Terraform-style disk growth key; correcting it to the
+actual GCP API storageAutoResizeLimit field allowed all resource assertions to
+pass. This did not change infrastructure or weaken the growth-cap assertion.
+Application availability, actual sign-in, Linux runtime containment, backup
+restore and automatic deployment remain unverified.
