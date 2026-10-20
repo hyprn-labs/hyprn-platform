@@ -4,6 +4,7 @@ cd "$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 group="${1:-}"
 case "$group" in
   contracts) pattern=test_contract.py ;;
+  secrets) pattern=test_secrets.py ;;
   reconcile) pattern=test_reconcile.py ;;
   delivery) pattern=test_delivery.py ;;
   infrastructure) pattern=test_infrastructure.py ;;
