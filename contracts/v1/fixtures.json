@@ -29,7 +29,7 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "bf4b15f92dff78f56af18d2e641cf6c28568c1a63e7f04c6891a49dde970b9d5",
+        "schema_sha256": "977ab3e7e5ebada9312d8f6d1152d5dce9a7f4217982793ff93cf2933c0f87b3",
         "renderer_sha256": "b81cb7d2cfcb02ddbea67abcddc7bb032e706f5bf586da1a7c50ef25e6090a02",
         "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
       },
