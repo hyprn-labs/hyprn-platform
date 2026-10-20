@@ -272,8 +272,14 @@ def deliver(args, runtime):
         os.close(root)
 
 
-def transfer(args, runtime):
-    secret = "projects/" + runtime["project_number"] + "/secrets/hyprn-staging-assistant-provider"
+def transfer(args):
+    # Bootstrap precedes complete runtime/agent bindings and the first version.
+    properties = read_json(SCHEMA_PATH)["$defs"]["runtime"]["properties"]
+    schema_check(args.project_id, properties["project_id"], "project_id")
+    schema_check(args.project_number, properties["project_number"], "project_number")
+    if not re.fullmatch(r"hyprn-staging(?:-[a-z0-9-]+)?", args.project_id):
+        raise Invalid("staging_project_required")
+    secret = "projects/" + args.project_number + "/secrets/hyprn-staging-assistant-provider"
     if args.approve_resource != secret:
         raise Invalid("explicit_transfer_approval_required")
     directory = private_directory(args.receipt_root)
@@ -326,8 +332,10 @@ def main():
     commands = parser.add_subparsers(dest="operation", required=True)
     for name in ("deliver", "cleanup", "transfer-provider"):
         command = commands.add_parser(name)
-        for flag in ("runtime", "project-id", "project-number"):
+        for flag in ("project-id", "project-number"):
             command.add_argument("--" + flag, required=True)
+        if name != "transfer-provider":
+            command.add_argument("--runtime", required=True)
         if name != "cleanup":
             command.add_argument("--gcloud")
         if name == "deliver":
@@ -343,8 +351,7 @@ def main():
     try:
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
         os.umask(0o077)
-        runtime = runtime_binding(args)
-        result = transfer(args, runtime) if args.operation == "transfer-provider" else deliver(args, runtime)
+        result = transfer(args) if args.operation == "transfer-provider" else deliver(args, runtime_binding(args))
         print(json.dumps(result, sort_keys=True))
         return 0
     except Invalid as error:

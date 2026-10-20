@@ -103,8 +103,10 @@ class SecretTests(unittest.TestCase):
         self.document.write_text(json.dumps(self.runtime))
         args = ([sys.executable, "-B", str(CLI)] if native else
                 [sys.executable, "-B", "-c", HARNESS, str(ROOT / "host")])
-        args += [operation, "--runtime", str(self.document), "--project-id", self.runtime["project_id"],
+        args += [operation, "--project-id", self.runtime["project_id"],
                  "--project-number", "123456789012"]
+        if operation != "transfer-provider":
+            args += ["--runtime", str(self.document)]
         if operation != "cleanup":
             args += ["--gcloud", str(self.gcloud)]
         if operation == "deliver":
@@ -227,6 +229,8 @@ class SecretTests(unittest.TestCase):
         self.assertEqual(self.calls(), [])
 
     def test_transfer_uses_stdin_and_receipt_prevents_duplicate(self):
+        # No valid runtime exists until the new secret version and provider IDs do.
+        self.runtime = {"project_id": "hyprn-staging-fixture"}
         result = self.success(self.command("transfer-provider", native=True))
         self.assertTrue(result["version"].endswith("/versions/7"))
         receipt = self.receipts / "assistant-provider-transfer.json"
@@ -267,6 +271,11 @@ class SecretTests(unittest.TestCase):
         self.rejected(self.command("transfer-provider", native=True,
                                   extra=("--approve-resource", "projects/123456789012/secrets/wrong")),
                       "explicit_transfer_approval_required")
+        self.assertEqual(self.calls(), [])
+
+    def test_transfer_rejects_other_environment_before_preflight(self):
+        self.runtime["project_id"] = "hyprn-prod-fixture"
+        self.rejected(self.command("transfer-provider", native=True), "staging_project_required")
         self.assertEqual(self.calls(), [])
         source = self.root / "source"
         self.key.rename(source)

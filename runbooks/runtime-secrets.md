@@ -88,13 +88,15 @@ The source remains the master-copy workflow's existing file; it must be mode
 Use a persistent mode 0700 receipt directory outside Git and Terraform state.
 
 ```sh
-python3 -B host/secrets.py transfer-provider --runtime "$RUNTIME" \
+python3 -B host/secrets.py transfer-provider \
   --project-id "$PROJECT_ID" --project-number "$PROJECT_NUMBER" \
   --gcloud "$GCLOUD" --key-file "$PROVIDER_KEY_FILE" \
   --receipt-root "$TRANSFER_RECEIPT_ROOT" \
   --approve-resource "projects/$PROJECT_NUMBER/secrets/hyprn-staging-assistant-provider"
 ```
 
+Transfer takes explicit staging project identity without a runtime document;
+bootstrap precedes the agent IDs and numeric version that runtime will pin.
 The command checks project identity and the existing secret resource before
 reading the source. The key is passed through stdin to `versions add --data-file=-`,
 never through arguments, environment, logs or Terraform. It emits only the new
