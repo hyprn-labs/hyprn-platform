@@ -87,3 +87,9 @@ separate acceptance obligations. No actual provider resources were provisioned.
 Parent owns the integrated acceptance rerun and global STATE/ROADMAP/REQUIREMENTS.
 All unrelated infrastructure, runbook and planning edits were preserved. Later
 task metadata commits change only this checkpoint and summary.
+
+## Parent integrated acceptance
+
+The parent reran `tests/platform/run.sh contracts` on final implementation
+`1f9a7fa`: exit 0, 20 passed, 0 failed (4.345 s). No relevant implementation
+changed afterwards; subsequent commits contain task evidence only.
