@@ -27,7 +27,7 @@ mock_provider "google" {
 }
 variables {
   project_id = "hyprn-staging-test"
-  folder_id = "123456789012"
+  organization_id = "123456789012"
   billing_account = "ABCDEF-ABCDEF-ABCDEF"
   region = "europe-west1"
   zone = "europe-west1-b"
@@ -55,8 +55,8 @@ run "private_stopped_host_and_database" {
     error_message = "Require deletion protection and OS Login."
   }
   assert {
-    condition = !output.offline_policy.environment.public_database && output.offline_policy.environment.pitr
-    error_message = "Require private PostgreSQL and point-in-time recovery."
+    condition = !output.offline_policy.environment.public_database && output.offline_policy.environment.pitr && output.infrastructure.database.version == "POSTGRES_17"
+    error_message = "Require private PostgreSQL 17 and point-in-time recovery."
   }
   assert {
     condition = output.infrastructure.database.host == "012345abcdef.abcdef012345.europe-west1.sql-psa.goog" && output.infrastructure.database.ca_mode == "GOOGLE_MANAGED_CAS_CA" && output.infrastructure.database.ssl_mode == "ENCRYPTED_ONLY"
@@ -75,8 +75,15 @@ run "private_stopped_host_and_database" {
     error_message = "No public buckets."
   }
   assert {
-    condition = contains(output.offline_policy.environment.secrets, "db-app-auth") && contains(output.offline_policy.environment.secrets, "db-app-migration")
-    error_message = "Authentication and migration need distinct secret metadata."
+    condition = contains(output.offline_policy.environment.secrets, "db-app-auth") && contains(output.offline_policy.environment.secrets, "db-app-migration") && contains(output.offline_policy.environment.secrets, "db-assistant-background") && contains(output.offline_policy.environment.secrets, "db-dispatcher-background")
+    error_message = "Request, authentication, migration and background roles need separate secret metadata."
+  }
+}
+run "organization_root" {
+  command = plan
+  assert {
+    condition = output.offline_policy.environment.organization_id == var.organization_id
+    error_message = "The staging project must use the reviewed organization root."
   }
 }
 run "private_google_dns" {
@@ -168,7 +175,7 @@ class InfrastructureTests(unittest.TestCase):
                     events = [json.loads(line) for line in result.stdout.splitlines()]
                     summary = next(event["test_summary"] for event in events
                                    if event.get("type") == "test_summary")
-                    self.assertEqual(summary["passed"], 7)
+                    self.assertEqual(summary["passed"], 8)
                     self.assertEqual(summary["failed"], 0)
 
     def test_access_template_has_no_bypass_and_requires_explicit_admission(self):

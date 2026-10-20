@@ -6,14 +6,14 @@ startup script. This is not an application deployment or execution attestation.
 
 ## Resource boundary
 
-The staging root creates a dedicated project under the supplied folder, explicit
+The staging root creates a dedicated project directly under the supplied organization, explicit
 service enablement, private IPv4 subnet, Cloud Router/NAT and static NAT address.
 The VM has no external address; its only ingress rule admits IAP SSH. It has a
 30 GiB boot disk and a separate protected 100 GiB data disk. A pinned image is
 required; an image family is refused. No production or agent-fleet resources are
 referenced.
 
-A private Cloud SQL PostgreSQL 16 Enterprise instance starts at one vCPU,
+A private Cloud SQL PostgreSQL 17 Enterprise instance starts at one vCPU,
 3.75 GiB memory and 20 GiB SSD, with growth capped at 100 GiB, seven retained
 backups and seven-day PITR. Shared CA is explicit: GOOGLE_MANAGED_CAS_CA. Terraform
 selects the provider-returned PRIVATE_SERVICES_ACCESS/INSTANCE DNS name and creates
@@ -35,7 +35,7 @@ Git. None is inferred from the agent fleet.
 | Input | Review |
 |---|---|
 | project_id | Dedicated available hyprn-staging identifier; no existing project is adopted silently |
-| folder_id, billing_account | Exact target and billing authority |
+| organization_id, billing_account | Exact target and billing authority |
 | region, zone | Same-region resources; initial proposed region europe-west1 |
 | host_image | Exact reviewed Linux amd64 image resource, not a family |
 | subnet_cidr, sql_address | Nonoverlapping private subnet and /16 SQL allocation base |
@@ -55,6 +55,20 @@ reservation or permission to create one.
 Use the dedicated CLOUDSDK_CONFIG, GOOGLE_APPLICATION_CREDENTIALS and GH_CONFIG_DIR.
 The state bucket/bootstrap authority requires a separate reviewed bootstrap step;
 the staging root intentionally cannot create the backend it already needs.
+Declare that bucket and its IAM in the reviewed bootstrap Terraform root, with
+its own recorded plan and approval; do not create workload resources through
+console steps. An initial local bootstrap state, if required, stays private and
+is migrated to the reviewed remote backend with the resulting state lineage
+verified. Every workload VM, disk, SQL instance, bucket, network and IAM binding
+is managed by Terraform; host bootstrap and services are versioned platform code.
+Cloudflare Access, Tunnel and DNS still require a declarative resource owner
+before activation: the current JSON review template alone is not reproducible
+resource management.
+
+Initial operational configuration may use the existing administration group for
+both operator and recovery roles. This reduces setup but does not provide
+separation of duties between operation and backup recovery. These remain
+distinct IAM bindings so separate role groups can replace them later.
 
 1. Resolve target inputs, read current IAM/org policies and prepare the exact cost
    and settings change list.
@@ -82,11 +96,17 @@ the staging root intentionally cannot create the backend it already needs.
 
 Terraform creates only secret metadata and per-secret reader IAM, never secret
 versions, database passwords or SQL users. Aliases: modeling-auth, modeling-rails,
-assistant-provider, db-app-request, db-app-auth, db-app-migration, db-app-backup and
-cloudflare-tunnel. The host is the trusted loader, not a container credential
-source: deliver only each component's authorized numeric-version files on tmpfs.
+assistant-provider, db-app-request, db-app-auth, db-app-migration, db-app-backup,
+cloudflare-tunnel, db-assistant-background and db-dispatcher-background. The host
+is the trusted loader, not a container credential source: deliver only each component's authorized numeric-version files on tmpfs.
 The tunnel credential is host-only. Modeling and the worker never receive
 application/database/provider credentials.
+
+The assistant background SQL login is app-only; the dispatcher background login
+is for the dedicated application dispatcher process, separate from native execution.
+The existing execution consumer must never receive that credential. Both are NOINHERIT, with EXECUTE-only access to their
+reviewed product functions, no direct table privileges and no migration-role
+membership. These credentials are never sent to provider agents or workers.
 
 SQL bootstrap is a separate private operation against the fresh database using
 the product's reviewed role/grant script. Keep bootstrap credentials out of
@@ -125,29 +145,38 @@ must cover admission, unauthorized denial, private studies and revocation.
 
 ## Preliminary operating cost
 
-Planning estimate, not a quote or approved spend: USD 180–300/month before tax
-for 730 hours in a typical European region, one e2-standard-4 host, the single
-small Cloud SQL instance above, 130 GiB VM disks, 20 GiB SQL storage, 50–200 GiB
-artifact/backup objects and low traffic/log volume. Region, currency, actual
-retained bytes and workloads change the bill. No commitments or discounts assumed.
+Planning estimate, not a quote or approved spend: EUR 170–220/month before tax
+for 730 running hours in europe-west1, one e2-standard-4 host (4 vCPU, 16 GiB),
+the single PostgreSQL Enterprise instance above, 130 GiB balanced VM disks and
+20 GiB SQL SSD. Allowance assumes 50–200 GiB retained artifacts/backups and low
+traffic/log volume. No commitments, free-tier credits or negotiated discounts
+are assumed. The host size leaves room for the current bounded services and
+scientific worker; a smaller machine needs measured memory acceptance.
 
-| Item | Approximate monthly allowance |
-|---|---:|
-| VM compute | USD 100–140 |
-| Cloud SQL compute, SSD and ordinary backup use | USD 55–85 |
-| VM disks | USD 13–20 |
-| NAT gateway + one external address | USD 4.67 at published rates, plus traffic |
-| Buckets, registry, DNS, secret operations and logs | USD 7–40 |
+The Cloud Billing public catalogue was read in EUR on 2026-10-20, with effective
+prices at 07:00 UTC. Rate identities below make the estimate reproducible without
+storing account identifiers or credentials in Git.
 
-Public NAT currently charges USD 0.0014 per assigned VM-hour, USD 0.005 per
-external-IP-hour and USD 0.045/GiB processed, plus applicable transfer-out charges.
-The 730-hour base is 730 × (0.0014 + 0.005) = USD 4.672.
+| Item | Monthly amount at declared sizing | Catalogue SKU |
+|---|---:|---|
+| VM compute: 4 cores and 16 GiB | EUR 94.71 | 9FE0-8F60-A9F0; F268-6CE7-AC16 |
+| SQL compute: 1 core and 3.75 GiB | EUR 43.39 | 2154-E036-4CB2; 8A88-5E4B-2265 |
+| SQL SSD: 20 GiB | EUR 2.99 | B14E-2B60-F10B |
+| VM balanced disks: 130 GiB | EUR 11.44 | 6AE1-525F-8B80 |
+| SQL backups | EUR 0.0704 per retained GiB-month | FB45-227E-BC1B |
+| NAT/address, objects, registry, DNS, secrets, logs and modest transfer | EUR 17–67 allowance | Usage-dependent; reprice before approval |
+
+The compute/disk subtotal is approximately EUR 152.54/month. The remainder is a
+planning allowance, not a measured bill. Public NAT additionally charges per VM,
+external address and processed byte; transfer-out charges can also apply.
+Retained objects, SQL storage growth and logging can exceed this allowance.
 A stopped VM does not eliminate disk, SQL, address or storage costs.
+
 Assistant provider spending, Cloudflare/GitHub paid plans, support, tax and
-unusually large scientific artifacts are excluded. Confirm the region-specific
-calculator/price export before plan approval. Budget alerts are notifications,
-not hard caps; worker concurrency/time limits and storage quotas must enforce
-operational bounds.
+unusually large scientific artifacts are excluded. Confirm the current
+region-specific catalogue and all usage assumptions before plan approval.
+Budget alerts are notifications, not hard caps; worker concurrency/time limits
+and storage quotas must enforce operational bounds.
 
 ## Recovery and activation work retained
 

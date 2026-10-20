@@ -9,12 +9,14 @@ output "database" {
     host       = trimsuffix(local.sql_dns_name, ".")
     name       = google_sql_database.app.name
     private_ip = google_sql_database_instance.app.private_ip_address
+    version    = google_sql_database_instance.app.database_version
     ca_mode    = google_sql_database_instance.app.settings[0].ip_configuration[0].server_ca_mode
     ssl_mode   = google_sql_database_instance.app.settings[0].ip_configuration[0].ssl_mode
   }
 }
 output "policy" {
   value = {
+    organization_id       = google_project.staging.org_id
     public_database       = google_sql_database_instance.app.settings[0].ip_configuration[0].ipv4_enabled
     private_google_access = google_compute_subnetwork.staging.private_ip_google_access
     pitr                  = google_sql_database_instance.app.settings[0].backup_configuration[0].point_in_time_recovery_enabled

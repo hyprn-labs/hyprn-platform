@@ -5,11 +5,11 @@ variable "project_id" {
     error_message = "Use a dedicated hyprn-staging project, never bootstrap, fleet or production."
   }
 }
-variable "folder_id" {
+variable "organization_id" {
   type = string
   validation {
-    condition     = can(regex("^[0-9]+$", var.folder_id))
-    error_message = "Supply the reviewed staging folder numeric ID."
+    condition     = can(regex("^[0-9]+$", var.organization_id))
+    error_message = "Supply the reviewed organization numeric ID."
   }
 }
 variable "billing_account" { type = string }

@@ -15,13 +15,14 @@ locals {
   ])
   secret_aliases = toset([
     "modeling-auth", "modeling-rails", "assistant-provider", "db-app-request", "db-app-auth",
-    "db-app-migration", "db-app-backup", "cloudflare-tunnel"
+    "db-app-migration", "db-app-backup", "cloudflare-tunnel",
+    "db-assistant-background", "db-dispatcher-background"
   ])
 }
 resource "google_project" "staging" {
   project_id          = var.project_id
   name                = "HYPRN staging"
-  folder_id           = var.folder_id
+  org_id              = var.organization_id
   billing_account     = var.billing_account
   auto_create_network = false
   deletion_policy     = "PREVENT"
@@ -169,7 +170,7 @@ resource "google_sql_database_instance" "app" {
   project             = var.project_id
   name                = "hyprn-staging-app"
   region              = var.region
-  database_version    = "POSTGRES_16"
+  database_version    = "POSTGRES_17"
   deletion_protection = true
   settings {
     tier                        = "db-custom-1-3840"

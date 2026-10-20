@@ -1,5 +1,5 @@
 variable "project_id" { type = string }
-variable "folder_id" { type = string }
+variable "organization_id" { type = string }
 variable "billing_account" { type = string }
 variable "region" { type = string }
 variable "subnet_cidr" { type = string }

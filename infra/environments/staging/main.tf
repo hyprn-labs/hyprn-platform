@@ -1,7 +1,7 @@
 module "environment" {
   source              = "../../modules/environment"
   project_id          = var.project_id
-  folder_id           = var.folder_id
+  organization_id     = var.organization_id
   billing_account     = var.billing_account
   region              = var.region
   subnet_cidr         = var.subnet_cidr
