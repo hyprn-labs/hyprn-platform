@@ -219,6 +219,7 @@ def application_environment(runtime):
     """Fixed product paths; host-owned identity avoids a self-referential config hash."""
     return {
         "HYPRN_MVP_DATABASE_CA_SHA256": runtime["database"]["ca_sha256"],
+        "HYPRN_MVP_APPLICATION_STORE_ID": runtime["store_ids"]["application"],
         "HYPRN_MVP_HOST_IDENTITY_FILE": "/run/hyprn-control/runtime-identity.json",
         "HYPRN_MVP_ADMISSION_FILE": "/run/hyprn-control/admission.json",
         "HYPRN_MVP_ARTIFACT_ROOT": "/data/artifacts",

@@ -84,6 +84,8 @@ class ContractTests(unittest.TestCase):
             self.assertFalse(controls[0]["bind"]["create_host_path"])
             self.assertEqual(service["environment"]["HYPRN_MVP_DATABASE_CA_SHA256"],
                              self.documents["runtime"]["database"]["ca_sha256"])
+            self.assertEqual(service["environment"]["HYPRN_MVP_APPLICATION_STORE_ID"],
+                             self.documents["runtime"]["store_ids"]["application"])
             self.assertEqual(service["environment"]["HYPRN_MVP_HOST_IDENTITY_FILE"],
                              "/run/hyprn-control/runtime-identity.json")
         modeling = services["modeling"]
