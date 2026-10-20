@@ -235,10 +235,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "0e132a08214a339897a7eb18b368c010e895892f9cdee4fbc83a1059ab233bfd",
+      "release_sha256": "d7a508c4e137ee2b24fcfce91b07c4f4d938852b40089e9b3f7ef905d1dbfa85",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "33e5695dffbc1095f49606cd37e80092899fab0752fe728bb60ebe802dcf9c6f",
+      "config_sha256": "76ed97334a9620e61922e82ef0c59c6f4d148cc66c597d6db664657d9cf7bfc3",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
