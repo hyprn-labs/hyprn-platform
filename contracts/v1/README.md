@@ -45,7 +45,8 @@ or evidence of scientific qualification.
 
 ## Runtime boundaries
 
-The Compose portion runs only the existing app and modeling image entrypoints.
+The Compose portion declares the app and modeling services plus a dispatcher
+template using the exact app image pin.
 It uses their existing UIDs, read-only roots, dropped capabilities, bounded
 resources and no published ports. Execution is a separate trusted host service;
 its workers have no network or credentials. The host adapter must attach the
@@ -57,7 +58,8 @@ read-only file:
 
 | Consumer | Aliases |
 |---|---|
-| Application | `modeling-auth`, `assistant-provider`, `db-app-request`, `db-app-auth` |
+| Application | `modeling-auth`, `assistant-provider`, `db-app-request`, `db-app-auth`, `db-assistant-background` |
+| Dispatcher | `modeling-auth`, `db-app-request`, `db-dispatcher-background` |
 | Modeling | `modeling-auth`, `modeling-rails` |
 | Migration operation | `db-app-migration` |
 | Backup operation | `db-app-backup` |
@@ -69,6 +71,32 @@ values. `db-app-auth` belongs to the separate read-only credential lookup role
 `hyprn_auth`; study access uses `hyprn_request`. The application never receives migration or backup
 credentials. Platform identity supplies the secret project; descriptors cannot
 add secret consumers or arbitrary paths.
+
+The assistant and dispatcher discovery roles are respectively
+`hyprn_assistant_background` and `hyprn_dispatcher_background`, bound by required
+`assistant_background_role` and `dispatcher_background_role` fields. Their
+credentials authorize only bounded database discovery functions; each returned
+item then uses the request connection with its actor context. Database grants
+and discovery behavior are product migration/adapter acceptance obligations.
+
+The dispatcher has the app UID, a writable application artifact subdirectory,
+and a read-only TLS CA. It receives no authentication, provider, migration or
+backup credential. Its `host-dispatcher` profile excludes it from ordinary
+Compose startup. The host owns run/attach, fixed stdio, child lifetime and the
+fixed `python -B -m hyprn_mvp_app.dispatcher --with-exports` invocation, with
+open stdin and no TTY. The dispatcher has no public port, Docker socket or
+native execution credentials. The native execution host still receives no
+application credentials.
+
+Dispatcher egress defaults to deny and permits only modeling TCP 3000 and the
+bound database address TCP 5432. The internal dispatcher network requires a
+host-controlled private database route and firewall enforcement; internal
+network membership alone does not provide that route. Provider and metadata
+egress remain denied. Those requirements appear in `start_requires`.
+Product phase 06-05 implements and verifies the cloud entrypoint, host-owned
+bridge lifecycle and effective network policy. The existing local launcher
+executes the dispatcher inside the request app; it does not implement this
+separate cloud template. No boot or connectivity result follows from preview.
 
 Database binding separates the private connection address from the verified TLS
 server name and pins the CA file bytes. A matching Cloud SQL certificate/DNS

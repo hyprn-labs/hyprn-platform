@@ -871,6 +871,48 @@
                 "name",
                 "version"
               ]
+            },
+            "db-assistant-background": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
+            },
+            "db-dispatcher-background": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 512,
+                  "pattern": "^[a-z][a-z0-9-]{1,62}$"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "name",
+                "version"
+              ]
             }
           },
           "required": [
@@ -880,7 +922,9 @@
             "db-app-request",
             "db-app-auth",
             "db-app-migration",
-            "db-app-backup"
+            "db-app-backup",
+            "db-assistant-background",
+            "db-dispatcher-background"
           ]
         },
         "database": {
@@ -925,6 +969,12 @@
               "minLength": 1,
               "maxLength": 512,
               "pattern": "^[a-f0-9]{64}$"
+            },
+            "assistant_background_role": {
+              "const": "hyprn_assistant_background"
+            },
+            "dispatcher_background_role": {
+              "const": "hyprn_dispatcher_background"
             }
           },
           "required": [
@@ -937,7 +987,9 @@
             "backup_role",
             "sslmode",
             "server_name",
-            "ca_sha256"
+            "ca_sha256",
+            "assistant_background_role",
+            "dispatcher_background_role"
           ]
         },
         "access": {

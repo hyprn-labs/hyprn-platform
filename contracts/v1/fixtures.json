@@ -29,8 +29,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "4ff906236862ea93d7ab540f67fe74fcb587291ce71c97dd78b48943acac6d0a",
-        "renderer_sha256": "a49b0ed119ed721bcad6fcf5da1cf3822999613ac571008635e2064a91bfca6a",
+        "schema_sha256": "67eee28b2c1b8b64078d0cf157d562fc6a09547d12045d158d8238ff17b549f1",
+        "renderer_sha256": "193abe2bd70a4c947d79b9208bf107845541906ece67e2d1d8312df60590044a",
         "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
       },
       "product_contracts": {
@@ -171,6 +171,14 @@
         "db-app-backup": {
           "name": "hyprn-staging-db-app-backup",
           "version": 1
+        },
+        "db-assistant-background": {
+          "name": "hyprn-staging-db-assistant-background",
+          "version": 1
+        },
+        "db-dispatcher-background": {
+          "name": "hyprn-staging-db-dispatcher-background",
+          "version": 1
         }
       },
       "database": {
@@ -183,7 +191,9 @@
         "backup_role": "hyprn_backup",
         "sslmode": "verify-full",
         "server_name": "1a23b4cd5e67.1a2b345c6d27.europe-west1.sql-psa.goog",
-        "ca_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "ca_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "assistant_background_role": "hyprn_assistant_background",
+        "dispatcher_background_role": "hyprn_dispatcher_background"
       },
       "access": {
         "issuer": "https://fixture.cloudflareaccess.com",
@@ -200,10 +210,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "e4f98792542ba62a49e672342764743b09f0c13d9efcd079f9725b6335c0f941",
+      "release_sha256": "c032a6dda5706fe43e68f60e328207f77c422fb5b1947006ceaff3c58b871c5a",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "63f2ab029e145c5efae8a711b7b301818aafd6686296d6da73cea3861b82710f",
+      "config_sha256": "5a99448eda3f04c08e89d138d7b11799ffbc5966dd0a402563c056c06685c69e",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -347,6 +357,48 @@
       ],
       "value": "qualified",
       "code": "attestation_required"
+    },
+    {
+      "name": "assistant role cannot elevate",
+      "document": "runtime",
+      "path": [
+        "database",
+        "assistant_background_role"
+      ],
+      "value": "hyprn_migration",
+      "code": "schema_value"
+    },
+    {
+      "name": "assistant secret version must be pinned",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "db-assistant-background",
+        "version"
+      ],
+      "value": "latest",
+      "code": "schema_type"
+    },
+    {
+      "name": "dispatcher role cannot elevate",
+      "document": "runtime",
+      "path": [
+        "database",
+        "dispatcher_background_role"
+      ],
+      "value": "hyprn_migration",
+      "code": "schema_value"
+    },
+    {
+      "name": "dispatcher secret version must be pinned",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "db-dispatcher-background",
+        "version"
+      ],
+      "value": "latest",
+      "code": "schema_type"
     }
   ]
 }

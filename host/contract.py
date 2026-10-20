@@ -22,7 +22,9 @@ MAX_BUNDLE_BYTES = 20 * 1024**3
 MAX_EXPANDED_BYTES = 32 * 1024**3
 MAX_MEMBERS = 200000
 SECRET_CONSUMERS = {
-    "app": ("modeling-auth", "assistant-provider", "db-app-request", "db-app-auth"),
+    "app": ("modeling-auth", "assistant-provider", "db-app-request", "db-app-auth",
+            "db-assistant-background"),
+    "dispatcher": ("modeling-auth", "db-app-request", "db-dispatcher-background"),
     "modeling": ("modeling-auth", "modeling-rails"),
     "migration": ("db-app-migration",),
     "backup": ("db-app-backup",),
@@ -186,18 +188,21 @@ def render(release, runtime):
     limits = {
         "app": {"mem_limit": "2g", "cpus": 1.0, "pids_limit": 256},
         "modeling": {"mem_limit": "2g", "cpus": 1.0, "pids_limit": 256},
+        "dispatcher": {"mem_limit": "2g", "cpus": 1.0, "pids_limit": 256},
     }
     services = {}
-    for component, uid in (("app", 10002), ("modeling", 10001)):
-        area = "application" if component == "app" else "modeling"
+    for component, uid in (("app", 10002), ("dispatcher", 10002), ("modeling", 10001)):
+        area = "application" if component in ("app", "dispatcher") else "modeling"
         service = {
-            "image": release["images"][component], "user": f"{uid}:{uid}",
+            "image": release["images"]["app" if component == "dispatcher" else component], "user": f"{uid}:{uid}",
             "read_only": True, "cap_drop": ["ALL"],
             "security_opt": ["no-new-privileges:true"], "restart": "no",
             "init": True, "ulimits": {"core": 0},
             "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=134217728"],
-            "networks": ["modeling"] + (["application"] if component == "app" else []),
-            "volumes": [bind(root + "/" + area, "/data")],
+            "networks": ["modeling"] + (["application"] if component == "app" else
+                            ["dispatcher"] if component == "dispatcher" else []),
+            "volumes": [bind(root + "/" + area + "/artifacts", "/data/artifacts")]
+                if component == "dispatcher" else [bind(root + "/" + area, "/data")],
             **limits[component],
         }
         environment = {}
@@ -209,24 +214,42 @@ def render(release, runtime):
             environment["HYPRN_SECRET_" + alias.upper().replace("-", "_") + "_FILE"] = (
                 "/run/secrets/" + alias
             )
-        if component == "app":
+        if component in ("app", "dispatcher"):
             service["volumes"].append(bind(
                 "/etc/hyprn/trust/cloudsql-server-ca.pem",
                 "/etc/hyprn/trust/cloudsql-server-ca.pem", True,
             ))
             environment.update({
                 "HYPRN_MVP_EDITION": "cloud",
-                "HYPRN_MVP_EXTERNAL_ORIGIN": runtime["external_origin"],
                 "HYPRN_MVP_DATABASE_HOST": runtime["database"]["host"],
                 "HYPRN_MVP_DATABASE_PORT": "5432",
                 "HYPRN_MVP_DATABASE_NAME": runtime["database"]["name"],
                 "HYPRN_MVP_DATABASE_ROLE": runtime["database"]["request_role"],
-                "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
                 "HYPRN_MVP_DATABASE_SSLMODE": "verify-full",
                 "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
                 "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
+            })
+        if component == "app":
+            environment.update({
+                "HYPRN_MVP_EXTERNAL_ORIGIN": runtime["external_origin"],
+                "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
+                "HYPRN_MVP_DATABASE_ASSISTANT_BACKGROUND_ROLE":
+                    runtime["database"]["assistant_background_role"],
                 "HYPRN_MVP_ACCESS_ISSUER": runtime["access"]["issuer"],
                 "HYPRN_MVP_ACCESS_AUDIENCE": runtime["access"]["audience"],
+            })
+        if component == "dispatcher":
+            environment.update({
+                "HYPRN_MVP_DATABASE_DISPATCHER_BACKGROUND_ROLE":
+                    runtime["database"]["dispatcher_background_role"],
+                "HYPRN_MVP_ARTIFACT_ROOT": "/data/artifacts",
+                "HYPRN_MVP_MODEL_URL": "http://modeling:3000/modeling/1",
+                "HYPRN_MVP_MODEL_KEY_FILE": "/run/secrets/modeling-auth",
+            })
+            service.update({
+                "profiles": ["host-dispatcher"],
+                "entrypoint": ["python", "-B", "-m", "hyprn_mvp_app.dispatcher"],
+                "command": ["--with-exports"], "stdin_open": True, "tty": False,
             })
         service["environment"] = environment
         services[component] = service
@@ -237,13 +260,26 @@ def render(release, runtime):
         )},
         "compose": {
             "services": services,
-            "networks": {"modeling": {"internal": True}, "application": {"internal": False}},
+            "networks": {"modeling": {"internal": True}, "application": {"internal": False},
+                         "dispatcher": {"internal": True}},
         },
         "execution": {
             "kind": "host-service", "user": 10003, "root": root + "/execution",
             "native_bundle": release["native_bundle"], "application_secrets": [],
             "worker_identity": release["execution"],
             "maximum_workers": 2,
+        },
+        "dispatcher_bridge": {
+            "owner": "execution-host", "service": "dispatcher",
+            "launch": "host-owned-run-attach", "transport": "fixed-stdio",
+            "lifetime": "owned-child", "public_endpoint": False,
+        },
+        "dispatcher_egress": {
+            "default": "deny",
+            "allow": [
+                {"destination": "modeling", "port": 3000, "protocol": "tcp"},
+                {"destination": runtime["database"]["host"], "port": 5432, "protocol": "tcp"},
+            ],
         },
         "worker": {
             "image": release["images"]["worker"], "user": "65534:65534",
@@ -269,6 +305,8 @@ def render(release, runtime):
             "verified-release-bytes", "disk-and-store-identity", "writer-fencing",
             "current-host-firewall", "metadata-denied-to-containers",
             "cloudsql-tls-trust", "current-host-attestation-for-execution",
+            "dispatcher-private-database-route-and-egress-policy",
+            "dispatcher-host-owned-stdio-lifecycle",
         ],
     }
     check_render(value, runtime, release)
@@ -278,39 +316,100 @@ def render(release, runtime):
 def check_render(value, runtime, release):
     """Audit the effective renderer output, not just the original descriptor."""
     services = value["compose"]["services"]
-    if set(services) != {"app", "modeling"}:
+    if set(services) != {"app", "dispatcher", "modeling"}:
         raise Invalid("render_policy")
-    for component, uid in (("app", 10002), ("modeling", 10001)):
+    for component, uid in (("app", 10002), ("dispatcher", 10002), ("modeling", 10001)):
         service = services[component]
         allowed_fields = {
             "image", "user", "read_only", "cap_drop", "security_opt", "restart", "init",
             "ulimits", "tmpfs", "networks", "volumes", "mem_limit", "cpus",
             "pids_limit", "environment",
         }
+        if component == "dispatcher":
+            allowed_fields |= {"profiles", "entrypoint", "command", "stdin_open", "tty"}
+            if (service.get("profiles") != ["host-dispatcher"] or
+                    service.get("entrypoint") !=
+                    ["python", "-B", "-m", "hyprn_mvp_app.dispatcher"] or
+                    service.get("command") != ["--with-exports"] or
+                    service.get("stdin_open") is not True or service.get("tty") is not False):
+                raise Invalid("render_policy")
         if set(service) != allowed_fields or service["user"] != f"{uid}:{uid}":
             raise Invalid("render_policy")
-        if (service["image"] != release["images"][component] or
+        if (service["image"] != release["images"]["app" if component == "dispatcher" else component] or
                 service["cap_drop"] != ["ALL"] or not service["read_only"] or
                 service["security_opt"] != ["no-new-privileges:true"] or
                 service["restart"] != "no"):
             raise Invalid("render_policy")
-        area = "application" if component == "app" else "modeling"
-        expected_mounts = [bind(runtime["mounts"][area], "/data")]
+        area = "application" if component in ("app", "dispatcher") else "modeling"
+        expected_mounts = (
+            [bind(runtime["mounts"][area] + "/artifacts", "/data/artifacts")]
+            if component == "dispatcher" else [bind(runtime["mounts"][area], "/data")]
+        )
         expected_mounts += [
             bind(runtime["mounts"]["secrets"] + "/" + component + "/" + alias,
                  "/run/secrets/" + alias, True)
             for alias in SECRET_CONSUMERS[component]
         ]
-        if component == "app":
+        if component in ("app", "dispatcher"):
             expected_mounts.append(bind(
                 "/etc/hyprn/trust/cloudsql-server-ca.pem",
                 "/etc/hyprn/trust/cloudsql-server-ca.pem", True,
             ))
         if service["volumes"] != expected_mounts:
             raise Invalid("render_policy")
-        expected_networks = ["modeling"] + (["application"] if component == "app" else [])
+        expected_networks = ["modeling"] + (["application"] if component == "app" else
+                            ["dispatcher"] if component == "dispatcher" else [])
         if service["networks"] != expected_networks:
             raise Invalid("render_policy")
+    if value["execution"]["application_secrets"]:
+        raise Invalid("render_policy")
+    if value["compose"]["networks"] != {
+            "modeling": {"internal": True}, "application": {"internal": False},
+            "dispatcher": {"internal": True}}:
+        raise Invalid("render_policy")
+    expected_loads = [
+        {"consumer": consumer, "alias": alias,
+         "resource": "projects/" + runtime["project_number"] + "/secrets/"
+         + runtime["secrets"][alias]["name"] + "/versions/"
+         + str(runtime["secrets"][alias]["version"]),
+         "file": "/run/hyprn/secrets/" + consumer + "/" + alias}
+        for consumer, aliases in SECRET_CONSUMERS.items() for alias in aliases
+    ]
+    if value["secret_loads"] != expected_loads:
+        raise Invalid("render_policy")
+    environment = services["dispatcher"]["environment"]
+    expected_environment = {
+        "HYPRN_SECRET_" + alias.upper().replace("-", "_") + "_FILE":
+            "/run/secrets/" + alias for alias in SECRET_CONSUMERS["dispatcher"]
+    }
+    expected_environment.update({
+        "HYPRN_MVP_EDITION": "cloud",
+        "HYPRN_MVP_DATABASE_HOST": runtime["database"]["host"],
+        "HYPRN_MVP_DATABASE_PORT": "5432",
+        "HYPRN_MVP_DATABASE_NAME": runtime["database"]["name"],
+        "HYPRN_MVP_DATABASE_ROLE": runtime["database"]["request_role"],
+        "HYPRN_MVP_DATABASE_SSLMODE": "verify-full",
+        "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
+        "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
+        "HYPRN_MVP_DATABASE_DISPATCHER_BACKGROUND_ROLE":
+            runtime["database"]["dispatcher_background_role"],
+        "HYPRN_MVP_ARTIFACT_ROOT": "/data/artifacts",
+        "HYPRN_MVP_MODEL_URL": "http://modeling:3000/modeling/1",
+        "HYPRN_MVP_MODEL_KEY_FILE": "/run/secrets/modeling-auth",
+    })
+    if environment != expected_environment:
+        raise Invalid("render_policy")
+    if (value["dispatcher_bridge"] != {
+            "owner": "execution-host", "service": "dispatcher",
+            "launch": "host-owned-run-attach", "transport": "fixed-stdio",
+            "lifetime": "owned-child", "public_endpoint": False} or
+            value["dispatcher_egress"] != {
+                "default": "deny", "allow": [
+                    {"destination": "modeling", "port": 3000, "protocol": "tcp"},
+                    {"destination": runtime["database"]["host"], "port": 5432,
+                     "protocol": "tcp"},
+                ]}):
+        raise Invalid("render_policy")
     worker = value["worker"]
     if worker["network_mode"] != "none" or worker["secrets"] or not worker["read_only"]:
         raise Invalid("render_policy")

@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import io
+import importlib.util
 import json
 from pathlib import Path
 import subprocess
@@ -97,11 +98,81 @@ class ContractTests(unittest.TestCase):
                          "hyprn_assistant_background")
         self.assertEqual(dispatcher["networks"], ["modeling", "dispatcher"])
         self.assertTrue(preview["compose"]["networks"]["dispatcher"]["internal"])
+        self.assertEqual(dispatcher["profiles"], ["host-dispatcher"])
+        self.assertEqual(dispatcher["entrypoint"],
+                         ["python", "-B", "-m", "hyprn_mvp_app.dispatcher"])
+        self.assertEqual(dispatcher["command"], ["--with-exports"])
+        self.assertTrue(dispatcher["stdin_open"])
+        self.assertFalse(dispatcher["tty"])
+        self.assertEqual(preview["dispatcher_bridge"], {
+            "owner": "execution-host", "service": "dispatcher",
+            "launch": "host-owned-run-attach", "transport": "fixed-stdio",
+            "lifetime": "owned-child", "public_endpoint": False,
+        })
+        self.assertEqual(preview["dispatcher_egress"], {
+            "default": "deny", "allow": [
+                {"destination": "modeling", "port": 3000, "protocol": "tcp"},
+                {"destination": self.documents["runtime"]["database"]["host"],
+                 "port": 5432, "protocol": "tcp"},
+            ],
+        })
+        self.assertIn("dispatcher-private-database-route-and-egress-policy",
+                      preview["start_requires"])
+        writable = [m for m in dispatcher["volumes"] if not m["read_only"]]
+        self.assertEqual([(m["source"], m["target"]) for m in writable],
+                         [("/srv/hyprn/staging/application/artifacts", "/data/artifacts")])
         self.assertNotIn("ports", dispatcher)
         self.assertNotIn("assistant-provider", json.dumps(dispatcher))
         self.assertNotIn("docker.sock", json.dumps(services))
         self.assertEqual(preview["execution"]["application_secrets"], [])
         self.assertEqual(preview["worker"]["secrets"], [])
+
+    def test_background_roles_and_aliases_are_required_and_closed(self):
+        for parent, key in (("database", "assistant_background_role"),
+                            ("database", "dispatcher_background_role"),
+                            ("secrets", "db-assistant-background"),
+                            ("secrets", "db-dispatcher-background")):
+            with self.subTest(parent=parent, key=key):
+                self.documents = copy.deepcopy(self.fixtures["valid"])
+                del self.documents["runtime"][parent][key]
+                self.rejected(self.command(), "missing_field")
+        self.documents = copy.deepcopy(self.fixtures["valid"])
+        self.documents["runtime"]["secrets"]["dispatcher-provider"] = {
+            "name": "hyprn-staging-dispatcher-provider", "version": 1,
+        }
+        self.rejected(self.command(), "unknown_field")
+
+    def test_effective_render_rejects_dispatcher_authority_expansion(self):
+        spec = importlib.util.spec_from_file_location("contract", CLI)
+        contract = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(contract)
+        baseline = self.success(self.command())["preview"]
+        mutations = [
+            lambda p: p["compose"]["services"]["dispatcher"].update(ports=["8000:8000"]),
+            lambda p: p["compose"]["services"]["dispatcher"].update(command=["arbitrary"]),
+            lambda p: p["compose"]["services"]["dispatcher"]["networks"].append("application"),
+            lambda p: p["compose"]["services"]["dispatcher"]["volumes"].append(
+                {"source": "/var/run/docker.sock", "target": "/var/run/docker.sock"}),
+            lambda p: p["compose"]["services"]["dispatcher"]["environment"].update(
+                HYPRN_SECRET_ASSISTANT_PROVIDER_FILE="/run/secrets/assistant-provider"),
+            lambda p: p["compose"]["services"]["dispatcher"]["environment"].update(
+                HYPRN_MVP_DATABASE_ROLE="hyprn_migration"),
+            lambda p: p["compose"]["services"]["dispatcher"]["environment"].update(
+                HYPRN_MVP_DATABASE_SSLMODE="disable"),
+            lambda p: p["secret_loads"].append(
+                {"consumer": "dispatcher", "alias": "assistant-provider"}),
+            lambda p: p["execution"]["application_secrets"].append("db-app-request"),
+            lambda p: p["dispatcher_egress"].update(default="allow"),
+            lambda p: p["dispatcher_bridge"].update(transport="tcp"),
+        ]
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                preview = copy.deepcopy(baseline)
+                mutate(preview)
+                with self.assertRaises(contract.Invalid) as caught:
+                    contract.check_render(preview, self.documents["runtime"],
+                                          self.documents["release"])
+                self.assertEqual(caught.exception.code, "render_policy")
 
     def test_negative_fixtures_fail_before_rendering(self):
         for row in self.fixtures["negative"]:
