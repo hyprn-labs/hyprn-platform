@@ -340,3 +340,23 @@ Committed wiring `1e5915d` passed parent `tests/platform/run.sh contracts`
 8.300 seconds), both exit 0 with scopes released. No Terraform plan or cloud
 operation was repeated for this source-only wiring correction. Actual Linux
 startup remains the product lifecycle task's next boundary check.
+
+
+## Native execution projection — 2026-10-20
+
+Contract source `231bad2` adds an execution-only projection with exact source,
+native environment, interpreter, private execution home and Unix Docker endpoint.
+The native dependency lock participates in release identity. Network Docker
+endpoints and noncanonical paths are refused. Product lifecycle binds the stable
+execution projection digest separately from the full host configuration digest,
+so changing admission does not create an attestation hash cycle. Logical store
+identity remains distinct from the native UUIDs observed at initialization.
+
+Parent acceptance: `tests/platform/run.sh contracts` passed 23 tests in 5.282
+seconds on the committed source (development run: 23 in 4.838 seconds). Exact
+private logs are retained with the deployment review. This extends the earlier
+application store identity source `72d533e`, whose contracts passed 21 tests in
+4.540 seconds. No secret delivery implementation changed and no cloud operation
+was repeated. Product consumer `44b87a0` pins the exact updated contract files.
+Installed Linux execution, host socket permissions, containment attestation and
+release replacement remain required before application activation.
