@@ -25,7 +25,9 @@ read was performed. Parent owns integrated rerun and shared planning updates.
   staging project ID/number and the fixed approved target. Delivery/cleanup still
   require runtime. Updated `tests/platform/run.sh secrets` before commit →
   18 passed / 0 failed, 8.320s. This source delta invalidated the earlier 17-test
-  acceptance; the parent performs the committed-tree 18-test rerun.
+  acceptance.
+- Final parent integrated acceptance at `5f317c9`: `tests/platform/run.sh secrets`
+  → 18 passed / 0 failed, 8.096s, exit 0. Later changes are planning records only.
 - `git diff --check` → exit 0. No deleted files in the source commit. Stub scan
   found no TODO/FIXME/placeholder in owned source/tests/runbook.
 - A read-only `docker image ls --format '{{.Repository}}:{{.Tag}} {{.ID}}'` probe

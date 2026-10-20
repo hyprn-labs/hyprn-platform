@@ -43,7 +43,7 @@ key transfer uses stdin and a receipt that prevents uncertain redispatch.**
   separate operator mode uses the reviewed gcloud executable and dedicated identity.
 - Explicit provider transfer preflight, private key reader, stdin-only payload,
   metadata-only receipt before dispatch and no automatic retry.
-- Local registered group: 18 passed / 0 failed on final source. Exact runs,
+- Parent registered-group acceptance at `5f317c9`: 18 passed / 0 failed, 8.096s. Exact runs,
   limitations and cleanup are in [08-02A-CHECKPOINT.md](08-02A-CHECKPOINT.md).
 
 ## Task Commits
