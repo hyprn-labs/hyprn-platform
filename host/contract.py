@@ -5,6 +5,8 @@ An unknown schema keyword fails closed. This command never extracts bundles,
 fetches secrets, executes product code, starts services, or accesses cloud APIs.
 """
 import argparse
+from datetime import datetime
+from decimal import Decimal, ROUND_FLOOR
 import hashlib
 import ipaddress
 import json
@@ -175,6 +177,47 @@ def check_documents(documents):
     admission = runtime["admission"]
     if admission["execution"] == "qualified" and admission["attestation_sha256"] is None:
         raise Invalid("attestation_required", "runtime.admission")
+    assistant = runtime["assistant"]
+    if any(assistant[key] != value for key, value in release["assistant"].items()):
+        raise Invalid("assistant_pin", "runtime.assistant")
+    if assistant["budget"]["prior_cents"] >= assistant["budget"]["total_cents"]:
+        raise Invalid("assistant_budget", "runtime.assistant.budget")
+    budget = assistant["budget"]
+    rate = Decimal(budget["usd_per_approved_currency"])
+    converted = (Decimal(budget["approved_minor"]) * rate).to_integral_value(
+        rounding=ROUND_FLOOR)
+    if rate <= 0 or converted != budget["total_cents"]:
+        raise Invalid("assistant_conversion", "runtime.assistant.budget")
+    try:
+        datetime.strptime(budget["conversion_timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        raise Invalid("assistant_conversion", "runtime.assistant.budget") from None
+
+
+def assistant_environment(runtime):
+    """Product Settings names; credentials stay in the existing private file mount."""
+    binding = runtime["assistant"]
+    values = {key.upper(): binding[key] for key in (
+        "agent_id", "agent_version", "environment_id", "definitions_sha256",
+        "configuration_sha256",
+    )}
+    values.update({
+        "KEY_FILE": "/run/secrets/assistant-provider",
+        "TOTAL_CENTS": str(binding["budget"]["total_cents"]),
+        "PRIOR_CENTS": str(binding["budget"]["prior_cents"]),
+        "APPROVED_MINOR": str(binding["budget"]["approved_minor"]),
+        "APPROVED_CURRENCY": binding["budget"]["approved_currency"],
+        "CONVERSION_DATE": binding["budget"]["conversion_timestamp"][:10],
+    })
+    return {"HYPRN_MVP_ASSISTANT_" + key: value for key, value in values.items()}
+
+
+def assistant_policy(runtime):
+    return {
+        "consumer": "app", "provider": "claude-managed-agents",
+        "configuration_sha256": runtime["assistant"]["configuration_sha256"],
+        "budget": runtime["assistant"]["budget"],
+    }
 
 
 def bind(source, target, readonly=False):
@@ -230,6 +273,7 @@ def render(release, runtime):
                 "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
             })
         if component == "app":
+            environment.update(assistant_environment(runtime))
             environment.update({
                 "HYPRN_MVP_EXTERNAL_ORIGIN": runtime["external_origin"],
                 "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
@@ -296,6 +340,7 @@ def render(release, runtime):
             for consumer, aliases in SECRET_CONSUMERS.items() for alias in aliases
         ],
         "admission": runtime["admission"],
+        "assistant": assistant_policy(runtime),
         "trust_files": [{
             "path": "/etc/hyprn/trust/cloudsql-server-ca.pem",
             "sha256": runtime["database"]["ca_sha256"],
@@ -307,6 +352,8 @@ def render(release, runtime):
             "cloudsql-tls-trust", "current-host-attestation-for-execution",
             "dispatcher-private-database-route-and-egress-policy",
             "dispatcher-host-owned-stdio-lifecycle",
+            "assistant-resource-readback-and-release-definition-match",
+            "assistant-shared-spending-continuity-reconciled",
         ],
     }
     check_render(value, runtime, release)
@@ -318,6 +365,18 @@ def check_render(value, runtime, release):
     services = value["compose"]["services"]
     if set(services) != {"app", "dispatcher", "modeling"}:
         raise Invalid("render_policy")
+    if value.get("assistant") != assistant_policy(runtime):
+        raise Invalid("render_policy")
+    if not {"assistant-resource-readback-and-release-definition-match",
+            "assistant-shared-spending-continuity-reconciled"}.issubset(
+                value.get("start_requires", [])):
+        raise Invalid("render_policy")
+    for component, service in {**services, "worker": value["worker"],
+                               "execution": value["execution"]}.items():
+        actual = {key: setting for key, setting in service.get("environment", {}).items()
+                  if key.startswith("HYPRN_MVP_ASSISTANT_")}
+        if actual != (assistant_environment(runtime) if component == "app" else {}):
+            raise Invalid("render_policy")
     for component, uid in (("app", 10002), ("dispatcher", 10002), ("modeling", 10001)):
         service = services[component]
         allowed_fields = {

@@ -543,6 +543,28 @@
             "licenses",
             "sources"
           ]
+        },
+        "assistant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "definitions_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            },
+            "configuration_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          "required": [
+            "definitions_sha256",
+            "configuration_sha256"
+          ]
         }
       },
       "required": [
@@ -559,7 +581,8 @@
         "build_inputs",
         "stores",
         "execution",
-        "evidence"
+        "evidence",
+        "assistant"
       ]
     },
     "runtime": {
@@ -1049,6 +1072,113 @@
             "execution",
             "attestation_sha256"
           ]
+        },
+        "assistant": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "provider": {
+              "const": "claude-managed-agents"
+            },
+            "agent_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "agent_version": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,9}$",
+              "maxLength": 10
+            },
+            "environment_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "definitions_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            },
+            "configuration_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "minLength": 64,
+              "maxLength": 64
+            },
+            "budget": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "const": "installation"
+                },
+                "currency": {
+                  "const": "USD"
+                },
+                "total_cents": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                },
+                "prior_cents": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999999
+                },
+                "prior_spending_policy": {
+                  "const": "carry-forward-untracked-spend"
+                },
+                "history_policy": {
+                  "const": "preserve-and-reconcile-all-sessions"
+                },
+                "approved_minor": {
+                  "const": 10000
+                },
+                "approved_currency": {
+                  "const": "EUR"
+                },
+                "usd_per_approved_currency": {
+                  "type": "string",
+                  "pattern": "^(?:0|[1-9][0-9]{0,5})\\.[0-9]{1,8}$",
+                  "maxLength": 15
+                },
+                "conversion_timestamp": {
+                  "type": "string",
+                  "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+                  "maxLength": 20
+                },
+                "conversion_policy": {
+                  "const": "floor-to-provider-cent"
+                }
+              },
+              "required": [
+                "scope",
+                "currency",
+                "total_cents",
+                "prior_cents",
+                "prior_spending_policy",
+                "history_policy",
+                "approved_minor",
+                "approved_currency",
+                "usd_per_approved_currency",
+                "conversion_timestamp",
+                "conversion_policy"
+              ]
+            }
+          },
+          "required": [
+            "provider",
+            "agent_id",
+            "agent_version",
+            "environment_id",
+            "definitions_sha256",
+            "configuration_sha256",
+            "budget"
+          ]
         }
       },
       "required": [
@@ -1074,7 +1204,8 @@
         "secrets",
         "database",
         "access",
-        "admission"
+        "admission",
+        "assistant"
       ]
     },
     "desired": {

@@ -29,8 +29,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "67eee28b2c1b8b64078d0cf157d562fc6a09547d12045d158d8238ff17b549f1",
-        "renderer_sha256": "193abe2bd70a4c947d79b9208bf107845541906ece67e2d1d8312df60590044a",
+        "schema_sha256": "1c2c75f9e0ccd2db0a95085ec8f12335db514a9721f7b8885a25043086b8922d",
+        "renderer_sha256": "0d46a829d9824a51b09be311131c4488f41ef0c9afca2cfddd7cfcef3326d9e5",
         "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
       },
       "product_contracts": {
@@ -102,6 +102,10 @@
         "sbom": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "licenses": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "sources": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "assistant": {
+        "definitions_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
       }
     },
     "runtime": {
@@ -203,6 +207,27 @@
         "browser": "closed",
         "execution": "closed",
         "attestation_sha256": null
+      },
+      "assistant": {
+        "provider": "claude-managed-agents",
+        "agent_id": "agent_fixture",
+        "agent_version": "7",
+        "environment_id": "env_fixture",
+        "definitions_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "configuration_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "budget": {
+          "scope": "installation",
+          "currency": "USD",
+          "total_cents": 11000,
+          "prior_cents": 125,
+          "prior_spending_policy": "carry-forward-untracked-spend",
+          "history_policy": "preserve-and-reconcile-all-sessions",
+          "approved_minor": 10000,
+          "approved_currency": "EUR",
+          "usd_per_approved_currency": "1.10000000",
+          "conversion_timestamp": "2026-10-20T00:00:00Z",
+          "conversion_policy": "floor-to-provider-cent"
+        }
       }
     },
     "desired": {
@@ -210,10 +235,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "c032a6dda5706fe43e68f60e328207f77c422fb5b1947006ceaff3c58b871c5a",
+      "release_sha256": "b1206d72da4f2f8eeb69fb2b05377e0185262984b53a89cb89682ee96b46459e",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "5a99448eda3f04c08e89d138d7b11799ffbc5966dd0a402563c056c06685c69e",
+      "config_sha256": "33e5695dffbc1095f49606cd37e80092899fab0752fe728bb60ebe802dcf9c6f",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -399,6 +424,274 @@
       ],
       "value": "latest",
       "code": "schema_type"
+    },
+    {
+      "name": "unpinned agent version",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "agent_version"
+      ],
+      "value": "latest",
+      "code": "schema_value"
+    },
+    {
+      "name": "integer agent version is not setup output",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "agent_version"
+      ],
+      "value": 7,
+      "code": "schema_type"
+    },
+    {
+      "name": "provider identity cannot be a URL",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "agent_id"
+      ],
+      "value": "https://invalid.example",
+      "code": "schema_value"
+    },
+    {
+      "name": "definition must match release",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "definitions_sha256"
+      ],
+      "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "code": "assistant_pin"
+    },
+    {
+      "name": "configuration must match release",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "configuration_sha256"
+      ],
+      "value": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "code": "assistant_pin"
+    },
+    {
+      "name": "per study budget forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "scope"
+      ],
+      "value": "study",
+      "code": "schema_value"
+    },
+    {
+      "name": "resetting prior spend forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "prior_spending_policy"
+      ],
+      "value": "reset-on-start",
+      "code": "schema_value"
+    },
+    {
+      "name": "discarding history forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "history_policy"
+      ],
+      "value": "new-session-new-budget",
+      "code": "schema_value"
+    },
+    {
+      "name": "negative prior spend",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "prior_cents"
+      ],
+      "value": -1,
+      "code": "schema_value"
+    },
+    {
+      "name": "boolean budget",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "total_cents"
+      ],
+      "value": true,
+      "code": "schema_type"
+    },
+    {
+      "name": "fractional budget",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "total_cents"
+      ],
+      "value": 1.5,
+      "code": "schema_type"
+    },
+    {
+      "name": "budget exhausted",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "prior_cents"
+      ],
+      "value": 11000,
+      "code": "assistant_budget"
+    },
+    {
+      "name": "unbounded budget",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "total_cents"
+      ],
+      "value": 1000001,
+      "code": "schema_value"
+    },
+    {
+      "name": "API key value forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "api_key"
+      ],
+      "value": "secret-marker",
+      "code": "unknown_field"
+    },
+    {
+      "name": "API endpoint override forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "endpoint"
+      ],
+      "value": "https://invalid.example",
+      "code": "unknown_field"
+    },
+    {
+      "name": "per session budget forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "session_cents"
+      ],
+      "value": 100,
+      "code": "unknown_field"
+    },
+    {
+      "name": "provider credential must pin numeric version",
+      "document": "runtime",
+      "path": [
+        "secrets",
+        "assistant-provider",
+        "version"
+      ],
+      "value": "latest",
+      "code": "schema_type"
+    },
+    {
+      "name": "currency approval cannot silently become USD",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "approved_currency"
+      ],
+      "value": "USD",
+      "code": "schema_value"
+    },
+    {
+      "name": "shared EUR approval cannot increase",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "approved_minor"
+      ],
+      "value": 10001,
+      "code": "schema_value"
+    },
+    {
+      "name": "USD ceiling must match conversion",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "total_cents"
+      ],
+      "value": 10000,
+      "code": "assistant_conversion"
+    },
+    {
+      "name": "conversion rate cannot be float",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "usd_per_approved_currency"
+      ],
+      "value": 1.1,
+      "code": "schema_type"
+    },
+    {
+      "name": "zero conversion rejected",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "usd_per_approved_currency"
+      ],
+      "value": "0.0",
+      "code": "assistant_conversion"
+    },
+    {
+      "name": "missing time zone rejected",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "conversion_timestamp"
+      ],
+      "value": "2026-10-20T00:00:00",
+      "code": "schema_value"
+    },
+    {
+      "name": "invalid calendar conversion date",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "conversion_timestamp"
+      ],
+      "value": "2026-02-30T00:00:00Z",
+      "code": "assistant_conversion"
+    },
+    {
+      "name": "round-up convention forbidden",
+      "document": "runtime",
+      "path": [
+        "assistant",
+        "budget",
+        "conversion_policy"
+      ],
+      "value": "round-up",
+      "code": "schema_value"
     }
   ]
 }

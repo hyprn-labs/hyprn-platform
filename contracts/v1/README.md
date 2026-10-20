@@ -112,6 +112,73 @@ The embedded Assistant runs inside the application. No external MCP, ChatGPT
 transport or Managed OAuth scope is part of this contract, following
 [product ADR-0014](../../../hyprn-mvp/docs/adr/0014-embedded-assistant-staging.md).
 
+### Managed Assistant binding
+
+`release.assistant` pins `definitions_sha256` and `configuration_sha256` from
+the product's release-bound managed setup. `runtime.assistant` repeats those
+exact hashes and supplies `provider: claude-managed-agents`, `agent_id`,
+`agent_version` (canonical positive decimal string), `environment_id` and
+`budget`. Provider IDs use the product adapter's 1–128 character identity
+format. The setup command's successful reviewed readback supplies the IDs,
+version and hashes; the examples in fixtures are synthetic.
+
+Only the application receives these settings:
+
+| Runtime field | Product environment suffix after `HYPRN_MVP_ASSISTANT_` |
+|---|---|
+| `agent_id`, `agent_version`, `environment_id` | `AGENT_ID`, `AGENT_VERSION`, `ENVIRONMENT_ID` |
+| `definitions_sha256`, `configuration_sha256` | `DEFINITIONS_SHA256`, `CONFIGURATION_SHA256` |
+| `budget.total_cents`, `budget.prior_cents` | `TOTAL_CENTS`, `PRIOR_CENTS` |
+| `budget.approved_minor`, `budget.approved_currency` | `APPROVED_MINOR`, `APPROVED_CURRENCY` |
+| Date portion of `budget.conversion_timestamp` | `CONVERSION_DATE` |
+| Existing `assistant-provider` secret file | `KEY_FILE=/run/secrets/assistant-provider` |
+
+The generic `HYPRN_SECRET_ASSISTANT_PROVIDER_FILE` remains an alias for the same
+file. The numeric Secret Manager version stays in `runtime.secrets`; credential
+bytes never enter a descriptor, argument or environment value. The host secret
+loader must create an app-owned regular file with mode 0600 before mounting it
+read-only: the product credential reader rejects symlinks, wrong ownership and
+group/world permissions. Dispatcher, modeling, execution and workers receive no
+Assistant settings or provider credential.
+
+The closed budget object requires `scope: installation`, `currency: USD`,
+`total_cents` from 1 to 1,000,000, explicit `prior_cents` from zero to less than
+the total, `prior_spending_policy: carry-forward-untracked-spend` and
+`history_policy: preserve-and-reconcile-all-sessions`. The total is the shared
+ceiling, including prior spending; it is not a new allowance for each study,
+session, child agent, restart or release. Prior cents cover spending outside
+the retained session inventory and must not double-count those sessions.
+Provider session caps are derived by the product from remaining shared allowance.
+
+The staging approval is explicitly EUR 100: `approved_minor: 10000` and
+`approved_currency: EUR`. Provider billing is USD. The binding therefore requires
+an explicit decimal-string `usd_per_approved_currency`, UTC
+`conversion_timestamp` and `conversion_policy: floor-to-provider-cent`.
+`total_cents` must equal the exact decimal product of approved minor units and
+the conversion rate, rounded down to a USD cent. The validator neither obtains
+an exchange rate nor treats EUR cents as USD cents. The fixture's 1.10 rate and
+timestamp are synthetic, not a live conversion decision. The startup review must
+verify the rate's provenance and the approved conversion before activation.
+
+Startup requires `assistant-resource-readback-and-release-definition-match`
+and `assistant-shared-spending-continuity-reconciled`. The host/product startup
+consumer must compare the setup configuration to the pinned release and re-read
+the provider resources, preserve all session accounting across replacement or
+rollback, reconcile uncertain sessions and carried spending, and refuse startup
+if continuity is unknown. Changing a release or resource must not reset prior
+spending. Increasing the EUR approval requires a reviewed contract amendment;
+changing the converted USD ceiling requires a separately reviewed runtime update.
+The desired configuration hash changes with every resource or budget
+change. This stateless validator cannot determine whether a supplied zero is
+historically correct or enforce a transition from an earlier runtime.
+
+The product currently reads every setting above except `CONFIGURATION_SHA256`:
+that hash is retained for the startup/release consumer. Its allowance admission
+reads recorded provider sessions afresh and adds explicit prior spending before
+permitting a turn. Provider readback, historical continuity, secret file ownership
+and effective egress still require cloud adapter/host acceptance. Preview makes
+no provider request and supplies no cloud boot or spending qualification.
+
 ## What validation proves
 
 The CLI checks structure, pins, fixed authority, source identity shape, store

@@ -141,6 +141,9 @@ class ContractTests(unittest.TestCase):
             "CONFIGURATION_SHA256": binding["configuration_sha256"],
             "TOTAL_CENTS": str(binding["budget"]["total_cents"]),
             "PRIOR_CENTS": str(binding["budget"]["prior_cents"]),
+            "APPROVED_MINOR": str(binding["budget"]["approved_minor"]),
+            "APPROVED_CURRENCY": binding["budget"]["approved_currency"],
+            "CONVERSION_DATE": binding["budget"]["conversion_timestamp"][:10],
         }
         self.assertEqual({k.removeprefix("HYPRN_MVP_ASSISTANT_"): v
                           for k, v in environment.items()
@@ -174,6 +177,80 @@ class ContractTests(unittest.TestCase):
             "name": "hyprn-staging-dispatcher-provider", "version": 1,
         }
         self.rejected(self.command(), "unknown_field")
+
+    def test_assistant_binding_and_accounting_have_no_implicit_defaults(self):
+        for document, path in (
+            ("runtime", ["assistant"]), ("release", ["assistant"]),
+            *(("runtime", ["assistant", key])
+              for key in self.documents["runtime"]["assistant"]),
+            *(("runtime", ["assistant", "budget", key])
+              for key in self.documents["runtime"]["assistant"]["budget"]),
+            *(("release", ["assistant", key])
+              for key in self.documents["release"]["assistant"]),
+        ):
+            with self.subTest(document=document, path=path):
+                self.documents = copy.deepcopy(self.fixtures["valid"])
+                target = self.documents[document]
+                for key in path[:-1]:
+                    target = target[key]
+                del target[path[-1]]
+                self.rejected(self.command(), "missing_field")
+
+    def test_assistant_rebinding_changes_config_and_invalidates_desired_pin(self):
+        original = self.success(self.command())["config_sha256"]
+        for path, setting in (
+            (["agent_id"], "agent_other"), (["agent_version"], "8"),
+            (["environment_id"], "env_other"),
+            (["budget", "prior_cents"], 126),
+        ):
+            with self.subTest(path=path):
+                self.documents = copy.deepcopy(self.fixtures["valid"])
+                target = self.documents["runtime"]["assistant"]
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = setting
+                self.assertNotEqual(self.success(self.command())["config_sha256"], original)
+                self.rejected(self.command("validate", desired=True), "config_pin")
+
+    def test_shared_approval_conversion_is_explicit_and_never_increases_by_rounding(self):
+        budget = self.documents["runtime"]["assistant"]["budget"]
+        self.assertEqual((budget["approved_minor"], budget["approved_currency"]), (10000, "EUR"))
+        budget["usd_per_approved_currency"] = "1.12345678"
+        budget["total_cents"] = 11234
+        preview = self.success(self.command())["preview"]
+        environment = preview["compose"]["services"]["app"]["environment"]
+        self.assertEqual(environment["HYPRN_MVP_ASSISTANT_TOTAL_CENTS"], "11234")
+        self.assertEqual(environment["HYPRN_MVP_ASSISTANT_APPROVED_MINOR"], "10000")
+        self.assertEqual(environment["HYPRN_MVP_ASSISTANT_APPROVED_CURRENCY"], "EUR")
+        budget["total_cents"] = 11235
+        self.rejected(self.command(), "assistant_conversion")
+
+    def test_effective_render_preserves_assistant_settings_and_accounting_gate(self):
+        spec = importlib.util.spec_from_file_location("contract", CLI)
+        contract = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(contract)
+        baseline = self.success(self.command())["preview"]
+        mutations = [
+            lambda p: p["compose"]["services"]["app"]["environment"].update(
+                HYPRN_MVP_ASSISTANT_KEY_FILE="/tmp/key"),
+            lambda p: p["compose"]["services"]["app"]["environment"].update(
+                HYPRN_MVP_ASSISTANT_PRIOR_CENTS="0"),
+            lambda p: p["compose"]["services"]["app"]["environment"].update(
+                HYPRN_MVP_ASSISTANT_SESSION_CENTS="100"),
+            lambda p: p["compose"]["services"]["modeling"]["environment"].update(
+                HYPRN_MVP_ASSISTANT_KEY_FILE="/run/secrets/assistant-provider"),
+            lambda p: p["worker"].update(environment={"HYPRN_MVP_ASSISTANT_KEY_FILE": "key"}),
+            lambda p: p["assistant"]["budget"].update(prior_spending_policy="reset"),
+            lambda p: p["start_requires"].remove("assistant-shared-spending-continuity-reconciled"),
+        ]
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                preview = copy.deepcopy(baseline)
+                mutate(preview)
+                with self.assertRaises(contract.Invalid) as caught:
+                    contract.check_render(preview, self.documents["runtime"],
+                                          self.documents["release"])
+                self.assertEqual(caught.exception.code, "render_policy")
 
     def test_effective_render_rejects_dispatcher_authority_expansion(self):
         spec = importlib.util.spec_from_file_location("contract", CLI)
@@ -216,6 +293,9 @@ class ContractTests(unittest.TestCase):
                     target = target[key]
                 target[row["path"][-1]] = row["value"]
                 self.rejected(self.command(desired=row["document"] == "desired"), row["code"])
+                if row["value"] == "secret-marker":
+                    result = self.command()
+                    self.assertNotIn("secret-marker", result.stdout + result.stderr)
 
     def test_duplicate_keys_nonfinite_and_yaml_are_rejected_without_echoing_values(self):
         for source, code in [
