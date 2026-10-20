@@ -73,3 +73,21 @@ existing host identity/private-file helpers are reused.
 Official API and permission references are linked in the scoped plan. The next action
 is parent acceptance/review of the committed adapter, followed by the separately
 reviewed IAM gate and remaining platform08-02 integration work.
+
+
+## Parent committed acceptance
+
+Parent reviewed the source identity and private-network guards, durable intent
+before POST, complete paginated reconciliation, exact successful backup readback,
+explicit database-only receipt, and failure/transport tests. Registered
+`tests/platform/run.sh backup` passed **18 tests in 20.294 s**, exit 0, on
+implementation `9c05e779fc87618c247c17fff2356b2efb6cf96f` plus evidence-only
+a3ea3d2. Log: `hyprn-cloudsql-backup-parent.log` in private scratch. Isolated
+HTTP fixtures used no real credentials/cloud mutations; their temporary scopes
+and servers were released. No identical repeat is required for documentation.
+
+The separately prepared Terraform plan is still pending owner approval. The
+adapter is not yet connected to the full host writer hold/product snapshot
+orchestrator. The complete deployment, managed recovery drill and recurring
+backup workflow remain unfinished; this result proves only the bounded API
+adapter and refusal/reconciliation behavior against HTTP boundary fixtures.
