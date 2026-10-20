@@ -80,6 +80,12 @@
               "maxLength": 512,
               "pattern": "^[a-f0-9]{64}$"
             },
+            "renderer_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
+            },
             "workload_sha256": {
               "type": "string",
               "minLength": 1,
@@ -90,6 +96,7 @@
           "required": [
             "commit",
             "schema_sha256",
+            "renderer_sha256",
             "workload_sha256"
           ]
         },
@@ -881,6 +888,18 @@
             },
             "sslmode": {
               "const": "verify-full"
+            },
+            "server_name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-z0-9][a-z0-9.-]*\\.sql\\.goog$"
+            },
+            "ca_sha256": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[a-f0-9]{64}$"
             }
           },
           "required": [
@@ -890,7 +909,9 @@
             "request_role",
             "migration_role",
             "backup_role",
-            "sslmode"
+            "sslmode",
+            "server_name",
+            "ca_sha256"
           ]
         },
         "access": {

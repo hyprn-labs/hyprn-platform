@@ -29,7 +29,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "b9497dce2bd3bf9c57d480bf402f52207d191c4298abeb6690b12fa57626f5ce",
+        "schema_sha256": "b2c5274abcd89ab9fb07d6b60bbdf31d382f9c7f6e28be666398e62ed0042c21",
+        "renderer_sha256": "39b28ccf8edafecb4f42184ea03763b10b59c8e98685a9f21aa2ce2e9b24e589",
         "workload_sha256": "be2182638cdf3b265991ab7402763832d0e4bd39e102343b835bbf2e4eca2c4a"
       },
       "product_contracts": {
@@ -175,7 +176,9 @@
         "request_role": "hyprn_request",
         "migration_role": "hyprn_migration",
         "backup_role": "hyprn_backup",
-        "sslmode": "verify-full"
+        "sslmode": "verify-full",
+        "server_name": "fixture.europe-west1.sql.goog",
+        "ca_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       },
       "access": {
         "issuer": "https://fixture.cloudflareaccess.com",
@@ -192,10 +195,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "643bdd3a24ba1e558400da358292c9777a5f0de60d1dec894ba282975382682b",
+      "release_sha256": "ed5a3e292d7cd958a01ecee71153a0b1a3fbbdaf37d5a8ff665b13becd488c44",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "config_sha256": "8cc8dd229731401b6f2d00eb66550718afab6d6a485c91141da78bba51542b51",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

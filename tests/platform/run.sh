@@ -13,4 +13,8 @@ if [ "$#" -ne 1 ] || [ ! -f "tests/platform/$pattern" ]; then
   printf 'Missing or invalid check group: %s\n' "$group" >&2
   exit 2
 fi
+if ! git ls-files --error-unmatch "tests/platform/$pattern" >/dev/null 2>&1; then
+  printf 'Uncommitted check group: %s\n' "$group" >&2
+  exit 2
+fi
 exec python3 -B -m unittest discover -s tests/platform -p "$pattern" -v

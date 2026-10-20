@@ -63,6 +63,11 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("/run/secrets/db-app-backup", app_secrets)
         self.assertNotIn("assistant-provider", json.dumps(modeling))
         self.assertEqual(rendered["execution"]["application_secrets"], [])
+        self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_SSLMODE"], "verify-full")
+        self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_TLS_SERVER_NAME"],
+                         self.documents["runtime"]["database"]["server_name"])
+        self.assertTrue(any(m["read_only"] and m["target"].endswith("server-ca.pem")
+                            for m in app["volumes"]))
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
         self.assertEqual(first["config_sha256"], hashlib.sha256(encoded).hexdigest())
 
@@ -171,11 +176,52 @@ class ContractTests(unittest.TestCase):
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
         self.assertEqual(self.documents["release"]["platform_contract"]["schema_sha256"],
                          hashlib.sha256(schema_path.read_bytes()).hexdigest())
-        self.success(self.command("validate"))
+        self.success(self.command("validate", desired=True))
+
+    def test_numbers_missing_fields_and_nested_input_fail_without_tracebacks(self):
+        for document, path, value, code in [
+            ("runtime", ["secrets", "db-app-request", "version"], True, "schema_type"),
+            ("release", ["native_bundle", "size_bytes"], 1.25, "schema_type"),
+            ("release", ["source_inventory_sha256"], "../untrusted", "schema_value"),
+            ("runtime", ["database", "request_role"], "hyprn_migration", "schema_value"),
+            ("runtime", ["database", "sslmode"], "disable", "schema_value"),
+            ("runtime", ["database", "server_name"], "metadata.google.internal", "schema_value"),
+            ("release", ["platform_contract", "workload_sha256"], "0" * 64, "workload_pin"),
+        ]:
+            with self.subTest(path=path):
+                self.documents = copy.deepcopy(self.fixtures["valid"])
+                target = self.documents[document]
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+                self.rejected(self.command(), code)
+        self.documents = copy.deepcopy(self.fixtures["valid"])
+        del self.documents["runtime"]["database"]["ca_sha256"]
+        self.rejected(self.command(), "missing_field")
+        self.documents = copy.deepcopy(self.fixtures["valid"])
+        self.rejected(self.command(raw={"runtime": "[" * 1500 + "]" * 1500}), "invalid_json")
+
+    def test_compressed_expansion_and_bundle_symlinks_are_rejected(self):
+        path = self.directory / "compressed.tar.gz"
+        with tarfile.open(path, "w:gz") as archive:
+            item = tarfile.TarInfo("large")
+            item.size = 2 * 1024 * 1024
+            archive.addfile(item, io.BytesIO(b"x" * item.size))
+        data = path.read_bytes()
+        self.documents["release"]["native_bundle"] = {
+            "sha256": hashlib.sha256(data).hexdigest(), "size_bytes": len(data)
+        }
+        self.documents["release"]["execution"]["native_sha256"] = hashlib.sha256(data).hexdigest()
+        self.rejected(self.command(bundle=path), "unsafe_bundle")
+        link = self.directory / "link.tar"
+        link.symlink_to(path)
+        self.rejected(self.command(bundle=link), "input_unreadable")
 
     def test_runner_unknown_and_missing_groups_fail(self):
         runner = ROOT / "tests/platform/run.sh"
-        for group in ("unknown", "delivery", "reconcile", "infrastructure"):
+        missing = [name for name in ("delivery", "reconcile", "infrastructure")
+                   if not (ROOT / "tests/platform" / ("test_" + name + ".py")).exists()]
+        for group in ["unknown"] + missing:
             result = subprocess.run([str(runner), group], capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("group", result.stderr.lower())

@@ -22,3 +22,29 @@ credentials/
 .claude/settings.local.json
 .DS_Store
 __pycache__/
+
+# Local infrastructure inputs and exported plans
+*.tfvars
+*.tfvars.json
+*.tfplan.json
+plan.json
+terraform-plan*.json
+!*.tfvars.example
+!*.tfvars.json.example
+# Private keys, service account downloads and safe templates
+*.key
+*.p12
+*.pfx
+*service-account*.json
+*service_account*.json
+application_default_credentials.json
+!.env.example
+# Local application/session stores and diagnostics
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+.pytest_cache/
