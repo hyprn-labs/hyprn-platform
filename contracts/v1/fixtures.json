@@ -122,7 +122,7 @@
         "modeling": "fixture-modeling",
         "execution": "fixture-execution"
       },
-      "external_origin": "https://staging.app.hyprn.ai",
+      "external_origin": "https://staging.hyprn.ai",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "registry": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product",
       "artifacts_bucket": "hyprn-staging-fixture-artifacts",

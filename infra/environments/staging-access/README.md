@@ -2,7 +2,7 @@
 
 This Terraform root manages the email PIN identity provider, named-email policy,
 self-hosted application, remotely managed tunnel, connector ingress and proxied DNS
-for staging.app.hyprn.ai. State is a dedicated GCS prefix with dedicated staging
+for staging.hyprn.ai. State is a dedicated GCS prefix with dedicated staging
 authority. The sibling staging root owns the GCP host and database.
 
 Inputs are the reviewed account and zone IDs, Access team name, exact admitted

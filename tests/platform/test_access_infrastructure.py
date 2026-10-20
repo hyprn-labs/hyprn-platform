@@ -47,7 +47,7 @@ run "named_email_boundary" {
     error_message = "Use the one-time email PIN provider and explicit named admission."
   }
   assert {
-    condition = output.review.application.domain == "staging.app.hyprn.ai" && output.review.application.type == "self_hosted" && output.review.application.allowed_idps == toset([output.review.idp.id]) && length(output.review.application.policies) == 1 && output.review.application.policies[0].id == output.review.policy.id
+    condition = output.review.application.domain == "staging.hyprn.ai" && output.review.application.type == "self_hosted" && output.review.application.allowed_idps == toset([output.review.idp.id]) && length(output.review.application.policies) == 1 && output.review.application.policies[0].id == output.review.policy.id
     error_message = "The complete application hostname must use the one reviewed IdP and policy."
   }
   assert {

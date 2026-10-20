@@ -182,7 +182,7 @@ class InfrastructureTests(unittest.TestCase):
         document = json.loads((ROOT / "environments/staging/access.json").read_text())
         self.assertEqual(document["status"], "review-template")
         application = document["request_templates"]["application"]
-        self.assertEqual(application["domain"], "staging.app.hyprn.ai")
+        self.assertEqual(application["domain"], "staging.hyprn.ai")
         self.assertEqual(application["type"], "self_hosted")
         self.assertEqual(application["allowed_idps"], ["${email_pin_idp_id}"])
         policy = document["request_templates"]["policy"]

@@ -137,7 +137,7 @@ Cloudflare API token and revoke it after configuration. Required permissions are
 Tunnel Edit, Access Apps and Policies Edit, DNS Edit on the one zone, and Access
 Identity Providers and Groups Edit only if creating the PIN provider.
 
-The application is self-hosted Access at staging.app.hyprn.ai using email PIN.
+The application is self-hosted Access at staging.hyprn.ai using email PIN.
 Origin traffic must carry the verified Access JWT with the actual issuer and
 application audience. There is no MCP, ChatGPT, Managed OAuth or bypass policy.
 The tunnel has one reviewed loopback origin and a final 404 catch-all. Live checks

@@ -19,7 +19,7 @@ resource "cloudflare_zero_trust_access_application" "staging" {
   account_id                 = var.account_id
   name                       = "HYPRN staging"
   type                       = "self_hosted"
-  domain                     = "staging.app.hyprn.ai"
+  domain                     = "staging.hyprn.ai"
   session_duration           = "8h"
   allowed_idps               = [cloudflare_zero_trust_access_identity_provider.email_pin.id]
   auto_redirect_to_identity  = true

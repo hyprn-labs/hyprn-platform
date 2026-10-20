@@ -3,7 +3,7 @@ output "binding" {
     application_id = cloudflare_zero_trust_access_application.staging.id
     audience       = cloudflare_zero_trust_access_application.staging.aud
     issuer         = "https://${var.team_name}.cloudflareaccess.com"
-    origin         = "https://staging.app.hyprn.ai"
+    origin         = "https://staging.hyprn.ai"
     tunnel_id      = cloudflare_zero_trust_tunnel_cloudflared.staging.id
   }
 }

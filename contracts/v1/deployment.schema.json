@@ -661,7 +661,7 @@
           ]
         },
         "external_origin": {
-          "const": "https://staging.app.hyprn.ai"
+          "const": "https://staging.hyprn.ai"
         },
         "platform_commit": {
           "type": "string",
