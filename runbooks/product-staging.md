@@ -227,3 +227,31 @@ Official references checked 2026-10-20:
 - [Cloud SQL pricing](https://cloud.google.com/sql/pricing)
 - [NAT pricing](https://cloud.google.com/nat/pricing)
 - [Storage pricing](https://cloud.google.com/storage/pricing)
+
+## State bootstrap execution — 2026-10-20
+
+The platform owner approved creation of the staging-state bucket and initialization
+of the three isolated state namespaces. The exact initial plan was SHA256
+`59066c7fc6605638b252861d588c33c6fbee77c9e0f59b3a7453e864a52676dc`.
+Expired application-default authentication stopped creation. A dedicated CLI
+identity remained valid; readback confirmed no bucket and zero local resources.
+The failed attempt advanced local state, making the saved plan stale. The refreshed
+plan's resource changes and planned values were identical; SHA256
+`4bdc963c13f841f3fd9f47211fe8e0d260ceb316cace53a77ad90a9e42d4f8a2`.
+It applied the same approved one-bucket operation successfully.
+
+Backend transition commit `89429d2` changed the bootstrap root to GCS. Migration
+and both empty-state initializations succeeded in the namespaces enumerated in
+[08-04C checkpoint](../.planning/phases/08-product-staging/08-04C-CHECKPOINT.md).
+Bootstrap readback owns exactly one bucket; main and Access states are empty.
+The bootstrap plan is no-op. Original local state and backup are retained privately.
+Short-lived dedicated CLI tokens were passed only in process environment; backend
+metadata was checked not to retain the token. No existing fleet state was touched.
+
+Actual main staging and Access saved plans were produced, not applied: respectively
+76 creates and 6 creates, zero updates/deletes. Main SHA256
+`f28a7719fec047dfd224318afa4a8adb22491c2bdf309bc0c4e8c91e7fc82e40`;
+Access SHA256 `f2e1956b02842ac5f1ea03d9fce9c6c2f0892de68163e866050553c9463c15d2`.
+Source snapshot `8a5ca936e60560132e227eff1c2163757cc55359`; operational inputs,
+plans, logs and cost review stay outside Git. No application infrastructure,
+provider resource, secret transfer, GitHub setting or workload activation occurred.
