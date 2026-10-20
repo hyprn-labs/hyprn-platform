@@ -334,3 +334,9 @@ already carried by the local allowance, total 501 cents. It must not be counted
 twice. The existing approved EUR 100 conversion ceiling is preserved. This is a
 provisional transition review: refresh usage and fence old local delivery before
 new cloud admission. Private session identities and evidence remain outside Git.
+
+Committed wiring `1e5915d` passed parent `tests/platform/run.sh contracts`
+(21 tests, 4.566 seconds) and `tests/platform/run.sh secrets` (18 tests,
+8.300 seconds), both exit 0 with scopes released. No Terraform plan or cloud
+operation was repeated for this source-only wiring correction. Actual Linux
+startup remains the product lifecycle task's next boundary check.
