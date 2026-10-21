@@ -1,4 +1,9 @@
-# Staging host setup — approval-ready checkpoint
+# Staging host setup — current checkpoint
+
+Current: resolver-only attempt refused before mutation after boot-time IPv6 drift.
+VM RUNNING; closed-host completion and application deployment remain open.
+Next: approve the combined network correction described in the final section.
+Earlier sections retain historical evidence, not current operating state.
 
 2026-10-21. Source commit `ef774567f8cc5b9e503763bbef5f572acb948c66`.
 Owner: parent integration session. Preparation complete; application is **not deployed**.
@@ -117,3 +122,43 @@ link-local discovery, preserves DNS, reruns strict verification and records clos
 host completion. Source `38da65b`, committed host-setup 36/36. Frozen packet and
 full hashes are in the runbook. It leaves the VM running. No application readiness
 or live DNS-correction success is claimed before that operation.
+
+## Current network finalization — 2026-10-21
+
+Approved plan `d9578c423d42…` was applied once and refused before mutation with
+`ipv6_must_be_disabled`. Same VM ID `3112612718549037193` is RUNNING; no application
+started. Read-only inspection confirmed no finalization intent, completion receipt
+or resolver override. systemd-networkd's generated `10-netplan-all-en.network`
+requests IPv6 link-local addressing, re-enabling ens4 after boot despite the saved
+global sysctl settings. all/default/lo=1, ens4=0; known resolver listener remains.
+This supersedes the previous pending-approval status. Do not replay the old plan.
+
+Source `43d7f5609ccbd27a9a60491ff9793454ec017c15` adds a fixed network-manager
+IPv4 drop-in, preserves inherited DHCP4/DNS/routes/MTU, reconfigures the interface,
+reapplies the existing sysctl policy and checks a second reconfiguration cannot
+re-enable IPv6. The resolver correction is included. Before-change reconciliation
+permits only the observed ens4 drift and identified resolver; all listeners are
+checked so the known failure cannot mask an additional exposed service. The
+ordinary post-change security rules remain strict. No install/format/start/secret.
+
+Committed acceptance: `tests/platform/run.sh host-setup` 39 passed (0.205 s),
+`tests/platform/run.sh preflight` 19 passed (0.038 s). Initial added tests failed
+with 2 missing implementation errors; no failure waived. Actual network config
+hash and public networkctl/wait-online commands checked read-only. Live mutation
+and reboot persistence remain unverified; simulated checks do not establish them.
+
+Private evidence: `/private/tmp/hyprn-network-{host-setup,preflight}-committed.log`,
+`/private/tmp/hyprn-network-command-check.log`, and old finalization application
+evidence. Generated network SHA256 is
+`3a5fcbc83523ac94494b4d7da3985caa020d3e56e781f8d2abdf98f1affe8cdf`.
+The new frozen packet is `host-network-finalize/REVIEW.md` under the same inventory
+root. Plan `e5ebf2b1976eadc1ee2447e5452dfde6fafe7d7245b67de5689529f668f11812`;
+bundle `778072913781cfb5f039827465060e90f0782c413009a6827dbfe2f21555009e`;
+controller `862e1ca0a46b239fa79c22a3d6768e4ab9c77319377739ca55d3940a7d5ba60f`.
+18 regular files, 93,470,475 bytes; admission passed. Approval pending for the
+additional network-manager change. The VM stays running under existing authority.
+
+Next: apply this exact plan after approval, reconcile actual receipt, then finish
+product routing/SQL credentials, closed install and live engineering/Assistant/
+recovery journeys. Automatic staging-branch delivery remains open. Parent owns
+integration; no hosted product or phase completion is claimed.
