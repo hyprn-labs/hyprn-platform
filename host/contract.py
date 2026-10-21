@@ -272,6 +272,44 @@ def bind(source, target, readonly=False):
             "bind": {"create_host_path": False}}
 
 
+def container_networks():
+    """Fixed non-overlapping bridge identity; host enforcement is required before start."""
+    return {name: {
+        "internal": name == "modeling", "enable_ipv6": False,
+        "driver_opts": {"com.docker.network.bridge.name": "br-hyprn-" + name[:5]},
+        "ipam": {"config": [{"subnet": f"172.29.{octet}.0/24",
+                              "gateway": f"172.29.{octet}.1"}]},
+    } for name, octet in (("application", 81), ("modeling", 82), ("dispatcher", 83))}
+
+
+def service_networks(component):
+    indices = {"app": "2", "modeling": "3", "dispatcher": "4"}
+    value = {"modeling": {"ipv4_address": "172.29.82." + indices[component]}}
+    if component == "app":
+        value["application"] = {"ipv4_address": "172.29.81.2"}
+    elif component == "dispatcher":
+        value["dispatcher"] = {"ipv4_address": "172.29.83.2"}
+    return value
+
+
+def proxy_environment():
+    return {"HTTPS_PROXY": "http://172.29.81.1:3128",
+            "HYPRN_MVP_EGRESS_PROXY": "http://172.29.81.1:3128"}
+
+
+def network_policy(runtime):
+    return {"schema": "hyprn-service-network/v1", "default": "deny",
+        "bridges": container_networks(),
+        "database": {"address": runtime["database"]["host"], "port": 5432},
+        "modeling": {"address": "172.29.82.3", "port": 3000},
+        "origin": {"address": "127.0.0.1", "port": 8080, "target_port": 8000},
+        "proxy": {"address": "172.29.81.1", "port": 3128,
+                  "source": "172.29.81.2/32", "method": "CONNECT", "target_port": 443,
+                  "hosts": ["api.anthropic.com", runtime["access"]["issuer"][8:]],
+                  "deny_non_public_destinations": True},
+        "metadata": "deny-all-containers", "ipv6": "disabled"}
+
+
 def render(release, runtime):
     """Platform-owned topology. Product fields contain pins, never authority."""
     root = "/srv/hyprn/staging"
@@ -289,8 +327,7 @@ def render(release, runtime):
             "security_opt": ["no-new-privileges:true"], "restart": "no",
             "init": True, "ulimits": {"core": 0},
             "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=134217728"],
-            "networks": ["modeling"] + (["application"] if component == "app" else
-                            ["dispatcher"] if component == "dispatcher" else []),
+            "networks": service_networks(component),
             "volumes": [bind(root + "/" + area + "/artifacts", "/data/artifacts")]
                 if component == "dispatcher" else
                 [bind(root + "/" + area, "/store" if component == "modeling" else "/data")],
@@ -327,6 +364,8 @@ def render(release, runtime):
         if component == "modeling":
             environment["HYPRN_MVP_EDITION"] = "cloud"
         if component == "app":
+            service["ports"] = ["127.0.0.1:8080:8000"]
+            environment.update(proxy_environment())
             environment.update(assistant_environment(runtime))
             environment.update({
                 "HYPRN_MVP_UI_ROOT": "/app/ui",
@@ -359,8 +398,7 @@ def render(release, runtime):
         )},
         "compose": {
             "services": services,
-            "networks": {"modeling": {"internal": True}, "application": {"internal": False},
-                         "dispatcher": {"internal": True}},
+            "networks": container_networks(),
         },
         "execution": {
             "kind": "host-service", "user": 10003, "root": root + "/execution",
@@ -374,6 +412,7 @@ def render(release, runtime):
             "launch": "host-owned-run-attach", "transport": "fixed-stdio",
             "lifetime": "owned-child", "public_endpoint": False,
         },
+        "network_policy": network_policy(runtime),
         "dispatcher_egress": {
             "default": "deny",
             "allow": [
@@ -440,6 +479,12 @@ def check_render(value, runtime, release):
             "ulimits", "tmpfs", "networks", "volumes", "mem_limit", "cpus",
             "pids_limit", "environment",
         }
+        if component == "app":
+            allowed_fields.add("ports")
+            if service.get("ports") != ["127.0.0.1:8080:8000"]:
+                raise Invalid("render_policy")
+            if any(service["environment"].get(k) != v for k, v in proxy_environment().items()):
+                raise Invalid("render_policy")
         if component == "dispatcher":
             allowed_fields |= {"profiles", "entrypoint", "command", "stdin_open", "tty"}
             if (service.get("profiles") != ["host-dispatcher"] or
@@ -486,17 +531,16 @@ def check_render(value, runtime, release):
             raise Invalid("render_policy")
         if service["volumes"] != expected_mounts:
             raise Invalid("render_policy")
-        expected_networks = ["modeling"] + (["application"] if component == "app" else
-                            ["dispatcher"] if component == "dispatcher" else [])
+        expected_networks = service_networks(component)
         if service["networks"] != expected_networks:
             raise Invalid("render_policy")
     if value["execution"].get("configuration") != execution_configuration(release, runtime):
         raise Invalid("render_policy")
     if value["execution"]["application_secrets"]:
         raise Invalid("render_policy")
-    if value["compose"]["networks"] != {
-            "modeling": {"internal": True}, "application": {"internal": False},
-            "dispatcher": {"internal": True}}:
+    if value["compose"]["networks"] != container_networks():
+        raise Invalid("render_policy")
+    if value.get("network_policy") != network_policy(runtime):
         raise Invalid("render_policy")
     expected_loads = [
         {"consumer": consumer, "alias": alias,

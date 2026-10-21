@@ -54,7 +54,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(modeling["user"], "10001:10001")
         self.assertEqual(app["cap_drop"], ["ALL"])
         self.assertTrue(app["read_only"])
-        self.assertNotIn("ports", app)
+        self.assertEqual(app["ports"], ["127.0.0.1:8080:8000"])
         self.assertNotIn("privileged", app)
         self.assertEqual(rendered["worker"]["network_mode"], "none")
         self.assertEqual(rendered["worker"]["secrets"], [])
@@ -73,6 +73,26 @@ class ContractTests(unittest.TestCase):
                             for m in app["volumes"]))
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
         self.assertEqual(first["config_sha256"], hashlib.sha256(encoded).hexdigest())
+
+    def test_private_routes_and_proxy_are_bound_to_the_exact_runtime(self):
+        rendered = self.success(self.command())["preview"]
+        services = rendered["compose"]["services"]
+        self.assertFalse(rendered["compose"]["networks"]["dispatcher"]["internal"])
+        self.assertTrue(rendered["compose"]["networks"]["modeling"]["internal"])
+        for network in rendered['compose']['networks'].values():
+            bridge = network['driver_opts']['com.docker.network.bridge.name']
+            self.assertTrue(bridge.startswith('br-'))
+            self.assertLessEqual(len(bridge), 15)
+        policy = rendered["network_policy"]
+        self.assertEqual(policy["database"]["address"], self.documents["runtime"]["database"]["host"])
+        self.assertEqual(policy["proxy"]["hosts"], ["api.anthropic.com", "fixture.cloudflareaccess.com"])
+        self.assertEqual(services["app"]["environment"]["HYPRN_MVP_EGRESS_PROXY"],
+                         "http://172.29.81.1:3128")
+        for name in ("dispatcher", "modeling"):
+            self.assertNotIn("HTTPS_PROXY", services[name]["environment"])
+            self.assertNotIn("ports", services[name])
+        self.assertEqual(services["modeling"]["networks"],
+                         {"modeling": {"ipv4_address": "172.29.82.3"}})
 
     def test_runtime_controls_are_read_only_and_not_given_to_modeling(self):
         services = self.success(self.command())["preview"]["compose"]["services"]
@@ -145,8 +165,9 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("HYPRN_MVP_DATABASE_AUTH_ROLE", environment)
         self.assertEqual(services["app"]["environment"]["HYPRN_MVP_DATABASE_ASSISTANT_BACKGROUND_ROLE"],
                          "hyprn_assistant_background")
-        self.assertEqual(dispatcher["networks"], ["modeling", "dispatcher"])
-        self.assertTrue(preview["compose"]["networks"]["dispatcher"]["internal"])
+        self.assertEqual(dispatcher["networks"], {"modeling": {"ipv4_address": "172.29.82.4"},
+                                               "dispatcher": {"ipv4_address": "172.29.83.2"}})
+        self.assertFalse(preview["compose"]["networks"]["dispatcher"]["internal"])
         self.assertEqual(dispatcher["profiles"], ["host-dispatcher"])
         self.assertEqual(dispatcher["entrypoint"],
                          ["python", "-B", "-m", "hyprn_mvp_app.dispatcher"])
@@ -316,7 +337,7 @@ class ContractTests(unittest.TestCase):
         mutations = [
             lambda p: p["compose"]["services"]["dispatcher"].update(ports=["8000:8000"]),
             lambda p: p["compose"]["services"]["dispatcher"].update(command=["arbitrary"]),
-            lambda p: p["compose"]["services"]["dispatcher"]["networks"].append("application"),
+            lambda p: p["compose"]["services"]["dispatcher"]["networks"].update({"application": {}}),
             lambda p: p["compose"]["services"]["dispatcher"]["volumes"].append(
                 {"source": "/var/run/docker.sock", "target": "/var/run/docker.sock"}),
             lambda p: p["compose"]["services"]["dispatcher"]["environment"].update(

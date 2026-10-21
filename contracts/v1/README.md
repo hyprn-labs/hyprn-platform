@@ -131,7 +131,7 @@ Assistant credentials.
 The Compose portion declares the app and modeling services plus a dispatcher
 template using the exact app image pin.
 It uses their existing UIDs, read-only roots, dropped capabilities, bounded
-resources and no published ports. Execution is a separate trusted host service;
+resources and a loopback-only application port (127.0.0.1:8080). Execution is a separate trusted host service;
 its workers have no network or credentials. The host adapter must attach the
 trusted tunnel ingress, enforce network/metadata policy, verify disk identity
 and acquire writer fencing before any start.
@@ -172,9 +172,9 @@ native execution credentials. The native execution host still receives no
 application credentials.
 
 Dispatcher egress defaults to deny and permits only modeling TCP 3000 and the
-bound database address TCP 5432. The internal dispatcher network requires a
-host-controlled private database route and firewall enforcement; internal
-network membership alone does not provide that route. Provider and metadata
+bound database address TCP 5432. The application and dispatcher bridges provide a private database route;
+host firewall enforcement limits their destinations. The modeling bridge is
+internal. Network membership alone does not establish containment. Provider and metadata
 egress remain denied. Those requirements appear in `start_requires`.
 Product phase 06-05 implements and verifies the cloud entrypoint, host-owned
 bridge lifecycle and effective network policy. The existing local launcher
@@ -297,3 +297,23 @@ after rendering, avoiding a recursive hash. Explicit initialization records real
 AiiDA profile and repository UUIDs in the protected host receipt; these are not
 substitutes for the logical platform store ID. No database or provider credentials
 are present in this projection.
+
+## Private service routing
+
+The renderer assigns separate, fixed IPv4 bridges for application egress,
+modeling traffic and dispatcher egress. Their names begin with `br-`, so the
+closed host's bridge-input guard also covers these networks before service
+exceptions are installed. The exact addresses, database destination and HTTPS
+proxy allowlist are included in the configuration digest.
+
+Only the application receives `HTTPS_PROXY` and `HYPRN_MVP_EGRESS_PROXY`.
+The latter explicitly routes Cloudflare signing-key retrieval through the
+host proxy while preserving TLS certificate verification and ignoring ambient
+trust settings. The proxy policy admits CONNECT on port 443 to the configured
+Access issuer and Assistant provider only, denying private destination addresses.
+Modeling and dispatcher receive no provider route. Metadata remains denied
+for every container; workers retain no network.
+
+These are deployment inputs. Host firewall/proxy enforcement, private SQL TLS
+verification and live positive/negative connectivity probes must pass before
+admission. A rendered policy does not itself configure or qualify the network.
