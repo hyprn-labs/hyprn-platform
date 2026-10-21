@@ -1,6 +1,6 @@
 # 08-02 Task 1 — coherent backup prerequisite checkpoint
 
-Status: bounded implementation committed; final corrective acceptance pending. This scoped batch
+Status: bounded implementation and parent committed acceptance passed. This scoped batch
 is not completion of platform 08-02 or product 06-05. Owner: backup-set executor;
 parent retains aggregate host qualification and release/recovery acceptance.
 
@@ -36,13 +36,21 @@ parent retains aggregate host qualification and release/recovery acceptance.
 - Subsequent inspection found standalone database-only resume needed to retain
   the endpoint from its validated immutable intent. The follow-up correction and
   real HTTP-boundary reconciliation assertion invalidate the preceding source
-  evidence; parent reruns both affected groups on the corrective commit.
+  evidence; parent reran both affected groups on the corrective commit.
+- Final parent acceptance: platform `b5953ec`, product `488c02d`:
+  `./hyprn-mvp dev check platform-backup-set` **16 passed, 0 failed, 0 skipped**,
+  9.389 test seconds / 9.646 group seconds;
+  `tests/platform/run.sh backup` **18 passed, 0 failed, 0 skipped**, 20.471 s.
+  Logs: `/private/tmp/hyprn-backup-set-final-parent.log` and
+  `/private/tmp/hyprn-backup-endpoint-final-parent.log`.
+  Runner scope `b1f347a7-467b-4a5a-b67a-c4d2e02511d9`, fixture
+  `ccf4a3c7-b715-4559-a6c4-912369e0804b` released; HTTP/AiiDA fixtures cleaned.
+  This checkpoint-only follow-up changes no implementation or behavioral input.
   Fixture stores and loopback server are isolated and released by fixture cleanup.
 
 ## Remaining obligations and limits
 
-- Parent: run exact committed acceptance and wire trusted policy/bootstrap into
-  reconciler. No resource approval is inferred; missing policy or stopped-owner
+- Parent: wire trusted policy/bootstrap into reconciler. No resource approval is inferred; missing policy or stopped-owner
   implementation refuses the production operation.
 - Parent/platform owner: qualified Linux root mounted-host run, exact IAM review,
   real Cloud SQL backup/isolated restore drill, second activation and complete
