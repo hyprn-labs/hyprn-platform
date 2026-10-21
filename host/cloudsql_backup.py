@@ -275,7 +275,12 @@ def backup(args, *, expected_endpoint=None):
             if intent['description'] != expected:
                 raise Invalid('backup_intent_mismatch')
         google = GoogleSQL(args)
-        source = google.source(binding, expected_endpoint=expected_endpoint)
+        # Standalone read-only reconciliation retains the endpoint pinned in a
+        # validated original intent; it never weakens a combined set's identity.
+        endpoint = expected_endpoint
+        if endpoint is None and intent is not None:
+            endpoint = intent['source'].get('endpoint')
+        source = google.source(binding, expected_endpoint=endpoint)
         if intent is not None and intent['source'] != source:
             raise Invalid('source_instance_changed')
         if intent is None:

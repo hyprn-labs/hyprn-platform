@@ -1,6 +1,6 @@
 # 08-02 Task 1 — coherent backup prerequisite checkpoint
 
-Status: implementation prepared; committed acceptance pending. This scoped batch
+Status: bounded implementation committed; final corrective acceptance pending. This scoped batch
 is not completion of platform 08-02 or product 06-05. Owner: backup-set executor;
 parent retains aggregate host qualification and release/recovery acceptance.
 
@@ -30,8 +30,13 @@ parent retains aggregate host qualification and release/recovery acceptance.
   12 passed, 0 failures, 0 skips; 7.087 test seconds / 7.318 group seconds. Parent
   evidence: `/private/tmp/hyprn-backup-set-first.log`. This evidence does not cover
   the later endpoint/policy hardening or AiiDA-at-dispatch/deadline additions.
-- Await committed acceptance for the exact delivery revision via the registered
-  `platform-backup-set` group and existing platform managed-backup regression.
+- Parent acceptance on platform `4b86a21`: registered `platform-backup-set`
+  16 passed / 0 failed / 0 skipped, 9.456 s; `tests/platform/run.sh backup`
+  18 passed / 0 failed / 0 skipped, 20.134 s.
+- Subsequent inspection found standalone database-only resume needed to retain
+  the endpoint from its validated immutable intent. The follow-up correction and
+  real HTTP-boundary reconciliation assertion invalidate the preceding source
+  evidence; parent reruns both affected groups on the corrective commit.
   Fixture stores and loopback server are isolated and released by fixture cleanup.
 
 ## Remaining obligations and limits

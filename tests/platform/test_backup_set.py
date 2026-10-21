@@ -178,6 +178,15 @@ except LockedProfileError: sys.exit(23)
         with self.assertRaisesRegex(subject.Invalid, 'new_scope'):
             self.run_set()
         self.assertEqual(len(self.provider.posts()), 1)
+        # Losing the coherent hold must still permit a separate database-only
+        # GET reconciliation against the intent's original endpoint binding.
+        standalone = SimpleNamespace(**dict(vars(self.args), command='resume',
+                                           state_root=str(self.set_root / 'database')))
+        managed = subject.sql.backup(standalone)
+        self.assertEqual(managed['source']['endpoint'], self.endpoint)
+        self.assertFalse(managed['coherent_installation_backup'])
+        self.assertEqual(len(self.provider.posts()), 1)
+        self.incomplete()
 
     def test_restarted_writer_invalidates_successful_database_member(self):
         def inspect(count):
