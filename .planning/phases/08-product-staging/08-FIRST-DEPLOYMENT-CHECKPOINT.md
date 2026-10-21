@@ -1,48 +1,63 @@
 # First staging deployment — current checkpoint
 
 Updated2026-10-21. VM running; browser/scientific admission closed. Modeling runs;
-application and dispatcher exited during startup. First usable staging is not achieved.
-Local Assistant remains fenced; authoring stores and runtime credentials preserved.
+application/dispatcher remain exited. First usable staging is not achieved. Local
+Assistant fenced; authoring stores and all nine credential versions preserved.
 
-## Current state after combined startup correction
+## Current state and next action
 
-Approvalc369a6abaff76b968cb2dbfd914e6200c6e8c35a3e62dca0c8b940e0753d9655 applied.
-Files/stage/desired/recover succeeded; desired generation1792595722827820.
-Release4afd5b9341dadd97fec05e98fc4d0615f9c9b7eb20e874ce98a3426d6223b68f installed.
-Containment09976d06-4c96-4b80-bfc4-7407db232d55 passed. Start456eaac1-8d70-4feb-a24b-f720f1bbb299
-returned success, but the subsequent network probe caught exited app/dispatcher
-containers. No tunnel/activation or human/provider conversation occurred. Modeling
-is healthy. Neither initialization nor migration nor secret issuance was repeated.
+Owner startup recovery be5ce61f60be56259ac28c4f6d261e01c187cf6dc6c62c53f265c7b0c05e4c84
+was approved. Images/files/stage/desired completed. Desired generation1792597479844287,
+digest4caf592f9bbea8463ff14e8e8a5f7dbf02f3b1975e46868c883365fd0d5150ae,
+release708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459.
+Appfe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886 published.
+Recovery exited2: platform_root_mismatch. The helper instantiated the old binding
+with the new platform module; its path identity guard correctly refused. No stop
+intent or service/store mutation occurred. Original attempt archive preserved.
+Journal stays sequence2 installed_closed/failure=null, old release4afd5b9341dadd97fec05e98fc4d0615f9c9b7eb20e874ce98a3426d6223b68f,
+configdbf6491c51fcb56e97d84bf934815cae3a9936260b6ce14d7e613c0a080caf09.
+Read-only checks confirmed exact container states, identities, closed admission and
+all existing protected source hashes. No initialization/migration/secret reissue.
 
-Actual redacted diagnostics show stale release/config pins in Assistant continuity
-and a dispatcher NoneType error reading an observation outside PostgreSQL actor
-scope. Native process is absent and executor lock free. Evidence:
-/private/tmp/hyprn-staging-service-start-recovery/application-evidence/{recover-result,network-diagnosis,container-differences,current-logs}.json;
-/private/tmp/hyprn-staging-owner-startup-recovery/application-evidence/{prior-state,native-quiescence}.json.
+Correction prepared, NOT applied:
+/private/tmp/hyprn-staging-owner-handoff-repair/REVIEW.md
+amendment3919b6df74d0efa0855e01146c1fb3cc8edfb879b759c8c14a79d06ca184ba0f,
+policy894df34132dcc7ce5aef91815642f5445090997acdfe1a7549c137c30b2bca09.
+Adds recover-owner-handoff.py and owner-handoff-policy.json beside the staged release;
+loads prior lifecycle in its own isolated interpreter/platform, pins prior archive,
+retains all original guards. No overwritten file or new application/native image.
+Actual corrected helper preflight passed on VM. Four focused handoff checks and six
+state checks pass. Code/readiness61, hosted-lifecycle23 and bootstrap32 evidence from
+product78814803fc87806109f19ac4b558e120a4ee53dd/platformcf1e1f8 remains unchanged.
 
-Prepared product78814803fc87806109f19ac4b558e120a4ee53dd uses its own successfully
-published, expiring readiness; no RLS/permission change. Platformcf1e1f8 rejects
-continuity for another release before publishing controls. Final runtime-observation61,
-hosted-lifecycle23 (real isolated PostgreSQL/TLS), bootstrap32 and recovery6 pass.
-Fresh application image/native extraction/imports and actual UI8 files verified.
-UI, modeling/worker images, provider definition and shared budget unchanged.
+After exact approval: packet apply-approved.py stage, recover, network-probe, activate.
+Do not rerun previous packet's failed recover or publication phases. Reconcile any
+uncertain side effects before retry; retain attempts and original initialized stores.
+New helper preserves the existing old-to-new native rebind/containment/HTTP readiness
+sequence and already approved network/tunnel/login/Assistant/execution journeys.
 
-Prepared not applied: /private/tmp/hyprn-staging-owner-startup-recovery/REVIEW.md.
-Amendmentbe5ce61f60be56259ac28c4f6d261e01c187cf6dc6c62c53f265c7b0c05e4c84.
-Release708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459;
-applicationfe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886;
-20 files321991721bytes,33 reused. Preserved-store recovery stops the exact old owner,
-installs/rebinds/re-attests, verifies real HTTP startup, then resumes network/activation.
-No new infrastructure, IAM, schema, credentials, provider resources or fixed charges.
-One replacement two-hour OS Login key remains authorized and unused; present key
-expires2026-10-21T15:47:31Z. Qualification access still ends2026-10-22T10:00:00Z.
+The single authorized replacement2h key has now been used. Initial attempt three
+seconds before expiry refused before mutation; subsequent registration completed.
+New key expires2026-10-21T17:47:38Z. No remaining key renewal authority in this packet.
+Transport still /private/tmp/hyprn-staging-database-correction/application-evidence/transport.py;
+prior key folder ssh-expired-before-owner-recovery retained. Never print credentials.
+Qualification access ends2026-10-22T10:00:00Z. VM remains running as requested.
 
-Next: obtain this exact amendment approval, then apply-approved.py phases images,
-files, stage, desired, recover, network-probe, activate. Reconcile uncertain outcomes;
-never erase intents or repeat initialization. Original four real journeys remain
-pending, followed separately by two-user acceptance, reboot/recovery and continuous
-deployment. Preserve all unrelated edits. Existing local build volumes are identified
-in the build records; no build container remains running. Earlier evidence follows.
+Evidence: parent /private/tmp/hyprn-staging-owner-startup-recovery/application-evidence
+images/files/stage/desired receipts, recover-result, diagnose-refusal, current-progress,
+verify-old-owner, replacement-key-complete. Correction application-evidence/live-preflight
+pins untouched failed archive. No live human login, provider request, candidate model
+or answer exploration yet. Two-user acceptance, reboot/recovery and automatic staging
+branch deployment remain separate unfinished obligations. Preserve unrelated edits.
+
+## Previous combined startup correction
+
+Approvalc369a6ab applied earlier: release4afd5b9 containment09976d06-4c96-4b80-bfc4-7407db232d55
+passed and start456eaac1-8d70-4feb-a24b-f720f1bbb299 returned, then network probes caught
+exited app/dispatcher. Actual logs showed stale Assistant continuity release/config
+and actorless readiness read. Corrected application release708ac69 is published and
+staged, pending the above operator handoff fix. Modeling/worker/UI/provider definition
+and €100 shared budget unchanged. No tunnel/activation occurred.
 
 ## Historical state after stopped-container recovery (superseded)
 
