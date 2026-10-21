@@ -4,6 +4,44 @@ Updated2026-10-21. First usable staging remains pending. VM running; browser and
 scientific admission closed; no product service running. Local web Assistant stopped
 as explicitly approved; authoring records/native processes preserved.
 
+## Current state after approved initialization recovery (2026-10-21)
+
+This section supersedes the earlier pending-initialization state below. Approval
+ e13f2018ddb22344b600aa3eb629d78e9c4deb4713b17d3850592f2ad5f0f4d9 applied successfully:
+failed undispatched journal and displaced controls/source archived, bootstrap-only
+fix installed, no database or durable secret changed by recovery. Then normal
+bootstrap initialized the application (all five migrations), modeling and native
+stores successfully. Initialize operation7e38eb79-593e-4cea-99c0-b5a39e24c23e is complete.
+
+Bootstrap exited2 after73.25s at actual worker qualification. Qualification operation
+4e2a8e78-3c4b-47ed-bfb4-d97ea5e65f5a is a completed failed receipt; journal retains its
+intent and operation_refused. Installed identity and complete migration remain.
+No application containers/tunnel running; admission closed; VM remains running.
+Native owner inspection and host scheduler prerequisites passed. All nine actual
+synthetic probes failed only because input directories were0700 under private umask077;
+worker reported Permission denied reading/input/canary.py. Candidate executions0.
+
+Product fix2ef0c8d explicitly sets only synthetic mount directories0755. Regression
+red16pass1fail, green17pass; committed-tree17pass0.147s. Not deployed. To preserve
+approved images and completed initialization, prepared exact one-off compatibility
+qualification with umask022 only for synthetic tests, restored077 before start.
+All containment checks remain mandatory; no source/image/secret/network replacement.
+
+Pending approval packet/private/tmp/hyprn-staging-qualification-recovery/REVIEW.md,
+SHA8593236fe709e46dfc1d152f4d60b3a6c4fc4f6d4300923011a5c190411d511d.
+Policy3845d94efc154c7ab4a7ea1ba8851e07a869e56e44f564a916e25453b157f08d.
+Helper guard tests5pass. It archives failed evidence, requires exact stopped state,
+checks actual schemas, records a new qualification ID, then starts only if successful.
+No reinitialization, migration, receipt overwrite or blind retry. Not applied.
+Existing key valid until15:47:31UTC; previous approval's single2h replacement unused.
+No further renewal authorized. Same activation plan25fddc669681b8e1be658351cbbe6f850a3855272fcbdea88ebbea3954213748.
+
+Evidence/private/tmp/hyprn-staging-initialization-recovery/application-evidence includes
+recovery-result, bootstrap-result, progress, native-diagnosis and containment-diagnosis.
+Do not overwrite these observations: next packet hashes them. Permanent fix must be
+included in next product artifact build. Full live journeys and earlier remaining
+release/automatic-delivery obligations still pending; no working-staging claim yet.
+
 ## Current next action
 
 Owner approved correction6e474f7755de53f07f2362eab83e4d5cde1d9f09f1938cb1db9ca265068e8461.
