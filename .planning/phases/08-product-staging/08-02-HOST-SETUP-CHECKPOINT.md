@@ -92,3 +92,16 @@ Next: approval of repair plan
 `914022b3b649e61a411e4804427c8bb925d1207d4169f2b1a0b005c87d635478`,
 then apply/verify/stop. Original bundle remains unchanged. No application startup,
 secret transfer or new provider usage. Broader hosted milestone remains open.
+
+## Repair outcome
+
+Owner approved plan `914022b3b649…`; one execution reached the final network check
+and refused an unexpected public TCP listener. Prior filesystem, package/binary,
+Docker, ownership and firewall/IPv6 structural checks passed in that execution.
+The VM is confirmed TERMINATED; no completion receipt, application or provider run.
+Do not replay the repair intent. See the runbook for exact evidence.
+
+`612995e` adds the missing listener address/port diagnostic without changing the
+network rule; committed preflight group passed 19/19. Next is approval of the
+prepared comprehensive read-only network/runtime inspection, then an evidence-based
+completion plan. No unknown listener has been allowed or disabled by assumption.

@@ -475,3 +475,32 @@ Controller SHA256: `9e5793ec5a51974daf183a294c82548626f27c004da71a6d918ea8d0d26e
 Eighteen archive members pass controller admission. Approval pending; no repair
 has run. No format/delete action exists in the repair. Parent owns remaining
 host installation, service integration and actual product/recovery qualification.
+
+## Approved no-format repair — 2026-10-21
+
+The owner approved repair plan
+`914022b3b649e61a411e4804427c8bb925d1207d4169f2b1a0b005c87d635478`.
+It ran once and reached the final network listener check, which refused with
+`unexpected_public_listener`. In this control flow, exact package status and
+binary hashes, filesystem identity, configuration hashes, Docker capability,
+ownership, private tmpfs, firewall structure and disabled IPv6 checks all passed
+before that refusal. No host completion receipt was written. The repair has no
+format operation. The controller confirmed the same VM ID `3112612718549037193`
+is TERMINATED; no app or provider call started.
+
+Private evidence: `host-setup-repair/application-evidence/last-error.log` and
+`result.json` under the inventory root. Do not replay the repair: its intent is
+expected to remain, and further work must reconcile the actual state.
+
+The listener error lacked its address/port. `612995e` adds only that diagnostic;
+the rejection condition is unchanged. Parent `tests/platform/run.sh preflight`:
+19 passed, 0 failed, 0.023 s. This source fix was not substituted into the applied
+frozen bundle. No unchanged host-setup group was rerun.
+
+Prepared comprehensive read-only runtime/network inventory:
+`host-network-diagnosis/REVIEW.md`, script SHA256
+`c4ca9a6f57e1d9c77b929a7727400cc05761cc615ac1663c371f551f986c8d3a`.
+One temporary start/inspect/stop requires approval. It will report listeners with
+process names and running services, avoiding guessed exceptions or disablements.
+Source and embedded script compile; no cloud operation has run for this proposal.
+Parent retains ownership; host qualification and working staging remain incomplete.
