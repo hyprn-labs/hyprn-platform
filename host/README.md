@@ -46,3 +46,9 @@ CA material is installed in a protected, readable trust directory before copying
 controls. Runtime credentials remain in their separate private tmpfs folders.
 An interrupted initialization stays blocked until its operation journal and actual
 store state have been reconciled under an explicit recovery plan.
+
+Bootstrap prepares the private application artifact folder before initialization.
+It preserves existing contents and refuses linked or differently owned paths.
+The modeling container has a bounded, non-executable temporary filesystem for
+Rails sockets and process files; its image filesystem remains read-only. Activation
+compares every rendered temporary mount with the engine's actual configuration.

@@ -89,6 +89,20 @@ class ActivationTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(subject.Refused):
                 subject.check_container(wrong, expected, 'test', 'app', image)
 
+    def test_every_rendered_scratch_mount_must_match_engine_observation(self):
+        expected, image, actual = self.container()
+        mount = '/native/tmp:rw,noexec,nosuid,nodev,size=33554432,uid=10001,gid=10001,mode=0700'
+        expected['tmpfs'].append(mount)
+        with self.assertRaises(subject.Refused):
+            subject.check_container(actual, expected, 'test', 'app', image)
+        path, options = mount.split(':', 1)
+        actual['HostConfig']['Tmpfs'][path] = options
+        subject.check_container(actual, expected, 'test', 'app', image)
+        for changed in (options.replace('noexec,', ''), options.replace('10001', '0')):
+            actual['HostConfig']['Tmpfs'][path] = changed
+            with self.assertRaises(subject.Refused):
+                subject.check_container(actual, expected, 'test', 'app', image)
+
     def test_mount_and_network_drift_is_refused(self):
         expected, image, actual = self.container()
         actual['Mounts'].append({'Type': 'bind', 'Source': '/var/run/docker.sock',

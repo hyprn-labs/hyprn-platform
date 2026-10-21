@@ -224,6 +224,42 @@ def public_control_directory(path):
     return path
 
 
+def application_artifacts(target):
+    """Prepare only the application-owned artifact directory; never repair foreign data."""
+    parent = Path(target.runtime['mounts']['application'])
+    uid = target.runtime['service_users']['app']
+    if not parent.is_absolute() or any(p.is_symlink() for p in (parent, *parent.parents)):
+        raise Refused('bootstrap_artifact_path')
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    root = os.open(parent, flags)
+    try:
+        info = os.fstat(root)
+        if ((info.st_uid, info.st_gid) != (uid, uid)
+                or stat.S_IMODE(info.st_mode) != 0o700):
+            raise Refused('bootstrap_artifact_owner')
+        created = False
+        try:
+            os.mkdir('artifacts', mode=0o700, dir_fd=root)
+            created = True
+        except FileExistsError:
+            pass
+        fd = os.open('artifacts', flags, dir_fd=root)
+        try:
+            if created:
+                os.fchown(fd, uid, uid)
+                os.fchmod(fd, 0o700)
+            info = os.fstat(fd)
+            if ((info.st_uid, info.st_gid) != (uid, uid)
+                    or stat.S_IMODE(info.st_mode) != 0o700):
+                raise Refused('bootstrap_artifact_owner')
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.fsync(root)
+    finally:
+        os.close(root)
+
+
 def load_preflight():
     """Resolve reviewed siblings even when Python excludes the script directory."""
     module = sibling('preflight')
@@ -472,6 +508,8 @@ def run(policy_path):
             fresh_secrets(target)
         else:
             verify_existing_secrets(target)
+        recheck()
+        application_artifacts(target)
         recheck()
         result = reconcile.reconcile(target, journal=HeldJournal(journal), host=host,
             product=product, active_product=active_product,

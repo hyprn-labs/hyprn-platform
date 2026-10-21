@@ -74,6 +74,15 @@ class ContractTests(unittest.TestCase):
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
         self.assertEqual(first["config_sha256"], hashlib.sha256(encoded).hexdigest())
 
+    def test_modeling_has_bounded_private_scratch_without_writable_image(self):
+        preview = self.success(self.command())["preview"]
+        for name, service in preview['compose']['services'].items():
+            self.assertTrue(service['read_only'])
+            scratch = [v for v in service['tmpfs'] if v.startswith('/native/tmp:')]
+            self.assertEqual(scratch, [
+                '/native/tmp:rw,noexec,nosuid,nodev,size=33554432,uid=10001,gid=10001,mode=0700'
+            ] if name == 'modeling' else [])
+
     def test_private_routes_and_proxy_are_bound_to_the_exact_runtime(self):
         rendered = self.success(self.command())["preview"]
         services = rendered["compose"]["services"]

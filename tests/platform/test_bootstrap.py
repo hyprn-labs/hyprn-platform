@@ -225,6 +225,60 @@ class BootstrapTests(unittest.TestCase):
             subject.public_control_directory(actual)
         self.assertEqual(actual.stat().st_mode & 0o777, 0o777)
 
+    def artifact_target(self):
+        parent = self.root / 'application'
+        parent.mkdir(mode=0o700)
+        # macOS uses a shared primary group; Linux production requires uid == gid.
+        # Keep real descriptor/path/mode observations, substitute only ownership.
+        from unittest.mock import patch
+        real_stat = os.fstat
+        def owner_stat(fd):
+            info = real_stat(fd)
+            return SimpleNamespace(st_uid=info.st_uid, st_gid=info.st_uid,
+                                   st_mode=info.st_mode)
+        ownership = patch.object(subject.os, 'fstat', side_effect=owner_stat)
+        chown = patch.object(subject.os, 'fchown')
+        ownership.start()
+        self.addCleanup(ownership.stop)
+        self.assigned_owner = chown.start()
+        self.addCleanup(chown.stop)
+        return SimpleNamespace(runtime={'mounts': {'application': str(parent)},
+                                       'service_users': {'app': os.getuid()}}), parent
+
+    def test_artifact_directory_is_private_and_existing_content_is_preserved(self):
+        target, parent = self.artifact_target()
+        previous = os.umask(0o077)
+        try:
+            subject.application_artifacts(target)
+        finally:
+            os.umask(previous)
+        from unittest.mock import ANY
+        self.assigned_owner.assert_called_once_with(ANY, os.getuid(), os.getuid())
+        folder = parent / 'artifacts'
+        self.assertEqual(folder.stat().st_mode & 0o777, 0o700)
+        item = folder / 'record'
+        item.write_bytes(b'preserve')
+        subject.application_artifacts(target)
+        self.assertEqual(item.read_bytes(), b'preserve')
+
+    def test_artifact_preparation_refuses_links_foreign_owner_and_open_directory(self):
+        target, parent = self.artifact_target()
+        folder = parent / 'artifacts'
+        external = self.root / 'external'
+        external.mkdir(mode=0o700)
+        folder.symlink_to(external, target_is_directory=True)
+        with self.assertRaises(OSError):
+            subject.application_artifacts(target)
+        folder.unlink()
+        folder.mkdir(mode=0o755)
+        folder.chmod(0o755)
+        with self.assertRaises(subject.Refused):
+            subject.application_artifacts(target)
+        self.assertEqual(folder.stat().st_mode & 0o777, 0o755)
+        target.runtime['service_users']['app'] += 1
+        with self.assertRaises(subject.Refused):
+            subject.application_artifacts(target)
+
     def test_isolated_preflight_loads_reviewed_service_network_module(self):
         code = (
             'import importlib.util,sys,pathlib; '

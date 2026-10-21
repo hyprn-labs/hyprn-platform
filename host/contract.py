@@ -324,6 +324,14 @@ def network_policy(runtime):
         "metadata": "deny-all-containers", "ipv6": "disabled"}
 
 
+def service_tmpfs(component):
+    """Bound writable service scratch while keeping image files read-only."""
+    mounts = ["/tmp:rw,noexec,nosuid,nodev,size=134217728"]
+    if component == "modeling":
+        mounts.append("/native/tmp:rw,noexec,nosuid,nodev,size=33554432,uid=10001,gid=10001,mode=0700")
+    return mounts
+
+
 def render(release, runtime):
     """Platform-owned topology. Product fields contain pins, never authority."""
     root = "/srv/hyprn/staging"
@@ -340,7 +348,7 @@ def render(release, runtime):
             "read_only": True, "cap_drop": ["ALL"],
             "security_opt": ["no-new-privileges:true"], "restart": "no",
             "init": True, "ulimits": {"core": 0},
-            "tmpfs": ["/tmp:rw,noexec,nosuid,nodev,size=134217728"],
+            "tmpfs": service_tmpfs(component),
             "networks": service_networks(component),
             "volumes": [bind(root + "/" + area + "/artifacts", "/data/artifacts")]
                 if component == "dispatcher" else
@@ -507,7 +515,8 @@ def check_render(value, runtime, release):
                     service.get("command") != ["--with-exports"] or
                     service.get("stdin_open") is not True or service.get("tty") is not False):
                 raise Invalid("render_policy")
-        if set(service) != allowed_fields or service["user"] != f"{uid}:{uid}":
+        if (set(service) != allowed_fields or service["user"] != f"{uid}:{uid}"
+                or service["tmpfs"] != service_tmpfs(component)):
             raise Invalid("render_policy")
         if (service["image"] != release["images"]["app" if component == "dispatcher" else component] or
                 service["cap_drop"] != ["ALL"] or not service["read_only"] or

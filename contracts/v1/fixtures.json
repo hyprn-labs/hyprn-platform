@@ -31,7 +31,7 @@
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
         "schema_sha256": "6bd56662fe8d534e8ae890fea49b3e7872eda0ef09265683ee1082c4effcc684",
-        "renderer_sha256": "3aa2a0c0b3cfa0ddef472445d766f98f9d1124db80869a4e7814e401ee78b56d",
+        "renderer_sha256": "da0d9f9898f0755e5d9c8b29f8ccc3a9f7e73b592fc8ca867ac2479f91dca672",
         "workload_sha256": "b01d60cbdc2aaee26fab40cdc5fddb39e6a597ba8c1d1f8027a308e684400096"
       },
       "product_contracts": {
@@ -241,10 +241,10 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "9d33bcad4c62b1623f128a632749c22b6e8c808736de544e39451fc225338e06",
+      "release_sha256": "43b771edf02cd0adb15c98aa2664079e9aae127ac109cb005ba229941232f3af",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-      "config_sha256": "256e8786443b3ef8150d0d796a122cd2c56577ef6a1e1809ed17290df90a4c19",
+      "config_sha256": "35914be9002db29eb17346f74636d2da1f92ff2ae16930f90d53646ae5430b80",
       "artifacts": {
         "images": {
           "app": "europe-west1-docker.pkg.dev/hyprn-staging-fixture/product/app@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

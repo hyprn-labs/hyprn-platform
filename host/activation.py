@@ -85,7 +85,7 @@ def check_container(actual, expected, project, service, image):
             or host.get('PidsLimit') != expected['pids_limit']
             or host.get('PidMode') or host.get('UTSMode') or host.get('IpcMode') != 'private'
             or host.get('Devices') or host.get('Init') is not True
-            or host.get('Tmpfs') != {'/tmp': expected['tmpfs'][0].split(':', 1)[1]}
+            or host.get('Tmpfs') != dict(item.split(':', 1) for item in expected['tmpfs'])
             or host.get('Ulimits') != [{'Name': 'core', 'Hard': 0, 'Soft': 0}]):
         raise Refused('activation_container_changed')
     for field, docker_field in (('entrypoint', 'Entrypoint'), ('command', 'Cmd')):
