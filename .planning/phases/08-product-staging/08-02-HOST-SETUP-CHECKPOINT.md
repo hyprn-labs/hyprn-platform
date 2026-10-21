@@ -1,8 +1,9 @@
 # Staging host setup — current checkpoint
 
-Current: resolver-only attempt refused before mutation after boot-time IPv6 drift.
-VM RUNNING; closed-host completion and application deployment remain open.
-Next: approve the combined network correction described in the final section.
+Current: approved combined correction succeeded. Host is prepared, VM RUNNING,
+application off, admission closed. Matching exact-plan receipt is recorded in
+`runbooks/product-staging.md` under “Closed host prepared”. Host setup is complete;
+product installation and live cloud qualification remain open.
 Earlier sections retain historical evidence, not current operating state.
 
 2026-10-21. Source commit `ef774567f8cc5b9e503763bbef5f572acb948c66`.

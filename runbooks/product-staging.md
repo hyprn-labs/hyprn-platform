@@ -575,3 +575,22 @@ Next: apply this exact plan after approval, reconcile actual receipt, then finis
 product routing/SQL credentials, closed install and live engineering/Assistant/
 recovery journeys. Automatic staging-branch delivery remains open. Parent owns
 integration; no hosted product or phase completion is claimed.
+
+## Closed host prepared — 2026-10-21
+
+The owner approved plan `e5ebf2b1976eadc1ee2447e5452dfde6fafe7d7245b67de5689529f668f11812`.
+The exact frozen controller/archive ran once and returned setup_completed=true,
+VM RUNNING, instance ID 3112612718549037193, product_started=false. The matching
+host receipt records admission=closed and execution_qualified=false. Both network
+reconfigurations, IPv6 verification, resolver restart, public/metadata DNS and
+full installed-host verification passed. A first SSH readiness attempt received
+Permission denied; the controller's bounded readiness retry succeeded before any
+mutation. The retained last-error.log is that transient readiness attempt, not
+failure of the completed apply. No settings were relaxed or packages reinstalled.
+
+Evidence: `host-network-finalize/application-evidence/{host-result,result}.json`
+under the private staging inventory. Same disk UUID 1a017a06-5a85-4201-8818-df65b4a72285.
+A full reboot persistence test remains separate; application/execution/Assistant
+are not yet qualified in this cloud installation. Next batch prepares private
+service routing, least-privilege database credentials and closed app installation.
+No new deployment or secret authority is inferred from host completion.
