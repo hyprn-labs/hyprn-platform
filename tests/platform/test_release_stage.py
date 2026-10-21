@@ -132,6 +132,25 @@ class StageTests(unittest.TestCase):
         host.download.assert_not_called()
         self.assertEqual(next(self.root.glob('.stage-*.partial')).read_bytes(), b'bad')
 
+    def test_special_file_is_refused_without_blocking(self):
+        os.mkfifo(self.root / 'example.py')
+        host = self.response()
+        with self.assertRaisesRegex(stage.Refused, 'existing_file_differs'):
+            stage.stage(self.row, host, time.monotonic() + 5)
+        host.download.assert_not_called()
+
+    def test_reconcile_leaves_interrupted_download_unchanged(self):
+        with self.assertRaises(stage.Refused):
+            stage.stage(self.row, self.response(b'bad'), time.monotonic() + 5)
+        partial = next(self.root.glob('.stage-*.partial'))
+        before = (partial.read_bytes(), partial.stat().st_mtime_ns)
+        value = manifest(); value['files'] = [self.row]
+        with patch.object(stage, 'PLATFORM_ROOT', str(self.root)):
+            result = stage.reconcile(value)
+        self.assertFalse(result['changed'])
+        self.assertEqual(result['files'][0]['state'], 'interrupted_download_requires_review')
+        self.assertEqual((partial.read_bytes(), partial.stat().st_mtime_ns), before)
+
     def test_download_length_and_deadline_refuse_final_installation(self):
         for content, deadline in ((b'abcd', time.monotonic() + 5), (b'abc', 0)):
             with self.assertRaises(stage.Refused):

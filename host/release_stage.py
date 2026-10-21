@@ -63,6 +63,7 @@ def validate(value):
         obj = PurePosixPath(row['object'])
         if (not row['destination'].startswith(roots) or '..' in destination.parts
                 or str(destination) != row['destination'] or not destination.is_absolute()
+                or destination.name.startswith('.stage-')
                 or obj.is_absolute() or '..' in obj.parts or str(obj) != row['object']
                 or not row['object'] or '\\' in row['object']
                 or any(ord(c) < 32 for c in row['object'] + row['destination'])
@@ -72,6 +73,9 @@ def validate(value):
         total += row['size_bytes']
     if total > MAX_BYTES:
         raise Refused('download_budget')
+    if any(name.startswith(other + '/') for name in destinations
+           for other in destinations if name != other):
+        raise Refused('file_directory_overlap')
     return value
 
 
@@ -108,7 +112,7 @@ def protected_manifest(path):
     target = PurePosixPath(path)
     parent = directory(str(target.parent))
     try:
-        fd = os.open(target.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        fd = os.open(target.name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
         with os.fdopen(fd, 'rb') as stream:
             info = os.fstat(stream.fileno())
             if (not stat.S_ISREG(info.st_mode) or info.st_uid != OWNER or info.st_nlink != 1
@@ -175,7 +179,7 @@ class AttachedHost:
 
 def inspect_file(parent, name, row):
     try:
-        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
     except FileNotFoundError:
         return False
     with os.fdopen(fd, 'rb') as stream:
