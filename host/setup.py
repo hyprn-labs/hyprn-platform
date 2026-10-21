@@ -179,10 +179,17 @@ def plan(policy, folder):
     return dict(value, plan_sha256=digest(canonical(value)))
 
 
-def run(args, *, input=None, allowed=(0,), timeout=60):
+def run(args, *, input=None, allowed=(0,), timeout=60, package_diagnostics=False):
     result = subprocess.run(args, input=input, env=ENV, capture_output=True, timeout=timeout)
     if result.returncode not in allowed:
-        fail('host_command_refused:' + Path(args[0]).name)
+        error = reconcile.Refused('host_command_refused:' + Path(args[0]).name)
+        if package_diagnostics:
+            # Only the package dry-run opts in; never expose arbitrary command data.
+            error.diagnostic = {
+                'stage': 'package_dependency_check', 'exit_code': result.returncode,
+                'stdout': result.stdout[-16384:].decode('utf-8', errors='replace'),
+                'stderr': result.stderr[-16384:].decode('utf-8', errors='replace')}
+        raise error
     return result.stdout
 
 
@@ -260,7 +267,7 @@ def package_probe(rows, folder):
         if observed.decode() != '\t'.join(row[key] for key in ('name', 'version', 'architecture')):
             fail('setup_debian_package_identity')
         paths.append(path)
-    run(['/usr/bin/dpkg', '--dry-run', '--install', *paths], timeout=120)
+    run(['/usr/bin/dpkg', '--dry-run', '--install', *paths], timeout=120, package_diagnostics=True)
     return paths
 
 
@@ -429,7 +436,10 @@ def main():
             value = apply(args.policy, args.packages, args.approve_sha256)
         print(json.dumps(value, sort_keys=True, indent=2))
     except (reconcile.Refused, OSError, ValueError, KeyError, subprocess.TimeoutExpired) as error:
-        print(json.dumps({'status': 'refused', 'reason': getattr(error, 'reason', type(error).__name__)}))
+        value = {'status': 'refused', 'reason': getattr(error, 'reason', type(error).__name__)}
+        if hasattr(error, 'diagnostic'):
+            value['diagnostic'] = error.diagnostic
+        print(json.dumps(value))
         raise SystemExit(2)
 
 

@@ -153,6 +153,26 @@ class SetupTests(unittest.TestCase):
         with patch.object(setup, 'run', side_effect=values + [b'']) as run:
             paths = setup.package_probe(self.rows, self.root)
             self.assertEqual(run.call_args.args[0], ['/usr/bin/dpkg', '--dry-run', '--install', *paths])
+            self.assertTrue(run.call_args.kwargs['package_diagnostics'])
+
+    def test_package_dependency_failure_retains_bounded_diagnostics(self):
+        result = subprocess.CompletedProcess(['dpkg'], 1, b'x' * 20000, b'missing dependency\xff')
+        with patch.object(setup.subprocess, 'run', return_value=result):
+            with self.assertRaises(setup.reconcile.Refused) as caught:
+                setup.run(['/usr/bin/dpkg', '--dry-run', '--install', '/fixture.deb'],
+                          package_diagnostics=True)
+        diagnostic = caught.exception.diagnostic
+        self.assertEqual(diagnostic['stage'], 'package_dependency_check')
+        self.assertEqual(diagnostic['exit_code'], 1)
+        self.assertEqual(len(diagnostic['stdout']), 16384)
+        self.assertIn('missing dependency', diagnostic['stderr'])
+
+    def test_other_command_failures_do_not_expose_output(self):
+        result = subprocess.CompletedProcess(['command'], 1, b'private', b'private')
+        with patch.object(setup.subprocess, 'run', return_value=result):
+            with self.assertRaises(setup.reconcile.Refused) as caught:
+                setup.run(['/usr/bin/command'])
+        self.assertFalse(hasattr(caught.exception, 'diagnostic'))
 
     def test_apply_refuses_non_linux_without_any_cloud_or_command(self):
         with patch.object(setup.sys, 'platform', 'darwin'), patch.object(setup, 'run') as run, \
