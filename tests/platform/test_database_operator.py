@@ -34,11 +34,15 @@ class GoogleFixture:
         self.ca = b'fixture-ca'
         self.state = 'RUNNABLE'
         self.public = False
+        self.database_name = policy['database']['database']
 
     def request(self, host, method, path, body=None):
         self.calls.append((host, method, path, body))
         db = self.policy['database']
         if host == 'sqladmin.googleapis.com':
+            if '/databases/' in path:
+                return {'name': self.database_name, 'instance': db['instance'],
+                        'project': db['project_id']}
             if '/operations/' in path:
                 return self.operations[path.rsplit('/', 1)[-1]]
             if path.endswith('/instances/' + db['instance']):
@@ -154,7 +158,8 @@ class DatabaseOperatorTests(unittest.TestCase):
         self.assertFalse(any('assistant-provider' in c[2] for c in self.google.calls))
 
     def test_instance_drift_refuses_before_cloud_mutation(self):
-        for field, value in [('state', 'STOPPED'), ('public', True), ('ca', b'other')]:
+        for field, value in [('state', 'STOPPED'), ('public', True), ('ca', b'other'),
+                             ('database_name', 'wrong_database')]:
             with self.subTest(field=field):
                 prior = getattr(self.google, field)
                 setattr(self.google, field, value)

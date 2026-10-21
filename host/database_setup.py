@@ -19,7 +19,7 @@ import ssl
 import stat
 import sys
 
-from contract import Invalid, canonical, digest, read_json
+from contract import Invalid, canonical, cloudsql_tls_name, digest, read_json
 
 ROLES = {
     'db-app-request': 'hyprn_request',
@@ -149,7 +149,7 @@ def connect(policy, ca, role, password):
     sock = socket.create_connection((policy['private_ip'], 5432), timeout=15)
     try:
         return pg8000.dbapi.connect(
-            host=policy['server_name'], database=policy['database'], user=role,
+            host=cloudsql_tls_name(policy['server_name']), database=policy['database'], user=role,
             password=password.decode('ascii'), sock=sock, ssl_context=context, timeout=15,
         )
     except BaseException:

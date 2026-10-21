@@ -8,6 +8,9 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import ssl
+from types import ModuleType
+from unittest.mock import Mock
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +26,28 @@ def policy():
                 server_name='abcdef.abcdef.europe-west1.sql-psa.goog',
                 ca_sha256=hashlib.sha256(b'fixture-ca').hexdigest(),
                 bootstrap_role='hyprn_bootstrap_01234567')
+
+
+class DatabaseTLSIdentityTests(unittest.TestCase):
+    def test_driver_checks_absolute_certificate_name_while_routing_to_private_ip(self):
+        package = ModuleType('pg8000')
+        driver = ModuleType('pg8000.dbapi')
+        driver.connect = Mock(return_value=object())
+        package.dbapi = driver
+        context = Mock(check_hostname=True, verify_mode=ssl.CERT_REQUIRED)
+        transport = Mock()
+        with patch.dict(sys.modules, {'pg8000': package, 'pg8000.dbapi': driver}), \
+                patch('importlib.metadata.version', return_value='1.31.5'), \
+                patch.object(setup.ssl, 'create_default_context', return_value=context), \
+                patch.object(setup.socket, 'create_connection', return_value=transport) as route:
+            setup.connect(policy(), b'fixture-ca', 'fixture_role', b'fixture-password')
+        route.assert_called_once_with(('10.82.0.3', 5432), timeout=15)
+        self.assertEqual(driver.connect.call_args.kwargs['host'],
+                         'abcdef.abcdef.europe-west1.sql-psa.goog.')
+        self.assertIs(driver.connect.call_args.kwargs['ssl_context'], context)
+        self.assertIs(driver.connect.call_args.kwargs['sock'], transport)
+        self.assertTrue(context.check_hostname)
+        self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
 
 
 class Cursor:

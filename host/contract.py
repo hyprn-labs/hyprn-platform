@@ -240,6 +240,15 @@ def assistant_environment(runtime):
     return {"HYPRN_MVP_ASSISTANT_" + key: value for key, value in values.items()}
 
 
+def cloudsql_tls_name(server_name):
+    """Render the absolute DNS identity used in Cloud SQL shared-CA certificates."""
+    if not isinstance(server_name, str) or not re.fullmatch(
+            r'(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.){2}'
+            r'[a-z]+-[a-z]+[0-9]\.sql(?:-psa)?\.goog', server_name):
+        raise Invalid("database_tls_identity")
+    return server_name + "."
+
+
 def application_environment(runtime):
     """Fixed product paths; host-owned identity avoids a self-referential config hash."""
     return {
@@ -363,7 +372,7 @@ def render(release, runtime):
                 "HYPRN_MVP_DATABASE_NAME": runtime["database"]["name"],
                 "HYPRN_MVP_DATABASE_ROLE": runtime["database"]["request_role"],
                 "HYPRN_MVP_DATABASE_SSLMODE": "verify-full",
-                "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
+                "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": cloudsql_tls_name(runtime["database"]["server_name"]),
                 "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
             })
         if component == "modeling":
@@ -569,7 +578,7 @@ def check_render(value, runtime, release):
         "HYPRN_MVP_DATABASE_NAME": runtime["database"]["name"],
         "HYPRN_MVP_DATABASE_ROLE": runtime["database"]["request_role"],
         "HYPRN_MVP_DATABASE_SSLMODE": "verify-full",
-        "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": runtime["database"]["server_name"],
+        "HYPRN_MVP_DATABASE_TLS_SERVER_NAME": cloudsql_tls_name(runtime["database"]["server_name"]),
         "HYPRN_MVP_DATABASE_CA_FILE": "/etc/hyprn/trust/cloudsql-server-ca.pem",
         "HYPRN_MVP_DATABASE_DISPATCHER_BACKGROUND_ROLE":
             runtime["database"]["dispatcher_background_role"],

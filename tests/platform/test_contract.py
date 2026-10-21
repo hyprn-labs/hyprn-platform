@@ -68,7 +68,7 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(rendered["execution"]["application_secrets"], [])
         self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_SSLMODE"], "verify-full")
         self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_TLS_SERVER_NAME"],
-                         self.documents["runtime"]["database"]["server_name"])
+                         self.documents["runtime"]["database"]["server_name"] + ".")
         self.assertTrue(any(m["read_only"] and m["target"].endswith("server-ca.pem")
                             for m in app["volumes"]))
         encoded = json.dumps(rendered, sort_keys=True, separators=(",", ":")).encode()
@@ -414,7 +414,7 @@ class ContractTests(unittest.TestCase):
                 self.documents["runtime"]["database"]["server_name"] = server
                 preview = self.success(self.command())["preview"]
                 app = preview["compose"]["services"]["app"]
-                self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_TLS_SERVER_NAME"], server)
+                self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_TLS_SERVER_NAME"], server + ".")
                 self.assertEqual(app["environment"]["HYPRN_MVP_DATABASE_SSLMODE"], "verify-full")
         for server in (
             "metadata.google.internal", "10.20.0.3", "attacker.example",

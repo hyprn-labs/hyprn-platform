@@ -76,7 +76,8 @@ def verify(binding, network_policy):
     for role in ('app', 'dispatcher'):
         command = ['/usr/bin/docker', '--host', 'unix:///run/docker.sock', 'exec',
             containers[role], 'python', '-I', '-B', '-c', PYTHON, role, db['host'],
-            db['server_name'], target.runtime['access']['issuer'].removeprefix('https://'),
+            target.preview['compose']['services'][role]['environment']['HYPRN_MVP_DATABASE_TLS_SERVER_NAME'],
+            target.runtime['access']['issuer'].removeprefix('https://'),
             '/run/hyprn/control/database-ca.pem']
         # Take the actual rendered CA path, rather than assuming a product mount.
         command[-1] = target.preview['compose']['services'][role]['environment']['HYPRN_MVP_DATABASE_CA_FILE']

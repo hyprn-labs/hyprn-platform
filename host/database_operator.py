@@ -168,6 +168,10 @@ class Operation:
                 or network.get('serverCaMode') != 'GOOGLE_MANAGED_CAS_CA'
                 or self.db['server_name'] not in dns or ips != [self.db['private_ip']]):
             raise Invalid('database_operator_instance_identity')
+        target = self.sql_request('GET', '/databases/' + self.db['database'])
+        if any(target.get(key) != self.db[field] for key, field in
+               [('name', 'database'), ('instance', 'instance'), ('project', 'project_id')]):
+            raise Invalid('database_operator_database_identity')
         ca = record.get('serverCaCert', {}).get('cert', '').encode()
         if hashlib.sha256(ca).hexdigest() != self.db['ca_sha256']:
             raise Invalid('database_operator_ca_pin')

@@ -279,6 +279,9 @@ For shared-CA server identity, the binding accepts the documented
 access, or `INSTANCE_UID.PROJECT_DNS_LABEL.REGION.sql.goog` for Private Service
 Connect/public IP. Record the actual instance SAN name, without a terminal DNS
 root dot; arbitrary hostnames, IP literals and suffix extensions are rejected.
+The renderer restores the terminal root dot for TLS: shared-CA certificates
+contain the absolute DNS name, and OpenSSL compares that dot literally. Both
+service connections and connectivity probes use this exact TLS identity.
 The private connection address remains separate and `verify-full` remains
 mandatory. These formats follow Google's
 [server identity verification documentation](https://docs.cloud.google.com/sql/docs/postgres/configure-ssl-instance#server-identity-verification),
