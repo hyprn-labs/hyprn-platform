@@ -2,38 +2,43 @@
 
 ## Current stopping point
 
-The owner approved the original aggregate plan
-`28f7c82864dc9ef5794c11facadf3fa358c1760040b437b3a369340166d869cb`
-and publisher compatibility amendment
-`879b3b24145a110dce2e939302c6809ce69d23c861f6723150de80a6354322c4`.
-Actual deployment has now published/verified all three pinned images and all 61
-nonsecret files, and installed those files on the VM. The desired pointer remains
-absent. No database bootstrap, runtime credential publication, application,
-Assistant delivery or tunnel activation has started.
+The owner approved the original deployment, publisher correction and network
+repair. Network repair was applied successfully on2026-10-21: actual firewall,
+bridges and proxy passed, with admission closed. Host directories are prepared;
+all three pinned runtime images are pulled and verified. All61 published/staged
+nonsecret files remain intact. Desired state is still absent; product/tunnel and
+Assistant delivery have not started. The original local Assistant is unchanged.
 
-The network installer wrote its reviewed files, local proxy identity, bridges and
-rules, then failed its textual firewall comparison. Actual kernel rule capture
-matches the policy: Linux reordered equivalent base predicates and emitted an
-implicit UDP match. The proxy is inactive; application admission remains closed.
-Do not repeat the original apply: its intent exists and partial effects are known.
+Database creation first stopped on a transient Google identity timeout before
+any intent/mutation. After read-only identity verification, the next attempt
+created the single approved temporary bootstrap user. Its recorded CREATE_USER
+operation is DONE with no error. Google omitted the default built-in user-type
+field, so the operator's post-create identity check failed. Do not recreate the
+user or reset its password. The original password and intent/operation receipts
+remain protected under the private packet's private-transfer directory.
+No database roles or runtime credential versions have been published yet.
 
-Source correction `3a84dde` passed the focused network installer group (8 tests),
-accepted the actual VM capture and rejected three changes to access authority.
-The exact pending repair is in the private review folder's
-`application-evidence/network-verifier-repair` subtree. Its amendment digest is
-`936ad7d8e7028e275fd0fcb6a0e34b3d7dcb7e3a1ce53859cca301d9281b046e`.
-It preserves policy/artifacts/credentials and resumes only the approved services,
-with updated source fingerprints and immutable publication-receipt reconciliation.
-It explicitly includes one replacement 30-minute OS Login key if the original
-expires. No code correction has yet been applied to the live host.
+Committed correction44bb931 accepts only an omitted type as the documented
+BUILT_IN default; explicit malformed or IAM types and duplicates still fail.
+Focused database-operator checks:15passed. A sandbox-only repeat failed one
+loopback fixture bind (14passed/1error); the committed-tree run with socket
+permission passed15/15. GET-only verification against actual Google records
+confirmed the corrected parser and completed operation; no receipt was fabricated.
 
-Next action: obtain owner approval for that exact repair, reconcile its expected
-partial state, apply it, then continue the approved host preparation, database,
-Assistant fence, desired publication and live journeys. Use the replacement
-activation plan from the repair. The qualification window still ends
-2026-10-22 10:00 UTC; do not extend it silently. The VM stays running as requested.
-All operational evidence and protected SSH material are under the private review
-folder. No secret values are committed or present in the public artifact bucket.
+Next: obtain approval for the concrete operator amendment in
+`/private/tmp/hyprn-staging-final-plan/application-evidence/database-user-type-repair/REVIEW.md`,
+SHA256 `23f63375a3aae178d45e016cce0f8cde1bb7c1bcc38deb2725de12677532f228`.
+Its pinned wrapper verifies the corrected source plan, preserves original receipt
+lineage and has no create-user action. Reconcile the existing creation, then
+continue role setup, secret publication and the remaining approved deployment.
+No permissions, costs, payloads or user passwords change.
+
+The network amendment's desired publisher and activation SHA remain binding:
+`57262e02cf8c3c11b379cfa3eb2a8d98be338e96557632ba9d2664c7c2381c37`.
+The original operator key expires12:52:09UTC. The one replacement30-minute key
+already approved in the network amendment has not been used. Preserve knownhosts.
+The initial qualification window ends2026-10-22 10:00UTC. VM remains running;
+no live login, contained execution, Assistant or slider success is claimed.
 
 ## Frozen source and evidence
 
@@ -90,7 +95,7 @@ automatic staging-branch delivery workflow is not yet implemented in either repo
 prepare that narrow GitHub/authority delta after the first installed path works.
 Existing shared Assistant approval and all prior spending remain intact. The
 narrow Secret Manager master-copy exception for machine runtime credentials is
-explicitly included in the pending owner review, not presumed approved.
+explicitly approved in the original deployment review.
 
 No unrelated planning/design edits were staged or reverted. Build evidence and
 scoped build volumes remain retained for review; no running build containers remain.
