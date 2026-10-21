@@ -227,19 +227,53 @@ class Target:
         self.unchanged()
 
 
+def disk_attachment(runtime, *, disk_name, device_name, instance, disk):
+    """Check live Compute observations; the returned device still needs kernel proof.
+
+    The supported zonal pd-balanced type cannot be multi-writer. Its API response
+    may omit accessMode, unlike Hyperdisk. Never extend that inference to another
+    disk type, a foreign type URL, or explicit conflicting mode/multiWriter data.
+    """
+    for name in (disk_name, device_name):
+        if not isinstance(name, str) or not re.fullmatch('[a-z][a-z0-9-]{0,61}[a-z0-9]', name):
+            raise Refused('host_policy_invalid')
+    base = ('https://www.googleapis.com/compute/v1/projects/' + runtime['project_id']
+            + '/zones/' + runtime['zone'])
+    instance_link = base + '/instances/' + runtime['host_id']
+    disk_link = base + '/disks/' + disk_name
+    if (not isinstance(instance, dict) or not isinstance(disk, dict)
+            or instance.get('selfLink') != instance_link or instance.get('status') != 'RUNNING'
+            or disk.get('selfLink') != disk_link or disk.get('users') != [instance_link]
+            or disk.get('type') != base + '/diskTypes/pd-balanced'
+            or ('accessMode' in disk and disk['accessMode'] != 'READ_WRITE_SINGLE')
+            or disk.get('multiWriter', False) is not False or disk.get('status') != 'READY'):
+        raise Refused('exclusive_disk_ownership_unproven')
+    observed = instance.get('disks')
+    if not isinstance(observed, list) or any(not isinstance(item, dict) for item in observed):
+        raise Refused('disk_attachment_mismatch')
+    attachments = [item for item in observed if item.get('source') == disk_link]
+    if (len(attachments) != 1 or attachments[0].get('mode') != 'READ_WRITE'
+            or attachments[0].get('type') != 'PERSISTENT'
+            or attachments[0].get('boot') is not False
+            or attachments[0].get('deviceName') != device_name):
+        raise Refused('disk_attachment_mismatch')
+    return Path('/dev/disk/by-id/google-' + device_name)
+
+
 class GoogleHost:
     """Read live metadata, Compute ownership, kernel mounts and GCS generation.
 
-Disk name and retired instance names come from the reviewed bootstrap policy,
+Disk resource, attachment device and retired instance names come from bootstrap policy,
 never from product receipts. IAM authorizes only reads here. Runtime must have
 compute.instances.get / compute.disks.get to establish exclusive ownership.
 """
-    def __init__(self, target, *, disk_name, retired_hosts=()):
+    def __init__(self, target, *, disk_name, device_name, retired_hosts=()):
         self.target = target
         self.runtime = target.runtime
         self.disk_name = disk_name
+        self.device_name = device_name
         self.retired_hosts = tuple(retired_hosts)
-        for name in (disk_name, *self.retired_hosts):
+        for name in (disk_name, device_name, *self.retired_hosts):
             if not isinstance(name, str) or not re.fullmatch('[a-z][a-z0-9-]{0,61}[a-z0-9]', name):
                 raise Refused('host_policy_invalid')
         if self.runtime['host_id'] in self.retired_hosts:
@@ -274,21 +308,10 @@ compute.instances.get / compute.disks.get to establish exclusive ownership.
             if request_google(True, '/computeMetadata/v1/' + key).decode().strip() != value:
                 raise Refused('host_identity_mismatch')
         base = '/compute/v1/projects/' + runtime['project_id'] + '/zones/' + runtime['zone']
-        self_link = 'https://www.googleapis.com' + base + '/instances/' + runtime['host_id']
-        disk_link = 'https://www.googleapis.com' + base + '/disks/' + self.disk_name
         instance = self.request('compute.googleapis.com', base + '/instances/' + runtime['host_id'])
         disk = self.request('compute.googleapis.com', base + '/disks/' + self.disk_name)
-        if (instance.get('selfLink') != self_link or instance.get('status') != 'RUNNING'
-                or disk.get('selfLink') != disk_link or disk.get('users') != [self_link]
-                or disk.get('accessMode') != 'READ_WRITE_SINGLE'
-                or disk.get('status') != 'READY'):
-            raise Refused('exclusive_disk_ownership_unproven')
-        attachments = [item for item in instance.get('disks', []) if item.get('source') == disk_link]
-        if (len(attachments) != 1 or attachments[0].get('mode') != 'READ_WRITE'
-                or attachments[0].get('type') != 'PERSISTENT'
-                or attachments[0].get('boot') is not False
-                or attachments[0].get('deviceName') != self.disk_name):
-            raise Refused('disk_attachment_mismatch')
+        device = disk_attachment(runtime, disk_name=self.disk_name, device_name=self.device_name,
+                                 instance=instance, disk=disk)
         for previous in self.retired_hosts:
             item = self.request('compute.googleapis.com', base + '/instances/' + previous)
             if (item.get('selfLink') != 'https://www.googleapis.com' + base + '/instances/' + previous
@@ -297,7 +320,7 @@ compute.instances.get / compute.disks.get to establish exclusive ownership.
         boot = Path('/proc/sys/kernel/random/boot_id').read_text().strip()
         if not re.fullmatch('[0-9a-f-]{36}', boot):
             raise Refused('boot_identity_unavailable')
-        device = Path('/dev/disk/by-id/google-' + self.disk_name).resolve(strict=True)
+        device = device.resolve(strict=True)
         expected_device = os.stat(device).st_rdev
         if not stat.S_ISBLK(os.stat(device).st_mode):
             raise Refused('disk_device_unproven')

@@ -321,7 +321,7 @@ class HTTPBoundaryTests(unittest.TestCase):
                 return next(responses)
             def close(self):
                 pass
-        host = reconcile.GoogleHost(target, disk_name='test-disk')
+        host = reconcile.GoogleHost(target, disk_name='test-disk', device_name='test-device')
         host.principal.token = 'nonsecret-test-peer'
         with patch.object(reconcile.http.client, 'HTTPSConnection', Connection):
             self.assertEqual(host.desired(), '779')
@@ -341,11 +341,103 @@ class HTTPBoundaryTests(unittest.TestCase):
                 return response
             def close(self):
                 pass
-        host = reconcile.GoogleHost(self.target, disk_name='test-disk')
+        host = reconcile.GoogleHost(self.target, disk_name='test-disk', device_name='test-device')
         host.principal.token = 'nonsecret-test-peer'
         with patch.object(reconcile.http.client, 'HTTPSConnection', Connection):
             with self.assertRaisesRegex(reconcile.Refused, 'host_observation_unavailable'):
                 host.desired()
+
+
+class DiskAttachmentTests(unittest.TestCase):
+    """Provider observations validate policy; these do not prove a Linux mount."""
+    def setUp(self):
+        self.runtime = {'project_id': 'hyprn-staging-fixture', 'zone': 'europe-west1-b',
+                        'host_id': 'hyprn-staging-host-01'}
+        self.base = ('https://www.googleapis.com/compute/v1/projects/'
+                     'hyprn-staging-fixture/zones/europe-west1-b')
+        self.instance_link = self.base + '/instances/hyprn-staging-host-01'
+        self.disk_link = self.base + '/disks/hyprn-staging-data'
+        # Staging readback shape: balanced PD omits accessMode; attachment name
+        # is explicitly different from its Compute disk resource name.
+        self.disk = {'selfLink': self.disk_link, 'type': self.base + '/diskTypes/pd-balanced',
+                     'status': 'READY', 'users': [self.instance_link]}
+        self.instance = {'selfLink': self.instance_link, 'status': 'RUNNING',
+                         'disks': [{'source': self.disk_link, 'deviceName': 'hyprn-data',
+                                    'type': 'PERSISTENT', 'boot': False, 'mode': 'READ_WRITE'}]}
+
+    def verify(self):
+        return reconcile.disk_attachment(self.runtime, disk_name='hyprn-staging-data',
+            device_name='hyprn-data', instance=self.instance, disk=self.disk)
+
+    def test_balanced_disk_without_access_mode_uses_exact_attachment_device(self):
+        self.assertEqual(self.verify(), Path('/dev/disk/by-id/google-hyprn-data'))
+
+    def test_balanced_disk_explicit_single_writer_fields_are_accepted(self):
+        self.disk.update(accessMode='READ_WRITE_SINGLE', multiWriter=False)
+        self.assertEqual(self.verify(), Path('/dev/disk/by-id/google-hyprn-data'))
+
+    def test_conflicting_or_malformed_access_modes_are_refused(self):
+        for mode in ('READ_WRITE_MANY', 'READ_ONLY_MANY', '', None, False, 0, []):
+            with self.subTest(mode=mode):
+                self.disk['accessMode'] = mode
+                with self.assertRaisesRegex(reconcile.Refused, 'exclusive_disk_ownership_unproven'):
+                    self.verify()
+
+    def test_true_or_malformed_multiwriter_fields_are_refused(self):
+        for value in (True, 'false', None, 0, 1, [], {}):
+            with self.subTest(value=value):
+                self.disk['multiWriter'] = value
+                with self.assertRaisesRegex(reconcile.Refused, 'exclusive_disk_ownership_unproven'):
+                    self.verify()
+
+    def test_other_disk_types_and_foreign_type_urls_are_refused(self):
+        for kind in ('pd-ssd', 'pd-standard', 'hyperdisk-balanced'):
+            with self.subTest(kind=kind):
+                self.disk['type'] = self.base + '/diskTypes/' + kind
+                with self.assertRaisesRegex(reconcile.Refused, 'exclusive_disk_ownership_unproven'):
+                    self.verify()
+        for kind in ('pd-balanced', None, self.base.replace('europe-west1-b', 'europe-west1-c')
+                     + '/diskTypes/pd-balanced', self.base.replace('hyprn-staging-fixture', 'foreign-project')
+                     + '/diskTypes/pd-balanced'):
+            with self.subTest(kind=kind):
+                self.disk['type'] = kind
+                with self.assertRaisesRegex(reconcile.Refused, 'exclusive_disk_ownership_unproven'):
+                    self.verify()
+
+    def test_disk_users_must_be_exactly_the_current_host(self):
+        for users in ([], [self.instance_link, self.instance_link + '-other'],
+                      [self.instance_link + '-other'], None):
+            with self.subTest(users=users):
+                self.disk['users'] = users
+                with self.assertRaisesRegex(reconcile.Refused, 'exclusive_disk_ownership_unproven'):
+                    self.verify()
+
+    def test_attached_resource_name_cannot_substitute_for_device_name(self):
+        self.instance['disks'][0]['deviceName'] = 'hyprn-staging-data'
+        with self.assertRaisesRegex(reconcile.Refused, 'disk_attachment_mismatch'):
+            self.verify()
+
+    def test_attachment_source_and_mode_remain_exact(self):
+        original = copy.deepcopy(self.instance['disks'][0])
+        for key, value in (('source', self.disk_link + '-other'), ('mode', 'READ_ONLY'),
+                           ('type', 'SCRATCH'), ('boot', True), ('boot', 0)):
+            with self.subTest(key=key, value=value):
+                self.instance['disks'] = [dict(original, **{key: value})]
+                with self.assertRaisesRegex(reconcile.Refused, 'disk_attachment_mismatch'):
+                    self.verify()
+
+    def test_duplicate_attachment_is_refused(self):
+        self.instance['disks'].append(copy.deepcopy(self.instance['disks'][0]))
+        with self.assertRaisesRegex(reconcile.Refused, 'disk_attachment_mismatch'):
+            self.verify()
+
+    def test_bootstrap_requires_a_separate_valid_device_name(self):
+        from types import SimpleNamespace
+        target = SimpleNamespace(runtime=self.runtime)
+        with self.assertRaises(TypeError):
+            reconcile.GoogleHost(target, disk_name='hyprn-staging-data')
+        with self.assertRaisesRegex(reconcile.Refused, 'host_policy_invalid'):
+            reconcile.GoogleHost(target, disk_name='hyprn-staging-data', device_name='../wrong-device')
 
 
 if __name__ == '__main__':
