@@ -504,3 +504,34 @@ One temporary start/inspect/stop requires approval. It will report listeners wit
 process names and running services, avoiding guessed exceptions or disablements.
 Source and embedded script compile; no cloud operation has run for this proposal.
 Parent retains ownership; host qualification and working staging remain incomplete.
+
+## Listener identification and running continuation — 2026-10-21
+
+Approved network diagnostic `c4ca9a6f57e1…` succeeded and stopped the exact VM.
+It identifies systemd-resolved on 0.0.0.0:5355 as the refused TCP listener. Other
+observed TCP services are SSH 22 and loopback DNS/SMTP. Docker/containerd are active;
+nftables.service is disabled. Actual file/package/runtime inventory is retained in
+`host-network-diagnosis/evidence/network-diagnosis.json` under the private root.
+
+The owner then explicitly authorized keeping the VM running until staging is
+finished. The already-running inspection retained its automatic stop; the parent
+restarted the exact VM once under the new authorization. `running-continuation`
+records final RUNNING for ID `3112612718549037193`. Further work no longer needs
+start/stop-only approval cycles. Configuration/secret/activation scopes remain
+subject to their explicit approvals. The application is still offline.
+
+Source `38da65b` prepares one resolver drop-in (LLMNR=no, MulticastDNS=no), preserving
+ordinary DNS. It reconciles the exact prior repair and refuses other listener or
+owner discrepancies, checks normal DNS and the full host, then records completion.
+Fresh setup includes the same hardening. The controller binds RUNNING to the
+finalization plan and will not stop or restart an already-running approved VM.
+
+Committed host-setup group: 36 passed, 0 failed (0.141 s). Existing network
+preflight evidence is unchanged (19 passed at `612995e`). No package versions or
+listener rules were relaxed. Frozen finalization bundle admission passed 18 files.
+Private packet: `host-setup-finalize/REVIEW.md`.
+Plan SHA256: `d9578c423d428f07371ca8bd959a406961a584c5eabedcc8aacc7aab72210306`.
+Bundle SHA256: `ef9a50bb045bc39e55eda469dd8cbeb71ac33aa3c8b794420ef303cdf10d7dcc`.
+Controller SHA256: `862e1ca0a46b239fa79c22a3d6768e4ab9c77319377739ca55d3940a7d5ba60f`.
+Approval for the resolver change is pending; it has not been applied. Parent owns
+host completion, service integration and the remaining staging demonstration.

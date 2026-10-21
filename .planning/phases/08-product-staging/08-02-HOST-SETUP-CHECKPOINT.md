@@ -105,3 +105,15 @@ Do not replay the repair intent. See the runbook for exact evidence.
 network rule; committed preflight group passed 19/19. Next is approval of the
 prepared comprehensive read-only network/runtime inspection, then an evidence-based
 completion plan. No unknown listener has been allowed or disabled by assumption.
+
+## Current next action
+
+The network inspection succeeded: systemd-resolved LLMNR is the 5355 listener.
+Owner explicitly permits leaving the VM running through staging completion; after
+the inspection's stop, the exact VM was restarted once and confirmed RUNNING.
+
+Approve/apply finalization plan `d9578c423d42…`: one resolver drop-in disables
+link-local discovery, preserves DNS, reruns strict verification and records closed
+host completion. Source `38da65b`, committed host-setup 36/36. Frozen packet and
+full hashes are in the runbook. It leaves the VM running. No application readiness
+or live DNS-correction success is claimed before that operation.
