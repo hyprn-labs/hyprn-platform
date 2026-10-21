@@ -131,3 +131,36 @@ Local PostgreSQL TLS verification establishes the SQL and driver behavior, not
 Cloud SQL IAM/API behavior. Live operator user creation, Secret Manager publication,
 Cloud SQL owner grants and actual private TLS still require the approved deployment
 and its recorded results. There is no cloud mutation in planning or local tests.
+
+## Runtime image invocation
+
+The native host environment does not contain the PostgreSQL driver. Use the exact
+reviewed application image, which already contains `pg8000==1.31.5`, as a one-off
+operator container. This does not start the application. The image digest, source
+folder and input-file locations are fixed by the combined deployment plan.
+
+```sh
+docker run --rm --name REVIEWED_DATABASE_SETUP_CONTAINER \
+  --network hyprn-staging_application --user 0:0 --read-only \
+  --cap-drop ALL --security-opt no-new-privileges:true \
+  --pids-limit 64 --memory 128m --cpus 0.5 --ulimit core=0 \
+  --mount type=bind,src=REVIEWED_HOST_SOURCES,dst=/platform,readonly \
+  --mount type=bind,src=REVIEWED_POLICY,dst=/policy.json,readonly \
+  --mount type=bind,src=REVIEWED_CA,dst=/ca.pem,readonly \
+  --mount type=bind,src=BOOTSTRAP_PASSWORD,dst=/admin-password,readonly \
+  --mount type=bind,src=ROOT_OWNED_TMPFS_CREDENTIALS,dst=/credentials \
+  --entrypoint python REVIEWED_APP_IMAGE_DIGEST \
+  -B /platform/database_setup.py apply --policy /policy.json \
+  --ca-file /ca.pem --admin-password-file /admin-password \
+  --private-root /credentials --approve-sha256 APPROVED_PLAN_SHA256
+```
+
+The application network must already have its reviewed private-database-only
+route for this operation. No Docker socket, provider credential or host operator
+OAuth token is mounted. UID 0 exists only to preserve ownership of the protected
+files; all container capabilities are dropped. After deleting the temporary
+bootstrap user, the `verify` invocation omits the bootstrap-password mount and
+argument, retaining the same image, source, policy, CA and credential-directory
+pins. The tmpfs and swap checks remain active inside the container. This exact
+container launch still requires live deployment verification; the local SQL/TLS
+fixture validated the same driver and role operations, not host packet rules.
