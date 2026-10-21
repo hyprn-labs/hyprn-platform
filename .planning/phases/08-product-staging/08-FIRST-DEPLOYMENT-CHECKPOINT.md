@@ -2,20 +2,38 @@
 
 ## Current stopping point
 
-The exact first staging deployment packet is prepared, not applied. Its private
-review folder is `hyprn-staging-final-plan` under the host scratch root; review
-`REVIEW.md`, `OPERATIONS.md`, `deployment-plan.json` and `APPROVAL.sha256` together.
-The root approval digest is
-`28f7c82864dc9ef5794c11facadf3fa358c1760040b437b3a369340166d869cb`.
-No additional cloud writes, real credential generation, application startup,
-provider conversation or access activation occurred during this preparation.
+The owner approved the original aggregate plan
+`28f7c82864dc9ef5794c11facadf3fa358c1760040b437b3a369340166d869cb`
+and publisher compatibility amendment
+`879b3b24145a110dce2e939302c6809ce69d23c861f6723150de80a6354322c4`.
+Actual deployment has now published/verified all three pinned images and all 61
+nonsecret files, and installed those files on the VM. The desired pointer remains
+absent. No database bootstrap, runtime credential publication, application,
+Assistant delivery or tunnel activation has started.
 
-Next action: obtain owner approval for that exact aggregate plan, then execute
-its stages in order. Approval includes the explicitly named temporary database
-user creation and removal, nine existing-secret version publications, local
-Assistant delivery fencing, private first-use checks and conditional ongoing
-staging promotion. The initial qualification window ends 2026-10-22 10:00 UTC;
-expired or changed policy needs a revised plan, never a silent extension.
+The network installer wrote its reviewed files, local proxy identity, bridges and
+rules, then failed its textual firewall comparison. Actual kernel rule capture
+matches the policy: Linux reordered equivalent base predicates and emitted an
+implicit UDP match. The proxy is inactive; application admission remains closed.
+Do not repeat the original apply: its intent exists and partial effects are known.
+
+Source correction `3a84dde` passed the focused network installer group (8 tests),
+accepted the actual VM capture and rejected three changes to access authority.
+The exact pending repair is in the private review folder's
+`application-evidence/network-verifier-repair` subtree. Its amendment digest is
+`936ad7d8e7028e275fd0fcb6a0e34b3d7dcb7e3a1ce53859cca301d9281b046e`.
+It preserves policy/artifacts/credentials and resumes only the approved services,
+with updated source fingerprints and immutable publication-receipt reconciliation.
+It explicitly includes one replacement 30-minute OS Login key if the original
+expires. No code correction has yet been applied to the live host.
+
+Next action: obtain owner approval for that exact repair, reconcile its expected
+partial state, apply it, then continue the approved host preparation, database,
+Assistant fence, desired publication and live journeys. Use the replacement
+activation plan from the repair. The qualification window still ends
+2026-10-22 10:00 UTC; do not extend it silently. The VM stays running as requested.
+All operational evidence and protected SSH material are under the private review
+folder. No secret values are committed or present in the public artifact bucket.
 
 ## Frozen source and evidence
 
