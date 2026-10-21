@@ -75,15 +75,20 @@ not final release qualification or human acceptance.
 
 ## Application outcome (supersedes pending approval above)
 
-Owner approved the exact plan; one execution failed at the package dry-run before
-formatting/install intent. VM ID `3112612718549037193` is confirmed TERMINATED.
-The immutable bundle and state lock were created; no format, package installation,
-application startup or secret transfer occurred. Private evidence is in
-`host-setup/application-evidence` alongside the original review. See the runbook's
-2026-10-21 approved setup attempt for details.
+Owner approved the exact plan and the subsequent diagnostic inspection. The
+original generic dpkg error was incorrectly reported as a pre-format dry-run
+failure. Actual inventory disproved that: the intended disk was formatted/mounted,
+four packages installed and Docker Engine unpacked but unconfigured. Its service
+is inactive. The required nftables/libnftables1/libjansson4 packages are absent.
+The diagnostic itself made no package changes and confirmed the same VM stopped.
 
-The original wrapper lost detailed package stderr/stdout. Source `b2e3a48`
-corrects this for the bounded dry-run only; 21 host-setup checks passed on that
-committed tree. This does not change the frozen original bundle. No live retry.
-Next: owner-approved read-only diagnostic boot, then prepare the exact correction.
-The missing-package hypothesis is unconfirmed; do not install guessed dependencies.
+Source `210e154` corrects the weak dependency check and provides a separate,
+no-format repair bound to the exact original intent and partial state. Committed
+host-setup checks: 31 passed; actual eight-archive metadata and dependency versions
+checked using real Debian tools. See `runbooks/product-staging.md` for complete
+failures/corrections and the exact private evidence references.
+
+Next: approval of repair plan
+`914022b3b649e61a411e4804427c8bb925d1207d4169f2b1a0b005c87d635478`,
+then apply/verify/stop. Original bundle remains unchanged. No application startup,
+secret transfer or new provider usage. Broader hosted milestone remains open.

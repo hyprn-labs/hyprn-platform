@@ -404,10 +404,11 @@ The owner approved plan
 `0a18d1d19b1951fdc172b4a5ac986c387273e5ea187b3c42f5f8a5c1853c83ee`.
 Its frozen bundle/controller pins were verified and applied once. The VM started,
 IAP login/upload worked, and the root-owned immutable bundle was extracted. Exact
-host/disk and blank-device checks passed. The package dry-run returned nonzero;
-the operation stopped before writing the format/install intent, formatting the
-disk, creating service accounts or installing packages. The root setup state/lock
-and uploaded source/package files remain; no automatic rollback or retry occurred.
+host/disk and blank-device checks passed. The original report attributed the
+failure to the package dry-run, but the next approved inspection disproved that
+inference: formatting and partial installation did occur. The disk has its exact
+approved filesystem UUID; Docker is unpacked and four other packages installed.
+No automatic rollback or retry occurred. Detailed correction follows below.
 
 The controller confirmed VM ID `3112612718549037193` as TERMINATED. Receipt:
 `host-setup/application-evidence/result.json` under the private inventory root,
@@ -427,3 +428,50 @@ same dry-run diagnostics and actual package inventory without installing anythin
 Script SHA256: `7470146c6f377bcff0b573c27118e73d6fb3194999df868aca9476cdc76c3aec`.
 Approval is pending; no second start has occurred. Parent owns diagnosis, revised
 exact installation plan and subsequent integration. Working staging remains open.
+
+
+## Package diagnosis and no-format repair preparation — 2026-10-21
+
+Owner-approved diagnostic script
+`7470146c6f377bcff0b573c27118e73d6fb3194999df868aca9476cdc76c3aec`
+ran successfully. Readback confirmed the same VM ID `3112612718549037193` is
+TERMINATED. It performed package dry-run/inventory reads, no package installation.
+
+The generic `host_command_refused:dpkg` had been wrongly interpreted as a dry-run
+failure. Actual evidence shows the original approved filesystem exists and is
+mounted with UUID `1a017a06-5a85-4201-8818-df65b4a72285`; original intent exists,
+completion does not. Docker Engine is `install ok unpacked`, its service inactive.
+containerd, CLI, Compose and cloudflared are `install ok installed` at exact pins.
+Required nftables is absent, along with libnftables1 and libjansson4. The repeated
+dry-run returns 0 despite that gap, so it cannot serve as a configure-dependency
+guard. Original installation stderr was lost; this identifies a real gap without
+claiming it was the only possible error.
+
+Platform source `210e154` adds explicit Depends/Pre-Depends verification using
+Debian version semantics, preserves distinct diagnostics for each package stage,
+and prepares a no-format repair tied to the exact original intent and observed
+partial state. It pins three unmodified Debian OS packages and retains their
+upstream notices (GPL firewall runtime, MIT JSON library). Product dependencies
+are unchanged. The independent nftables service is disabled; the original Docker
+iptables guard remains the owner of container networking.
+
+`tests/platform/run.sh host-setup`: 31 passed, 0 failed on committed source,
+0.153 s. Real Debian archive metadata for all eight packages matched. Twenty
+prerequisites resolve from the proposed archives and observed installed inventory;
+real dpkg version comparisons exited 0. One initial combined version-check/cleanup
+command hid the check's own status, so it was rerun alone to establish exit 0.
+No unrelated checks were repeated. Disposable Linux inspection containers removed.
+
+Debian index authentication: one valid Bookworm signature using subkey
+`4CB50190207B4758A3F73A796ED0E7B82643E131`; a second newer signature was unknown to
+the reviewed keyring (gpgv initial overall exit 2). The valid known Bookworm
+signature and exact Packages.xz digest were explicitly checked; verification was
+not bypassed and the unknown signature was not counted as valid.
+
+Exact repair packet: private inventory root `host-setup-repair/REVIEW.md`.
+Plan SHA256: `914022b3b649e61a411e4804427c8bb925d1207d4169f2b1a0b005c87d635478`.
+Bundle SHA256: `dd1841fc2406dd3f91fa7a8a5dc7ca2ad40f2a69bff918b0c097b6301a01fcc0`.
+Controller SHA256: `9e5793ec5a51974daf183a294c82548626f27c004da71a6d918ea8d0d26ee3c0`.
+Eighteen archive members pass controller admission. Approval pending; no repair
+has run. No format/delete action exists in the repair. Parent owns remaining
+host installation, service integration and actual product/recovery qualification.
