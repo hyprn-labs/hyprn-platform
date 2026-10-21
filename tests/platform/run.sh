@@ -9,7 +9,10 @@ case "$group" in
   service-network-install) pattern=test_service_network_install.py ;;
   service-network-probe) pattern=test_service_network_probe.py ;;
   database-setup) pattern=test_database_setup.py ;;
+  database-operator) pattern=test_database_operator.py ;;
+  release-stage) pattern=test_release_stage.py ;;
   activation) pattern=test_activation.py ;;
+  activation-install) pattern=test_activation_install.py ;;
   secrets) pattern=test_secrets.py ;;
   backup) pattern=test_cloudsql_backup.py ;;
   reconcile) pattern=test_reconcile.py ;;
