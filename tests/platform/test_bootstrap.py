@@ -13,6 +13,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location('bootstrap_subject', ROOT / 'host/bootstrap.py')
@@ -185,6 +186,24 @@ class BootstrapTests(unittest.TestCase):
         Path(self.policy['controls']['assistant_plan']['path']).write_bytes(b'{"version":2}')
         with self.assertRaisesRegex(subject.Refused, 'bootstrap_control_bytes'):
             subject.control_inputs(self.policy)
+
+    def test_controls_from_another_release_are_refused_before_publication(self):
+        target = SimpleNamespace(identity={'installation_id': 'test',
+            'release_sha256': 'a' * 64, 'config_sha256': 'b' * 64},
+            binding={'control_root': '/unused'})
+        values = {'assistant_continuity': subject.contract.canonical({
+            **target.identity, 'release_sha256': 'c' * 64}),
+            'assistant_plan': b'{}', 'database_ca': b'certificate'}
+        with patch.object(subject, 'control_inputs', return_value=values), \
+                patch.object(subject, 'write_bytes') as write, \
+                patch.object(subject, 'public_control_directory') as directory:
+            with self.assertRaisesRegex(subject.Refused, 'bootstrap_continuity_identity'):
+                subject.publish_controls(target, self.policy)
+            write.assert_not_called()
+            directory.assert_not_called()
+            values['assistant_continuity'] = subject.contract.canonical(target.identity)
+            subject.publish_controls(target, self.policy)
+            self.assertEqual(write.call_count, 3)
 
     def test_atomic_control_copy_preserves_exact_bytes_and_readability(self):
         path = self.root / 'control.json'

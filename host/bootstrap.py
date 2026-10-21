@@ -269,6 +269,9 @@ def load_preflight():
 
 def publish_controls(target, policy):
     values = control_inputs(policy)
+    continuity = reconcile.decode(values['assistant_continuity'])
+    if any(continuity.get(key) != value for key, value in target.identity.items()):
+        raise Refused('bootstrap_continuity_identity')
     root = Path(target.binding['control_root'])
     destinations = {'assistant_plan': root / 'assistant-plan.json',
                     'assistant_continuity': root / 'assistant-continuity.json',
