@@ -248,8 +248,10 @@ class NetworkTests(unittest.TestCase):
             self.assertEqual(result['assurance'], 'minimum-structure-only')
             self.assertFalse(result['live_container_probe'])
             knobs[-1].read_text = lambda: '0'
-            with self.assertRaisesRegex(preflight.reconcile.Refused, 'ipv6_must_be_disabled'):
+            with self.assertRaisesRegex(preflight.reconcile.Refused, 'ipv6_must_be_disabled') as failure:
                 preflight.network_observation()
+            self.assertEqual(failure.exception.diagnostic, {
+                'stage': 'host_ipv6_check', 'interfaces': ['eth0']})
             knobs[-1].read_text = lambda: '1'
             output['/usr/bin/ss'] = b'LISTEN 0 128 0.0.0.0:8000 0.0.0.0:*\n'
             with self.assertRaisesRegex(preflight.reconcile.Refused, 'unexpected_public_listener') as failure:

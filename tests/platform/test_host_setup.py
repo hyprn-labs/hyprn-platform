@@ -424,9 +424,28 @@ class FinalizeSetupTests(unittest.TestCase):
     def setUp(self):
         import finalize_setup
         self.finalize = finalize_setup
+        for owner, name, value in ((setup, 'network_basis', None),
+                (finalize_setup.preflight, 'tcp_listeners', [('0.0.0.0', 5355)])):
+            mocked = patch.object(owner, name, return_value=value)
+            mocked.start(); self.addCleanup(mocked.stop)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
+
+    def test_network_override_keeps_dhcp4_and_leaves_dns_routes_and_mtu_inherited(self):
+        self.assertEqual(setup.files(policy())[str(setup.NETWORK_OVERRIDE)],
+            ('[Network]\nDHCP=ipv4\nLinkLocalAddressing=no\nIPv6AcceptRA=no\n', 0o644))
+
+    def test_network_reconfiguration_cannot_reenable_ipv6_after_sysctl(self):
+        commands = []
+        with patch.object(setup, 'run', side_effect=lambda command, **kw: commands.append(command)), \
+                patch.object(setup, 'wait_network'), \
+                patch.object(setup, 'network_basis'), \
+                patch('preflight.ipv6_observation', side_effect=setup.reconcile.Refused('ipv6_must_be_disabled')):
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'ipv6_must_be_disabled'):
+                setup.configure_ipv4()
+        self.assertEqual(commands[-1], ['/usr/bin/networkctl', 'reconfigure', 'ens4'])
+        self.assertEqual(commands[-2], ['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
 
     def test_discovery_is_disabled_without_overriding_dns_servers(self):
         self.assertEqual(setup.files(policy())[str(setup.RESOLVED)],
@@ -450,10 +469,31 @@ class FinalizeSetupTests(unittest.TestCase):
                     with self.assertRaises(setup.reconcile.Refused):
                         self.finalize.before_change(policy(),{})
 
+    def test_ipv6_correction_refuses_other_interface_drift_and_hidden_listeners(self):
+        error = setup.reconcile.Refused('ipv6_must_be_disabled')
+        baseline = {'all': '1', 'default': '1', 'lo': '1', 'ens4': '0'}
+        for values, listeners, allowed in (
+                (baseline, [], True),
+                (dict(baseline, lo='0'), [], False),
+                (dict(baseline, extra='0'), [], False),
+                (baseline, [('0.0.0.0', 5355), ('0.0.0.0', 8000)], False)):
+            with patch.object(setup.reconcile.contract, 'read_json', return_value={}), \
+                    patch.object(setup, 'verify', side_effect=error), \
+                    patch.object(self.finalize.preflight, 'ipv6_values', return_value=values), \
+                    patch.object(self.finalize.preflight, 'tcp_listeners', return_value=listeners), \
+                    patch.object(setup, 'run', return_value=b'LISTEN 0 4096 0.0.0.0:5355 0.0.0.0:* users:(("systemd-resolve",pid=1,fd=1))'), \
+                    patch.object(self.finalize, 'RESOLVED', self.root/'absent.conf'):
+                if allowed:
+                    self.finalize.before_change(policy(), {})
+                else:
+                    with self.assertRaises(setup.reconcile.Refused):
+                        self.finalize.before_change(policy(), {})
+
     def test_existing_resolver_override_is_never_replaced(self):
         path=self.root/'existing.conf';path.write_text('[Resolve]\nDNS=192.0.2.1\n')
         with patch.object(setup.reconcile.contract,'read_json',return_value={}), \
                 patch.object(setup,'verify',return_value={}), \
+                patch.object(self.finalize.preflight,'tcp_listeners',return_value=[]), \
                 patch.object(setup.reconcile,'protected',return_value=path), \
                 patch.object(self.finalize,'RESOLVED',path):
             with self.assertRaisesRegex(setup.reconcile.Refused,'existing_resolver_override'):

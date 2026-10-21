@@ -24,8 +24,10 @@ or interrupted repairs are refused until reconciled. The same IAP controller
 validates either a fresh-setup or repair bundle and stops the VM afterwards.
 
 `finalize_setup.py` completes the verified package repair after disabling
-systemd-resolved link-local discovery. It preserves DNS servers, checks normal
-DNS, and applies the unchanged strict listener verification before recording host
-completion. The corresponding plan explicitly binds a running final VM state;
+systemd-resolved link-local discovery and aligning the reviewed network-manager
+configuration with the IPv4-only host policy. It preserves DHCPv4, DNS, routes and
+MTU settings, verifies a second network reconfiguration cannot re-enable IPv6,
+and applies strict host verification before recording completion. Unexpected
+network configuration, interface drift or additional listeners refuse the repair. The corresponding plan explicitly binds a running final VM state;
 other setup plans retain their stopped final state. Fresh setup includes the same
 resolver settings.

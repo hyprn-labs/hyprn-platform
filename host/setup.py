@@ -29,6 +29,11 @@ DATA = Path('/srv/hyprn/staging')
 MOUNT = 'srv-hyprn-staging.mount'
 RESOLVED = Path('/etc/systemd/resolved.conf.d/70-hyprn.conf')
 RESOLVED_TEXT = '[Resolve]\nLLMNR=no\nMulticastDNS=no\n'
+NETWORK_BASE = Path('/run/systemd/network/10-netplan-all-en.network')
+NETWORK_OVERRIDE = Path('/etc/systemd/network/10-netplan-all-en.network.d/70-hyprn.conf')
+NETWORK_TEXT = '[Network]\nDHCP=ipv4\nLinkLocalAddressing=no\nIPv6AcceptRA=no\n'
+NETWORK_BASE_TEXT = ('[Match]\nName=en*\n\n[Network]\nDHCP=yes\nLinkLocalAddressing=ipv6\n'
+                     '\n[DHCP]\nRouteMetric=100\nUseMTU=true\nUseDomains=true\n')
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C', 'LC_ALL': 'C',
        'DEBIAN_FRONTEND': 'noninteractive'}
 FIELDS = {'schema', 'project_id', 'project_number', 'zone', 'host_id', 'instance_id',
@@ -143,6 +148,7 @@ ExecStartPost={CONFIG}/container-guard
               'userland-proxy': False}
     return {
         str(RESOLVED): (RESOLVED_TEXT, 0o644),
+        str(NETWORK_OVERRIDE): (NETWORK_TEXT, 0o644),
         '/etc/systemd/system/' + MOUNT: (mount, 0o644),
         '/etc/systemd/system/docker.service.d/hyprn.conf': (dropin, 0o644),
         str(CONFIG / 'container-guard'): (guard, 0o755),
@@ -178,6 +184,7 @@ def plan(policy, folder):
                  'mount-by-pinned-filesystem-uuid', 'install-pinned-packages-with-services-blocked',
                  'create-native-service-account-and-owner-directories',
                  'install-closed-firewall-and-bounded-docker-storage',
+                 'persist-ipv4-network-policy-and-test-reconfiguration',
                  'disable-link-local-discovery-preserving-dns',
                  'start-empty-docker-behind-closed-firewall', 'verify-host-prerequisites'],
         product_started=False, secrets_transferred=False, admission='closed')
@@ -196,6 +203,40 @@ def run(args, *, input=None, allowed=(0,), timeout=60, package_diagnostics=None)
                 'stderr': result.stderr[-16384:].decode('utf-8', errors='replace')}
         raise error
     return result.stdout
+
+
+def network_state():
+    raw = run(['/usr/bin/networkctl', 'status', 'ens4', '--no-pager', '--no-legend']).decode()
+    return dict(line.strip().split(': ', 1) for line in raw.splitlines() if ': ' in line)
+
+
+def network_basis():
+    if (reconcile.protected(NETWORK_BASE).read_text() != NETWORK_BASE_TEXT
+            or network_state().get('Network File') != str(NETWORK_BASE)):
+        fail('setup_network_basis_changed')
+    # Refuse other drop-ins rather than overriding unknown network policy.
+    for parent in ('/etc/systemd/network', '/run/systemd/network', '/usr/lib/systemd/network'):
+        for path in (Path(parent) / (NETWORK_BASE.name + '.d')).glob('*.conf'):
+            if path != NETWORK_OVERRIDE or reconcile.protected(path).read_text() != NETWORK_TEXT:
+                fail('setup_existing_network_override')
+
+
+def wait_network():
+    run(['/lib/systemd/systemd-networkd-wait-online', '--interface=ens4:routable',
+         '--ipv4', '--timeout=30'], timeout=40)
+
+
+def configure_ipv4():
+    import preflight
+    network_basis()
+    run(['/usr/bin/networkctl', 'reload'])
+    run(['/usr/bin/networkctl', 'reconfigure', 'ens4'])
+    wait_network()
+    run(['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
+    # Replay the operation that caused the drift; a one-time sysctl is insufficient.
+    run(['/usr/bin/networkctl', 'reconfigure', 'ens4'])
+    wait_network()
+    preflight.ipv6_observation()
 
 
 def cloud_device(policy):
@@ -424,6 +465,7 @@ def apply(policy_path, folder, approved):
                      '/etc/systemd/system/docker.socket', '/etc/systemd/system/containerd.service'):
             if Path(name).exists() or Path(name).is_symlink():
                 fail('setup_existing_runtime_configuration')
+        network_basis()
         paths = package_probe(rows, folder)
         write_new(intent, canonical(expected), 0o600)
         # Reconcile live attachment again immediately before the one format attempt.
@@ -457,6 +499,7 @@ def apply(policy_path, folder, approved):
         run(['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
         run(['/usr/bin/systemd-tmpfiles', '--create', '/etc/tmpfiles.d/hyprn.conf'])
         run(['/usr/bin/systemctl', 'daemon-reload'])
+        configure_ipv4()
         run(['/usr/bin/systemctl', 'restart', 'systemd-resolved.service'], timeout=60)
         run(['/usr/bin/getent', 'ahostsv4', 'compute.googleapis.com'])
         run(['/usr/bin/systemctl', 'enable', '--now', 'docker.service', 'docker.socket'], timeout=120)

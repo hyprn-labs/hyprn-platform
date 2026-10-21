@@ -239,34 +239,57 @@ def firewall_structure(raw):
     return hashlib.sha256(raw).hexdigest()
 
 
+def ipv6_values():
+    knobs = list(Path('/proc/sys/net/ipv6/conf').glob('*/disable_ipv6'))
+    if not knobs or not {'all', 'default'} <= {path.parent.name for path in knobs}:
+        refuse('ipv6_disable_observation_missing')
+    return {path.parent.name: path.read_text().strip() for path in knobs}
+
+
+def ipv6_observation():
+    values = ipv6_values()
+    enabled = sorted(name for name, value in values.items() if value != '1')
+    if enabled:
+        error = reconcile.Refused('ipv6_must_be_disabled')
+        error.diagnostic = {'stage': 'host_ipv6_check', 'interfaces': enabled}
+        raise error
+
+
+def tcp_listeners():
+    raw = observe(['/usr/bin/ss', '--no-header', '--listening', '--tcp', '--numeric'],
+                  'host_listener_observation_unavailable')
+    try:
+        result = []
+        for line in raw.decode().splitlines():
+            address, port = line.split()[3].rsplit(':', 1)
+            address = address.strip('[]').split('%', 1)[0]
+            if address != '*':
+                ipaddress.ip_address(address)
+            result.append((address, int(port)))
+        return result
+    except (UnicodeError, ValueError, IndexError):
+        refuse('host_listener_observation_invalid')
+
+
+def check_listener(address, port):
+    if port in (2375, 2376):
+        refuse('docker_tcp_listener_forbidden')
+    if port != 22 and (address == '*' or not ipaddress.ip_address(address).is_loopback):
+        error = reconcile.Refused('unexpected_public_listener')
+        error.diagnostic = {'stage': 'host_network_listener_check',
+                            'address': address, 'port': port}
+        raise error
+
+
 def network_observation():
     version = observe(['/usr/sbin/iptables', '--version'], 'iptables_nft_required').decode()
     if '(nf_tables)' not in version:
         refuse('iptables_nft_required')
     raw = observe(['/usr/sbin/iptables-save', '-t', 'filter'], 'firewall_observation_unavailable')
     digest = firewall_structure(raw)
-    knobs = list(Path('/proc/sys/net/ipv6/conf').glob('*/disable_ipv6'))
-    if not knobs or not {'all', 'default'} <= {path.parent.name for path in knobs}:
-        refuse('ipv6_disable_observation_missing')
-    if any(path.read_text().strip() != '1' for path in knobs):
-        refuse('ipv6_must_be_disabled')
-    listeners = observe(['/usr/bin/ss', '--no-header', '--listening', '--tcp', '--numeric'],
-                        'host_listener_observation_unavailable')
-    try:
-        for line in listeners.decode().splitlines():
-            fields = line.split()
-            address, port = fields[3].rsplit(':', 1)
-            address = address.strip('[]').split('%', 1)[0]
-            port = int(port)
-            if port in (2375, 2376):
-                refuse('docker_tcp_listener_forbidden')
-            if port != 22 and (address == '*' or not ipaddress.ip_address(address).is_loopback):
-                error = reconcile.Refused('unexpected_public_listener')
-                error.diagnostic = {'stage': 'host_network_listener_check',
-                                    'address': address, 'port': port}
-                raise error
-    except (UnicodeError, ValueError, IndexError):
-        refuse('host_listener_observation_invalid')
+    ipv6_observation()
+    for address, port in tcp_listeners():
+        check_listener(address, port)
     return dict(backend='iptables-nft', observed_rules_sha256=digest, ipv6='disabled',
                 assurance='minimum-structure-only', live_container_probe=False)
 

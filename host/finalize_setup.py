@@ -1,4 +1,4 @@
-"""Complete the reviewed host after disabling unneeded link-local discovery."""
+"""Complete the reviewed host with durable IPv4 policy and no link-local discovery."""
 import argparse
 import fcntl
 import json
@@ -9,6 +9,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import setup
+import preflight
 
 REPAIR_PLAN = '914022b3b649e61a411e4804427c8bb925d1207d4169f2b1a0b005c87d635478'
 RESOLVED = setup.RESOLVED
@@ -28,7 +29,7 @@ def plan(policy, folder):
     previous = basis()
     value = setup.plan(policy, folder)
     if (previous['policy'] != policy
-            or {k: v for k, v in value['files'].items() if k != str(RESOLVED)} != previous['files']
+            or {k: v for k, v in value['files'].items() if k not in (str(RESOLVED), str(setup.NETWORK_OVERRIDE))} != previous['files']
             or value['packages'] != previous['packages']):
         setup.fail('finalize_repair_basis_changed')
     value.pop('plan_sha256')
@@ -39,6 +40,7 @@ def plan(policy, folder):
                             for name in ('finalize_setup.py', 'repair-plan.json')})
     value['files'][str(RESOLVED)] = {'sha256': setup.digest(RESOLVED_TEXT.encode()), 'mode': '0o644'}
     value['actions'] = ['verify-repair-intent-and-installed-host',
+        'persist-ipv4-network-policy-and-test-reconfiguration',
         'disable-systemd-resolved-link-local-discovery', 'restart-systemd-resolved',
         'verify-normal-dns-and-all-host-prerequisites', 'record-closed-host-completion']
     return dict(value, plan_sha256=setup.digest(setup.canonical(value)))
@@ -47,22 +49,32 @@ def plan(policy, folder):
 def before_change(policy, previous):
     if setup.reconcile.contract.read_json(setup.STATE / 'repair-intent.json') != previous:
         setup.fail('finalize_repair_intent_differs')
+    setup.network_basis()
     try:
         setup.verify(policy, previous)
     except setup.reconcile.Refused as error:
-        if (error.reason != 'unexpected_public_listener'
+        if error.reason == 'ipv6_must_be_disabled':
+            if preflight.ipv6_values() != {'all': '1', 'default': '1', 'lo': '1', 'ens4': '0'}:
+                setup.fail('finalize_ipv6_state_differs')
+        elif (error.reason != 'unexpected_public_listener'
                 or getattr(error, 'diagnostic', {}) != {
                     'stage': 'host_network_listener_check', 'address': '0.0.0.0', 'port': 5355}):
             raise
-        raw = setup.run(['/usr/bin/ss', '--no-header', '--listening', '--tcp', '--numeric', '--processes']).decode()
-        matches = [line for line in raw.splitlines() if len(line.split()) > 3
-                   and line.split()[3] == '0.0.0.0:5355']
-        if len(matches) != 1 or '"systemd-resolve"' not in matches[0]:
-            setup.fail('finalize_listener_owner_differs')
-    if RESOLVED.exists() or RESOLVED.is_symlink():
-        path = setup.reconcile.protected(RESOLVED)
-        if path.read_bytes() != RESOLVED_TEXT.encode():
-            setup.fail('finalize_existing_resolver_override')
+    # Enumerate all listeners: the known resolver cannot mask another refusal.
+    for address, port in preflight.tcp_listeners():
+        if (address, port) == ('0.0.0.0', 5355):
+            raw = setup.run(['/usr/bin/ss', '--no-header', '--listening', '--tcp', '--numeric', '--processes']).decode()
+            matches = [line for line in raw.splitlines() if len(line.split()) > 3
+                       and line.split()[3] == '0.0.0.0:5355']
+            if len(matches) != 1 or '"systemd-resolve"' not in matches[0]:
+                setup.fail('finalize_listener_owner_differs')
+        else:
+            preflight.check_listener(address, port)
+    for path, text in ((RESOLVED, RESOLVED_TEXT), (setup.NETWORK_OVERRIDE, setup.NETWORK_TEXT)):
+        if path.exists() or path.is_symlink():
+            if setup.reconcile.protected(path).read_text() != text:
+                setup.fail('finalize_existing_resolver_override' if path == RESOLVED
+                           else 'finalize_existing_network_override')
 
 
 def apply(policy_path, folder, approved):
@@ -92,8 +104,10 @@ def apply(policy_path, folder, approved):
         previous = basis()
         before_change(policy, previous)
         setup.write_new(intent, setup.canonical(expected), 0o600)
-        if not RESOLVED.exists():
-            setup.write_new(RESOLVED, RESOLVED_TEXT.encode(), 0o644)
+        for path, text in ((RESOLVED, RESOLVED_TEXT), (setup.NETWORK_OVERRIDE, setup.NETWORK_TEXT)):
+            if not path.exists():
+                setup.write_new(path, text.encode(), 0o644)
+        setup.configure_ipv4()
         setup.run(['/usr/bin/systemctl', 'restart', 'systemd-resolved.service'], timeout=60)
         setup.run(['/usr/bin/getent', 'ahostsv4', 'compute.googleapis.com'])
         setup.run(['/usr/bin/getent', 'ahostsv4', 'metadata.google.internal'])
