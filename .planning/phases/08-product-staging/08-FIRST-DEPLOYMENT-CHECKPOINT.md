@@ -1,59 +1,48 @@
 # First staging deployment — current checkpoint
 
-Updated 21 October 2026. VM and app/modeling/dispatcher are running. Admission remains
-closed because connector verification failed. Human email-code login reached the
-Cloudflare 1033 error in Chrome; application login, scientific execution, live
-Assistant and answer exploration remain unverified. Stores and credentials preserved.
+Updated21October2026. VM and all three services remain running. Tunnel and Assistant
+amendments applied successfully. Chrome email login, private study creation and real
+Assistant authoring pass. Real execution exposed defects; staging is not complete.
 
-## Current state and next action
+Live product3aa4415118e7fb5e7436746f18d978a33eb83f84/platform3488a518cbae96b283d3ab88e5096215744f756d.
+Release131f3e8bfef7feb85d0c476baf9f45452efb9b93886060695ad92ecda8f04a64,
+config5f6a806bb00237454549f99d5e59193bc5004f4657d0f26df38d52b0f1af61ae;
+desiredgeneration1792605237148907/digestace16b1a1c2e3b4fde3506b926a219d0b57e66383eaef79a8536c5ad6da3d0eb.
+Assistant enablement amendment2eadb6d16c31efbfcf4c4edd12bdac0f9baa33101a6fe41734ec0aa9db0bf353
+completed all phases. Containmentb13ebab0-4244-4b09-aaa8-dfdef966d9f9,
+start98722d21-5dcb-4ba9-bff8-6536ec80eb34 and19 network probes passed. Stores/secrets retained.
 
-The approved container preparation b122a4bb succeeded. Fresh containment operation
-b37cb497-4684-452b-aa9b-03263ed05132 and start 2185e83e-b418-4c05-a398-5e390e3d7b77
-completed. Native owner rebind completed without initialization or migration.
-`/private/tmp/hyprn-staging-container-handoff/application-evidence/` holds recover
-and network-probe success: all 19 actual network tests passed, including database
-TLS, required proxy routes and forbidden metadata/public/private paths. Startup
-HTTP returns the expected unauthenticated 401. No scientific/provider request yet.
+Actual study ae232ccb-d48b-4e9d-928d-879d97d86d22 and Assistant provider session
+sesn_018B8bDt8pdWS8eUwuDmQjhR retained. Assistant authored brief/model/configs/analysis;
+nominal run5666c078-8c7a-4bf8-a155-7c1c036ee43f paused before upload because home absent;
+adverse0495c773-498e-4658-8f32-5ab40be7cb11 queued. Existing native process
+ e8ca1e78-da90-4467-bf8d-ad26d9004b41 has no scheduler job/remote workdir/output.
+Do not resubmit original requests. Run list/status also exposed SQLite BLOB cast on PG;
+Assistant history DB work blocks HTTP. Product corrections committedfb6ee97+3529f76.
 
-Activation partially installed: connector identity/token/units exist, timer inactive,
-original installer intent exists with no installed receipt. Connector restarts because
-it attempts DNS at blocked metadata address 169.254.169.254. A temporary collected
-read-only probe in the same restricted cgroup confirmed: loopback origin times out,
-local DNS connects, metadata HTTP remains blocked; root origin connects. Docker NAT
-returns from 172.29.81.2, which the cgroup currently denies.
+Prepared, not applied: /private/tmp/hyprn-staging-runtime-correction/REVIEW.md.
+Amendment0b528369d92a6c7ab4b6e13a1e3e7a682447d49e33ef4fbf61cfece93449a046.
+Product3529f76c13e8794d7a24a8b4a7d89a6f2168d7c3; platform unchanged.
+New releasefd809f9f61e0af811298b45d0f9ad867fc547e7e3552f29df8a624aceec2af5c,
+config59b8a0fd76bcf0cdf6c4fb4525daa2416ae8e930295bff877f9af8bbc1e5897f.
+App4776c06ec80bed1b08e3397556d95ccbae9a8635936e4878e5cc965b022c829e;
+modeling/worker/UI/network/secrets/Assistant definition unchanged. Exact native bundle
+built and freshly verified, new target-host containment required. Product checks
+139Assistant+25PostgreSQL+125history/API+18native-owner pass;16recovery guards pass.
+Full proof and initial failures linked by product06-OWNER-STARTUP-CHECKPOINT.md.
 
-Prepared correction: `/private/tmp/hyprn-staging-tunnel-network-repair/REVIEW.md`.
-Approval requested, NOT yet received at this checkpoint:
-afd1cb2bcdeece8be0b4c9425ef7d066691d9e97d43ae08323950dd7b8849f3d.
-It changes only connector DNS, the exact application return-address exception, and
-specific origin failure diagnostics. Repair archives original intent/source, verifies
-all preimages and identity, replaces three host config files and one installer source,
-then repeats real connector readiness/metadata denial before bounded admission.
-No app restart, credential/image/IAM/budget change. Do not blindly repeat old activate.
+Approval requested for publication/recovery/activation. Recovery verifies exact paused
+process/PID/request, creates only missing private home, interrupts existing handler once,
+waits for original requests to reconcile, then replaces release without reinitialization.
+Next after approval: images/files/stage/desired/recover/network-probe/activate, actual
+nominal/adverse results and validated joint exploration, then conditional ongoing access.
+No new resource/IAM/credential version or fixed cost. Original journals and authoring remain.
 
-Focused verification: `sh tests/platform/run.sh activation-install`: 9 passed
-(original new regressions: 2 failures/1 error); repair test_repair.py: 5 passed.
-Real corrected connector remains unverified until approved apply. Prior 61 readiness,
-23 hosted lifecycle, 32 bootstrap and live containment/service-network results remain
-valid for unchanged product/runtime. No scientific/provider execution was performed.
-
-Next: after approval, packet apply-approved.py stage then repair; verify Chrome login,
-real model execution, Assistant tools, joint exploration without reruns. Only then
-conditional ongoing access using corrected activation plan
-70629577dfe850840817ede0436a79c4a7fc2f6036c5a7e30a0ad5ca0acbadf8.
-Two-user acceptance, full reboot/recovery qualification and automatic branch deploys
-remain separate unfinished obligations. Do not describe staging as usable yet.
-
-Desired generation 1792597479844287; digest
-4caf592f9bbea8463ff14e8e8a5f7dbf02f3b1975e46868c883365fd0d5150ae.
-Release 708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459.
-App fe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886.
-Product source 78814803fc87806109f19ac4b558e120a4ee53dd remains unchanged.
-
-The replacement two-hour connection key was used; expiry 17:47:38 UTC 21 October.
-No further renewal authority. Existing database-correction transport remains valid.
-Qualification window ends 22 October 10:00 UTC. Infrastructure €170–220/month and
-shared Assistant €100 (11215 cents total, 501 prior usage) remain unchanged.
+Current operator key expires19:52:04UTC21October; proposal includes exactly one replacement
+2h key only after expiry. Qualification ends22October10:00UTC. InfrastructureEUR170–220/month;
+shared AssistantEUR100(11215US cents total including501carried+live usage), no per-study cap.
+Two-user human acceptance, reboot/recovery qualification and automatic staging-branch
+CI deployment remain unfinished. Bare domain redirect deferred; entryhttps://staging.hyprn.ai/ui/.
 
 ## Previous combined startup correction
 
