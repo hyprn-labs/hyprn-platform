@@ -85,7 +85,12 @@ def reviewed(bundle, review):
             raise ValueError('review_plan_pin')
         expected = {'plan.json', 'policy.json'} | {'platform/' + name for name in plan['sources']} | {
             'packages/' + row['filename'] for row in plan['packages']}
-        if (set(plan['sources']) != {'setup.py', 'reconcile.py', 'secrets.py', 'contract.py', 'host-packages.json', 'preflight.py'}
+        sources = {'setup.py', 'reconcile.py', 'secrets.py', 'contract.py', 'host-packages.json', 'preflight.py'}
+        if plan.get('schema') == 'hyprn-host-setup-repair/v1':
+            sources |= {'repair_setup.py', 'base-plan.json'}
+        elif plan.get('schema') != 'hyprn-host-setup-plan/v1':
+            raise ValueError('review_plan_schema')
+        if (set(plan['sources']) != sources
                 or any(PurePosixPath(m.name).is_absolute() or '..' in PurePosixPath(m.name).parts for m in members)):
             raise ValueError('review_source_inventory')
         if {m.name for m in members} != expected:
@@ -166,7 +171,9 @@ class Operator:
                 '--zone=' + p['zone'], '--tunnel-through-iap', '--ssh-key-file=' + str(self.root / 'operator-key'),
                 '--ssh-key-expire-after=30m', '--scp-flag=-oStrictHostKeyChecking=yes',
                 '--scp-flag=-oUserKnownHostsFile=' + str(self.root / 'known-hosts')], timeout=600)
-            arguments = ['sudo', '-n', '/usr/bin/python3', '-I', '-B', '-c', INSTALLER,
+            installer = (INSTALLER.replace('platform/setup.py', 'platform/repair_setup.py')
+                         if 'platform/repair_setup.py' in expected else INSTALLER)
+            arguments = ['sudo', '-n', '/usr/bin/python3', '-I', '-B', '-c', installer,
                          remote + '/bundle.tar.gz', review['bundle_sha256'], review['plan_sha256'], json.dumps(expected)]
             raw = self.call(self.ssh + ['--command=' + shlex.join(arguments)], timeout=960)
             receipt = json.loads(raw)

@@ -27,7 +27,8 @@ class SetupTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         rows = []
-        for name in ('containerd.io', 'docker-ce-cli', 'docker-ce', 'docker-compose-plugin', 'cloudflared'):
+        for name in ('containerd.io', 'docker-ce-cli', 'docker-ce', 'docker-compose-plugin', 'cloudflared',
+                     'libjansson4', 'libnftables1', 'nftables'):
             raw = name.encode()
             (self.root / (name + '.deb')).write_bytes(raw)
             rows.append(dict(name=name, version='1.0', architecture='amd64', filename=name + '.deb',
@@ -47,7 +48,7 @@ class SetupTests(unittest.TestCase):
         self.assertFalse(a['secrets_transferred'])
         self.assertEqual(a['admission'], 'closed')
         self.assertIn('preflight.py', a['sources'])
-        self.assertEqual(len(a['packages']), 5)
+        self.assertEqual(len(a['packages']), 8)
         self.assertEqual(a['plan_sha256'], setup.digest(setup.canonical(
             {k: v for k, v in a.items() if k != 'plan_sha256'})))
 
@@ -149,7 +150,9 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(run.call_count, 1)
 
     def test_dependency_probe_precedes_package_installation(self):
-        values = ['\t'.join(row[k] for k in ('name', 'version', 'architecture')).encode() for row in self.rows]
+        values = []
+        for row in self.rows:
+            values.extend(['\t'.join(row[k] for k in ('name', 'version', 'architecture')).encode(), b'\t'])
         with patch.object(setup, 'run', side_effect=values + [b'']) as run:
             paths = setup.package_probe(self.rows, self.root)
             self.assertEqual(run.call_args.args[0], ['/usr/bin/dpkg', '--dry-run', '--install', *paths])
@@ -160,9 +163,9 @@ class SetupTests(unittest.TestCase):
         with patch.object(setup.subprocess, 'run', return_value=result):
             with self.assertRaises(setup.reconcile.Refused) as caught:
                 setup.run(['/usr/bin/dpkg', '--dry-run', '--install', '/fixture.deb'],
-                          package_diagnostics=True)
+                          package_diagnostics='package_dry_run')
         diagnostic = caught.exception.diagnostic
-        self.assertEqual(diagnostic['stage'], 'package_dependency_check')
+        self.assertEqual(diagnostic['stage'], 'package_dry_run')
         self.assertEqual(diagnostic['exit_code'], 1)
         self.assertEqual(len(diagnostic['stdout']), 16384)
         self.assertIn('missing dependency', diagnostic['stderr'])
@@ -173,6 +176,34 @@ class SetupTests(unittest.TestCase):
             with self.assertRaises(setup.reconcile.Refused) as caught:
                 setup.run(['/usr/bin/command'])
         self.assertFalse(hasattr(caught.exception, 'diagnostic'))
+
+    def test_missing_configure_dependency_refuses_before_dry_run(self):
+        rows = [dict(name='engine', version='1', depends='nftables')]
+        with patch.object(setup, 'installed_package_version', return_value=None):
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'dependency_missing:nftables'):
+                setup.dependencies(rows)
+
+    def test_planned_dependency_does_not_satisfy_predependency(self):
+        rows = [dict(name='engine', version='1', pre_depends='helper'),
+                dict(name='helper', version='1')]
+        with patch.object(setup, 'installed_package_version', return_value=None):
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'dependency_missing:helper'):
+                setup.dependencies(rows)
+        rows[0] = dict(name='engine', version='1', depends='helper')
+        setup.dependencies(rows)
+
+    def test_unsupported_dependency_grammar_refuses_instead_of_guessing(self):
+        with self.assertRaisesRegex(setup.reconcile.Refused, 'dependency_syntax'):
+            setup.dependencies([dict(name='engine', version='1', depends='a | b')])
+
+    def test_versioned_dependency_uses_debian_version_comparison(self):
+        result = subprocess.CompletedProcess(['dpkg'], 1, b'', b'')
+        with patch.object(setup, 'installed_package_version', return_value='1'), \
+                patch.object(setup.subprocess, 'run', return_value=result) as command:
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'dependency_version:helper'):
+                setup.dependencies([dict(name='engine', version='1', depends='helper (>= 2)')])
+        self.assertEqual(command.call_args.args[0],
+                         ['/usr/bin/dpkg', '--compare-versions', '1', '>=', '2'])
 
     def test_apply_refuses_non_linux_without_any_cloud_or_command(self):
         with patch.object(setup.sys, 'platform', 'darwin'), patch.object(setup, 'run') as run, \
@@ -238,6 +269,20 @@ class RemoteSetupTests(unittest.TestCase):
         self.assertEqual(commands[-1][:3], ['compute', 'instances', 'stop'])
         self.assertFalse(op.observe.call_args.kwargs['startup'])
 
+    def test_reviewed_repair_uses_repair_entrypoint_and_still_stops(self):
+        from unittest.mock import Mock
+        op = self.operator()
+        review = {'plan_sha256': 'a'*64, 'bundle_sha256': 'b'*64}
+        receipt = {'plan_sha256': 'a'*64, 'admission': 'closed', 'product_started': False}
+        op.observe = Mock(side_effect=[{'status':'TERMINATED'}, {'status':'RUNNING'},
+                                      {'status':'RUNNING'}, {'status':'TERMINATED'}])
+        op.call = Mock(side_effect=[b'', b'', b'', b'', json.dumps(receipt).encode(), b''])
+        op.apply(self.root/'bundle', review, ['policy.json', 'platform/repair_setup.py'])
+        execution = op.call.call_args_list[4].args[0][-1]
+        self.assertIn('platform/repair_setup.py', execution)
+        self.assertNotIn('platform/setup.py', execution)
+        self.assertEqual(op.call.call_args_list[-1].args[0][:3], ['compute','instances','stop'])
+
     def test_uncertain_start_is_reconciled_by_observation_and_stop_never_restarted(self):
         from unittest.mock import Mock
         op = self.operator()
@@ -276,6 +321,78 @@ class RemoteSetupTests(unittest.TestCase):
             str(path), 'a' * 64, 'b' * 64, '[]'], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('AssertionError', result.stderr)
+
+
+class RepairSetupTests(unittest.TestCase):
+    def setUp(self):
+        import repair_setup
+        self.repair = repair_setup
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def test_repair_requires_the_exact_original_plan(self):
+        with patch.object(setup.reconcile.contract, 'read_json', return_value={
+                'plan_sha256': '0' * 64, 'policy': policy()}):
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'original_plan_binding'):
+                self.repair.plan(policy(), self.root)
+
+    def test_repair_rejects_a_different_original_intent_before_cloud_or_disk_actions(self):
+        with patch.object(setup.reconcile.contract, 'read_json', side_effect=[{'wrong':True}, {'expected':True}]), \
+                patch.object(setup, 'cloud_device') as cloud:
+            with self.assertRaisesRegex(setup.reconcile.Refused, 'original_intent_differs'):
+                self.repair.partial_state(policy(), {})
+        cloud.assert_not_called()
+
+    def execute(self, *, interrupted=False, installation_fails=False):
+        from contextlib import ExitStack
+        rows = [dict(name=name, filename=name+'.deb') for name in
+                ('libjansson4', 'libnftables1', 'nftables', 'docker-ce')]
+        expected = dict(plan_sha256='a'*64, sources={}, packages=rows)
+        state = self.root/'state'; state.mkdir(mode=0o700); (state/'lock').touch()
+        if interrupted: (state/'repair-intent.json').write_text('{}')
+        commands = []
+        def run(command, **kwargs):
+            commands.append(command)
+            if installation_fails and command[0] == '/usr/bin/dpkg':
+                raise setup.reconcile.Refused('fixture_installation_failure')
+            return b''
+        with ExitStack() as stack:
+            for target, attribute, value in (
+                (self.repair.sys, 'platform', 'linux'), (self.repair.os, 'geteuid', lambda: 0),
+                (setup.platform, 'machine', lambda: 'x86_64'), (setup, 'STATE', state),
+                (self.repair, 'BLOCKER', self.root/'policy-rc.d'),
+                (setup.reconcile, 'protected', lambda p, **kw: Path(p)),
+                (setup.reconcile.contract, 'read_json', lambda p: policy()),
+                (self.repair, 'plan', lambda *a: expected), (self.repair, 'partial_state', lambda *a: None),
+                (setup, 'packages', lambda *a: rows), (setup, 'package_probe', lambda *a: None),
+                (setup, 'run', run), (setup, 'verify', lambda *a: dict(plan_sha256='a'*64))):
+                stack.enter_context(patch.object(target, attribute, value))
+            result = self.repair.apply(self.root/'policy.json', self.root, 'a'*64)
+        return commands, result
+
+    def test_repair_only_installs_missing_packages_and_never_formats(self):
+        commands, result = self.execute()
+        self.assertEqual([c for c in commands if c[0]=='/usr/bin/dpkg'], [
+            ['/usr/bin/dpkg', '--force-confold', '--install',
+             *[str(self.root/(name+'.deb')) for name in ('libjansson4','libnftables1','nftables')]],
+            ['/usr/bin/dpkg', '--configure', 'docker-ce']])
+        self.assertFalse(any('mkfs' in c[0] or 'wipefs' in c[0] for c in commands))
+        self.assertIn('recovered_from_plan_sha256', result)
+        self.assertFalse((self.root/'policy-rc.d').exists())
+        self.assertTrue((self.root/'state/completed.json').exists())
+
+    def test_interrupted_repair_refuses_and_never_replays_installation(self):
+        with self.assertRaisesRegex(setup.reconcile.Refused, 'interrupted_requires_reconciliation'):
+            self.execute(interrupted=True)
+        self.assertFalse((self.root/'state/completed.json').exists())
+
+    def test_package_failure_retains_intent_and_removes_temporary_service_blocker(self):
+        with self.assertRaisesRegex(setup.reconcile.Refused, 'fixture_installation_failure'):
+            self.execute(installation_fails=True)
+        self.assertTrue((self.root/'state/repair-intent.json').exists())
+        self.assertFalse((self.root/'state/completed.json').exists())
+        self.assertFalse((self.root/'policy-rc.d').exists())
 
 
 if __name__ == '__main__':

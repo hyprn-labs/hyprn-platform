@@ -73,7 +73,8 @@ def packages(folder):
             or manifest['architecture'] != 'amd64'):
         fail('package_manifest')
     rows = manifest['packages']
-    expected = {'containerd.io', 'docker-ce-cli', 'docker-ce', 'docker-compose-plugin', 'cloudflared'}
+    expected = {'containerd.io', 'docker-ce-cli', 'docker-ce', 'docker-compose-plugin',
+                'cloudflared', 'libjansson4', 'libnftables1', 'nftables'}
     if len(rows) != len(expected) or {row['name'] for row in rows} != expected:
         fail('package_set')
     for row in rows:
@@ -179,14 +180,14 @@ def plan(policy, folder):
     return dict(value, plan_sha256=digest(canonical(value)))
 
 
-def run(args, *, input=None, allowed=(0,), timeout=60, package_diagnostics=False):
+def run(args, *, input=None, allowed=(0,), timeout=60, package_diagnostics=None):
     result = subprocess.run(args, input=input, env=ENV, capture_output=True, timeout=timeout)
     if result.returncode not in allowed:
         error = reconcile.Refused('host_command_refused:' + Path(args[0]).name)
         if package_diagnostics:
             # Only the package dry-run opts in; never expose arbitrary command data.
             error.diagnostic = {
-                'stage': 'package_dependency_check', 'exit_code': result.returncode,
+                'stage': package_diagnostics, 'exit_code': result.returncode,
                 'stdout': result.stdout[-16384:].decode('utf-8', errors='replace'),
                 'stderr': result.stderr[-16384:].decode('utf-8', errors='replace')}
         raise error
@@ -259,6 +260,37 @@ def write_new(path, raw, mode):
     path.chmod(mode)
 
 
+def installed_package_version(name):
+    result = subprocess.run(['/usr/bin/dpkg-query', '--show',
+        '--showformat=${Status}\t${Version}', name], env=ENV, capture_output=True, timeout=20)
+    fields = result.stdout.decode().split('\t')
+    if result.returncode == 0 and len(fields) == 2 and fields[0] == 'install ok installed':
+        return fields[1]
+    return None
+
+
+def dependencies(rows):
+    """dpkg's install dry-run does not prove configure-time dependencies exist."""
+    planned = {row['name']: row['version'] for row in rows}
+    for row in rows:
+        for field in ('depends', 'pre_depends'):
+            for term in (row.get(field) or '').split(','):
+                if not term.strip():
+                    continue
+                match = re.fullmatch(r'\s*([a-z0-9][a-z0-9+.-]*)(?: \((>=|<=|=|>>|<<) ([^ ()]+)\))?\s*', term)
+                if not match:
+                    fail('setup_dependency_syntax_requires_review')
+                name, operator, minimum = match.groups()
+                version = (planned.get(name) if field == 'depends' else None) or installed_package_version(name)
+                if version is None:
+                    fail('setup_dependency_missing:' + name)
+                if operator:
+                    result = subprocess.run(['/usr/bin/dpkg', '--compare-versions', version,
+                        operator, minimum], env=ENV, capture_output=True, timeout=20)
+                    if result.returncode != 0:
+                        fail('setup_dependency_version:' + name)
+
+
 def package_probe(rows, folder):
     paths = []
     for row in rows:
@@ -266,8 +298,13 @@ def package_probe(rows, folder):
         observed = run(['/usr/bin/dpkg-deb', '--show', '--showformat=${Package}\t${Version}\t${Architecture}', path])
         if observed.decode() != '\t'.join(row[key] for key in ('name', 'version', 'architecture')):
             fail('setup_debian_package_identity')
+        declarations = run(['/usr/bin/dpkg-deb', '--show',
+            '--showformat=${Depends}\t${Pre-Depends}', path]).decode()
+        if declarations != (row.get('depends') or '') + '\t' + (row.get('pre_depends') or ''):
+            fail('setup_package_dependencies_differ')
         paths.append(path)
-    run(['/usr/bin/dpkg', '--dry-run', '--install', *paths], timeout=120, package_diagnostics=True)
+    dependencies(rows)
+    run(['/usr/bin/dpkg', '--dry-run', '--install', *paths], timeout=120, package_diagnostics="package_dry_run")
     return paths
 
 
@@ -407,10 +444,12 @@ def apply(policy_path, folder, approved):
         blocker = Path('/usr/sbin/policy-rc.d')
         write_new(blocker, b'#!/bin/sh\nexit 101\n', 0o755)
         try:
-            run(['/usr/bin/dpkg', '--force-confold', '--install', *paths], timeout=300)
+            run(['/usr/bin/dpkg', '--force-confold', '--install', *paths], timeout=300,
+                package_diagnostics='package_installation')
         finally:
             if blocker.read_bytes() == b'#!/bin/sh\nexit 101\n':
                 blocker.unlink()
+        run(['/usr/bin/systemctl', 'disable', 'nftables.service'])
         run(['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
         run(['/usr/bin/systemd-tmpfiles', '--create', '/etc/tmpfiles.d/hyprn.conf'])
         run(['/usr/bin/systemctl', 'daemon-reload'])

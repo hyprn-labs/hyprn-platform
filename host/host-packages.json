@@ -21,7 +21,8 @@
         "url": "https://raw.githubusercontent.com/containerd/containerd/v2.3.6/LICENSE",
         "sha256": "4bbe3b885e8cd1907ab4cf9a41e862e74e24b5422297a4f2fe524e6a30ada2b4",
         "apache_2": true
-      }
+      },
+      "pre_depends": null
     },
     {
       "name": "docker-ce-cli",
@@ -40,7 +41,8 @@
         "url": "https://raw.githubusercontent.com/docker/cli/v29.8.2/LICENSE",
         "sha256": "2d81ea060825006fc8f3fe28aa5dc0ffeb80faf325b612c955229157b8c10dc0",
         "apache_2": true
-      }
+      },
+      "pre_depends": null
     },
     {
       "name": "docker-ce",
@@ -59,7 +61,8 @@
         "url": "https://raw.githubusercontent.com/moby/moby/master/LICENSE",
         "sha256": "7c87873291f289713ac5df48b1f2010eb6963752bbd6b530416ab99fc37914a8",
         "apache_2": true
-      }
+      },
+      "pre_depends": "init-system-helpers (>= 1.54~)"
     },
     {
       "name": "docker-compose-plugin",
@@ -78,7 +81,8 @@
         "url": "https://raw.githubusercontent.com/docker/compose/v5.6.0/LICENSE",
         "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
         "apache_2": true
-      }
+      },
+      "pre_depends": null
     },
     {
       "name": "cloudflared",
@@ -97,7 +101,68 @@
         "url": "https://raw.githubusercontent.com/cloudflare/cloudflared/2026.10.2/LICENSE",
         "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
         "apache_2": true
-      }
+      },
+      "pre_depends": null
+    },
+    {
+      "name": "libjansson4",
+      "version": "2.14-2",
+      "architecture": "amd64",
+      "filename": "libjansson4_2.14-2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/j/jansson/libjansson4_2.14-2_amd64.deb",
+      "size": 40788,
+      "sha256": "3fc9742f9f1a37bcb9931df6074b4d1483419ef832ad5349f47323e75fc27864",
+      "license": "MIT",
+      "depends": "libc6 (>= 2.14)",
+      "pre_depends": null,
+      "installed_files": {
+        "/usr/lib/x86_64-linux-gnu/libjansson.so.4.14.0": "122182d4815ee2941f7eeaf64826be4195f0eadc0c30f17e0db7a71d33c14dcd"
+      },
+      "license_source": {
+        "archive_path": "usr/share/doc/libjansson4/copyright",
+        "sha256": "29347e2528ab31d20e8582b09aa89cd878d306c59a273541141c9aede1903cb8"
+      },
+      "scope": "host-operating-system"
+    },
+    {
+      "name": "libnftables1",
+      "version": "1.0.6-2+deb12u2",
+      "architecture": "amd64",
+      "filename": "libnftables1_1.0.6-2+deb12u2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nftables/libnftables1_1.0.6-2+deb12u2_amd64.deb",
+      "size": 299116,
+      "sha256": "3a8223f9bfba99d97bf25296ac83de307ab036e1df63e5965f88809266851947",
+      "license": "GPL-2.0-only AND GPL-2.0-or-later; documentation CC-BY-SA-4.0",
+      "depends": "libc6 (>= 2.34), libgmp10 (>= 2:6.2.1+dfsg1), libjansson4 (>= 2.14), libmnl0 (>= 1.0.3-4~), libnftnl11 (>= 1.2.2), libxtables12 (>= 1.6.0+snapshot20161117)",
+      "pre_depends": null,
+      "installed_files": {
+        "/usr/lib/x86_64-linux-gnu/libnftables.so.1.1.0": "b33850300e26ae9d388eea121e933ae1c35d4284a5c86b7f1eae5b2edbb4e896"
+      },
+      "license_source": {
+        "archive_path": "usr/share/doc/libnftables1/copyright",
+        "sha256": "b5498c0fcbc1365229d6b0be883e2827c3b0444577fb83ff8cae35a7808610a4"
+      },
+      "scope": "host-operating-system"
+    },
+    {
+      "name": "nftables",
+      "version": "1.0.6-2+deb12u2",
+      "architecture": "amd64",
+      "filename": "nftables_1.0.6-2+deb12u2_amd64.deb",
+      "url": "https://deb.debian.org/debian/pool/main/n/nftables/nftables_1.0.6-2+deb12u2_amd64.deb",
+      "size": 70292,
+      "sha256": "966ff20ce58c17163a771c02ddbca264291408f94c512bd85dd18da0ebdbe88c",
+      "license": "GPL-2.0-only AND GPL-2.0-or-later; documentation CC-BY-SA-4.0",
+      "depends": "libnftables1 (= 1.0.6-2+deb12u2), libc6 (>= 2.34), libedit2 (>= 3.1-20130611-0)",
+      "pre_depends": null,
+      "installed_files": {
+        "/usr/sbin/nft": "ad7cda24982c62bcd449fea140d0640da37ff4cd1226e7f4699cba05d93d1f05"
+      },
+      "license_source": {
+        "archive_path": "usr/share/doc/nftables/copyright",
+        "sha256": "b5498c0fcbc1365229d6b0be883e2827c3b0444577fb83ff8cae35a7808610a4"
+      },
+      "scope": "host-operating-system"
     }
   ]
 }

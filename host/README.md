@@ -13,3 +13,12 @@ operator reconciliation. [Package provenance](provenance.md) records the pins.
 The preparation receipt leaves admission closed. Product artifacts, credentials,
 database roles, actual service routes, execution attestation and the connector
 are applied and qualified through the deployment lifecycle, not this command.
+
+
+`repair_setup.py` reconciles the reviewed interrupted package stage against the
+original intent, exact mounted filesystem, generated files and package states.
+It installs only the three explicitly pinned missing OS dependencies and configures
+the existing engine; it has no format action. Its source bundle includes the
+original `base-plan.json`, and a distinct repair plan hash is required. Uncertain
+or interrupted repairs are refused until reconciled. The same IAP controller
+validates either a fresh-setup or repair bundle and stops the VM afterwards.

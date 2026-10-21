@@ -27,3 +27,26 @@ updates require a new reviewed package pin and host operation. Compose is the
 current CLI plugin invoked as `docker compose`; its major 5 release is accepted
 alongside major 2, always with an exact version and executable hash. Legacy Python
 Compose remains unsupported.
+
+
+## Explicit Debian host dependencies
+
+The host package manifest also pins `libjansson4` 2.14-2 (MIT/Expat),
+`libnftables1` and `nftables` 1.0.6-2+deb12u2 (GPL-2/GPL-2+, with
+CC-BY-SA-4.0 documentation). These are unmodified operating-system packages,
+not linked into or redistributed as the HYPRN application. Their Debian copyright
+files are retained by installation and hashed in the manifest. The manifest's
+per-package `scope` distinguishes these host dependencies from product libraries.
+
+Archives come from the official Debian Bookworm repository. The exact Packages.xz
+hash is verified against InRelease, authenticated by the Bookworm archive signing
+subkey `4CB50190207B4758A3F73A796ED0E7B82643E131` in the reviewed Debian keyring.
+The older keyring verifies that Bookworm signature but cannot verify the second,
+newer archive signature; the accepted authentication is explicitly the valid
+Bookworm signature, not a claim that every signature verified.
+
+All declared dependencies and pre-dependencies are checked explicitly using
+installed package states and Debian version comparison. Unsupported dependency
+syntax is refused. A package installation dry-run alone does not establish that
+configure-time dependencies are met. Separate bounded diagnostics distinguish
+that dry-run from actual package installation and configuration failures.
