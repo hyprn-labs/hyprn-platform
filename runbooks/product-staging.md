@@ -1,8 +1,10 @@
 # Product staging
 
-Status: offline infrastructure foundation. No cloud resource or Access policy has
-been created by this work. The VM is deliberately stopped and has no product
-startup script. This is not an application deployment or execution attestation.
+Status: approved staging infrastructure and Access resources are provisioned.
+The VM is stopped and has no product startup script. The Assistant resource and
+provider secret exist; remaining credentials and host setup are not installed.
+This is not a running application or execution attestation. Operational evidence
+and remaining obligations are recorded in the staging phase checkpoints.
 
 ## Resource boundary
 
@@ -360,3 +362,38 @@ application store identity source `72d533e`, whose contracts passed 21 tests in
 was repeated. Product consumer `44b87a0` pins the exact updated contract files.
 Installed Linux execution, host socket permissions, containment attestation and
 release replacement remain required before application activation.
+
+## Host inspection and recovery authority — 2026-10-21
+
+The owner approved and applied the four-resource recovery IAM plan: database
+backup create/read authority scoped to this installation, and exact VM/data-disk
+metadata reads. Exact role/binding readback matched. No backup was created.
+The reviewed plan SHA256 is
+`c3101b526c57211277acb6daccbe4f91f78e33e7472eed22a14b4b336bf07c37`.
+
+Two separately approved temporary start/inspect/stop operations followed. The
+first reached RUNNING before guest SSH was ready and stopped cleanly after IAP
+refused. The revised operation captured boot diagnostics and retried only the
+read-only inventory. Operator OS Login over IAP succeeded on its second attempt;
+the same VM was stopped and TERMINATED was confirmed afterwards. No cloud
+firewall change was needed. Ephemeral operator SSH keys expire after 15 minutes.
+
+Actual host inventory: Debian 12 AMD64, systemd, kernel 6.1.0-53-cloud-amd64, no swap;
+Docker/connector and execution account are absent. The 100 GB data disk has no
+filesystem or mount; the 30 GB boot disk contains the OS. iptables is installed
+(version 1.8.9-2), though absent from the unprivileged login PATH. No packages,
+application process, secrets or disk formatting were introduced by inspection.
+Inventory SHA256:
+`552b44970d1e3718b82f66e0babf6fae1f09ab18df2bbc26f017b8da8552dc48`.
+
+Private review/evidence root:
+`/private/tmp/hyprn-staging-inventory-3k0g1h31`, in recovery-authority,
+host-inspection and host-inspection-ready. Exact approved inspection hashes:
+`79c1e4bdb24838ff97618d5b70b0c4651b76315c40b67f923594055d38e6aa59` and
+`d183a4ab1756448d9b9e4c10d86a6a695ac5b8e2035a23a12213d5938ea3a08f`.
+
+Next: prepare pinned package acquisition and declarative host setup for approval;
+then qualify actual AMD64 execution, update/recovery and external Access sign-in
+before admission. The local ARM rehearsal of the released lifecycle wrapper
+refused the AMD64 worker's architecture-warning-prefixed output; it does not
+establish execution qualification for the rebuilt native bundle.
