@@ -594,3 +594,40 @@ A full reboot persistence test remains separate; application/execution/Assistant
 are not yet qualified in this cloud installation. Next batch prepares private
 service routing, least-privilege database credentials and closed app installation.
 No new deployment or secret authority is inferred from host completion.
+
+## Private service routing preparation — 2026-10-21
+
+Platform commits `52a271d` and `26f5702` bind fixed private bridges, a loopback
+origin and a restricted host CONNECT proxy. Product commit `fe75d9a` supplies an
+explicit private proxy to signing-key retrieval while preserving certificate
+verification and ignoring ambient TLS/proxy settings. Only the app receives
+provider routing; dispatcher SQL/modeling paths remain separate. New renderer
+bytes require a new release/configuration pin; old frozen bundles are unchanged.
+
+Committed checks: contracts 24 passed (5.130 s); service-network 5 passed
+(0.037 s); service-network-live 1 passed (2.747 s); product hosted-assertions
+87 passed (0.92 s). The real Envoy 1.40.0 executable accepted the generated
+configuration. In a disposable networkless local container, verified TLS passed
+through CONNECT; five unapproved authorities/ports (including a forged Host
+header) and ordinary HTTP were refused. This proves proxy behavior, not Linux
+packet enforcement or cloud connectivity. Local AMD64 emulation initially
+refused to start without writable temporary storage (exit 133); a bounded tmpfs
+resolved that fixture issue. No staging package or network change was made.
+
+Exact dependency/source/licence hashes are in `host/egress-proxy.json`. Envoy's
+official release digest matches independently hashed bytes. Debian Squid was
+rejected due to unresolved published security issues; it was not installed.
+Logs: `/private/tmp/hyprn-routing-contract-committed.log`,
+`hyprn-access-proxy-committed.log`, `hyprn-service-network-unit.log`, and
+`hyprn-service-network-live.log` in the same scratch root. Test containers and
+per-test certificates were removed. The downloaded binary remains outside Git.
+
+Next, owned by the parent integrator: finish a reviewed host installer for these
+rendered rules and proxy, including Docker restart ordering, exact firewall
+readback, bridge ownership/Compose reuse and policy-bound preflight listener
+checks. The preview has no apply operation; its referenced network systemd unit
+is intentionally not claimed installed or implemented. Test permitted/private SQL
+and HTTPS routes plus denied metadata, sibling and arbitrary Internet access on
+the actual host before opening admission. Then finish SQL role/secret provisioning,
+rebuild the pinned app payload, closed startup and live engineering/Assistant/
+recovery qualification. Automatic staging-branch deployment remains open.

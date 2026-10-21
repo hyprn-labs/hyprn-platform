@@ -4,6 +4,13 @@ Current: approved combined correction succeeded. Host is prepared, VM RUNNING,
 application off, admission closed. Matching exact-plan receipt is recorded in
 `runbooks/product-staging.md` under “Closed host prepared”. Host setup is complete;
 product installation and live cloud qualification remain open.
+
+Private-route and proxy preparation is committed (`52a271d`, `26f5702`; product
+`fe75d9a`) with focused checks and a real isolated TLS/CONNECT test passing. See
+“Private service routing preparation” in the runbook for exact evidence and gaps.
+Next: implement/review the host network installer and verify actual packet paths,
+then SQL roles/secrets and closed app startup. The network preview is not an applied
+policy, and this batch makes no new cloud changes.
 Earlier sections retain historical evidence, not current operating state.
 
 2026-10-21. Source commit `ef774567f8cc5b9e503763bbef5f572acb948c66`.
