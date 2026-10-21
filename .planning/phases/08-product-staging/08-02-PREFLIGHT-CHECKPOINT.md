@@ -1,6 +1,6 @@
 # 08-02 host prerequisite preflight checkpoint
 
-Status: source implementation prepared; focused and parent acceptance pending.
+Status: implementation committed; focused acceptance passed; final parent rerun pending.
 Owned files: `host/preflight.py`, `tests/platform/test_preflight.py`, this checkpoint.
 Parent owns test runner registration, host qualification and aggregate delivery;
 bootstrap executor owns the call before installer, registry and secret effects.
@@ -84,3 +84,9 @@ correction requires boolean `IPv4Forwarding: true` alongside the other daemon
 capabilities and adds the false case to the existing failure matrix. This source
 change invalidates only preflight evidence; the parent reruns that group on the
 corrective commit. No host sysctl or Docker setting was changed.
+
+
+Correction commit: `821be76`. Focused discovery on that correction passed
+**18 tests, 0 failures, 0 skips**, 0.026 s. Parent owns the final registered
+`preflight` rerun; this checkpoint-only status update changes no implementation
+or behavioral input. Implementation commits are `586b103` and `821be76`.
