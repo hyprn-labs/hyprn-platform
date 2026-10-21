@@ -390,6 +390,7 @@ def render(release, runtime):
             environment.update(proxy_environment())
             environment.update(assistant_environment(runtime))
             environment.update({
+                "HYPRN_MVP_AGENT_ENABLED": "true",
                 "HYPRN_MVP_UI_ROOT": "/app/ui",
                 "HYPRN_MVP_EXTERNAL_ORIGIN": runtime["external_origin"],
                 "HYPRN_MVP_DATABASE_AUTH_ROLE": runtime["database"]["authentication_role"],
@@ -492,6 +493,9 @@ def check_render(value, runtime, release):
                                "execution": value["execution"]}.items():
         actual = {key: setting for key, setting in service.get("environment", {}).items()
                   if key.startswith("HYPRN_MVP_ASSISTANT_")}
+        enabled = service.get("environment", {}).get("HYPRN_MVP_AGENT_ENABLED")
+        if enabled != ("true" if component == "app" else None):
+            raise Invalid("render_policy")
         if actual != (assistant_environment(runtime) if component == "app" else {}):
             raise Invalid("render_policy")
     for component, uid in (("app", 10002), ("dispatcher", 10002), ("modeling", 10001)):

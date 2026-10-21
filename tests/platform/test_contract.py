@@ -44,6 +44,13 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(result.stdout, "")
         self.assertEqual(json.loads(result.stderr)["error"], code)
 
+    def test_cloud_assistant_tools_are_enabled_only_in_application(self):
+        preview = self.success(self.command())["preview"]
+        services = preview["compose"]["services"]
+        self.assertEqual(services["app"]["environment"].get("HYPRN_MVP_AGENT_ENABLED"), "true")
+        for name in ("modeling", "dispatcher"):
+            self.assertNotIn("HYPRN_MVP_AGENT_ENABLED", services[name]["environment"])
+
     def test_valid_preview_is_deterministic_and_separates_secret_authority(self):
         first = self.success(self.command())
         self.assertEqual(first, self.success(self.command()))
