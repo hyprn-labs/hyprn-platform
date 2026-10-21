@@ -1,10 +1,50 @@
 # First staging deployment — current checkpoint
 
-Updated2026-10-21. First usable staging remains pending. VM running; browser and
-scientific admission closed; no product service running. Local web Assistant stopped
-as explicitly approved; authoring records/native processes preserved.
+Updated2026-10-21. VM running; browser/scientific admission closed. Modeling runs;
+application and dispatcher exited during startup. First usable staging is not achieved.
+Local Assistant remains fenced; authoring stores and runtime credentials preserved.
 
-## Current state after approved stopped-container recovery (2026-10-21)
+## Current state after combined startup correction
+
+Approvalc369a6abaff76b968cb2dbfd914e6200c6e8c35a3e62dca0c8b940e0753d9655 applied.
+Files/stage/desired/recover succeeded; desired generation1792595722827820.
+Release4afd5b9341dadd97fec05e98fc4d0615f9c9b7eb20e874ce98a3426d6223b68f installed.
+Containment09976d06-4c96-4b80-bfc4-7407db232d55 passed. Start456eaac1-8d70-4feb-a24b-f720f1bbb299
+returned success, but the subsequent network probe caught exited app/dispatcher
+containers. No tunnel/activation or human/provider conversation occurred. Modeling
+is healthy. Neither initialization nor migration nor secret issuance was repeated.
+
+Actual redacted diagnostics show stale release/config pins in Assistant continuity
+and a dispatcher NoneType error reading an observation outside PostgreSQL actor
+scope. Native process is absent and executor lock free. Evidence:
+/private/tmp/hyprn-staging-service-start-recovery/application-evidence/{recover-result,network-diagnosis,container-differences,current-logs}.json;
+/private/tmp/hyprn-staging-owner-startup-recovery/application-evidence/{prior-state,native-quiescence}.json.
+
+Prepared product78814803fc87806109f19ac4b558e120a4ee53dd uses its own successfully
+published, expiring readiness; no RLS/permission change. Platformcf1e1f8 rejects
+continuity for another release before publishing controls. Final runtime-observation61,
+hosted-lifecycle23 (real isolated PostgreSQL/TLS), bootstrap32 and recovery6 pass.
+Fresh application image/native extraction/imports and actual UI8 files verified.
+UI, modeling/worker images, provider definition and shared budget unchanged.
+
+Prepared not applied: /private/tmp/hyprn-staging-owner-startup-recovery/REVIEW.md.
+Amendmentbe5ce61f60be56259ac28c4f6d261e01c187cf6dc6c62c53f265c7b0c05e4c84.
+Release708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459;
+applicationfe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886;
+20 files321991721bytes,33 reused. Preserved-store recovery stops the exact old owner,
+installs/rebinds/re-attests, verifies real HTTP startup, then resumes network/activation.
+No new infrastructure, IAM, schema, credentials, provider resources or fixed charges.
+One replacement two-hour OS Login key remains authorized and unused; present key
+expires2026-10-21T15:47:31Z. Qualification access still ends2026-10-22T10:00:00Z.
+
+Next: obtain this exact amendment approval, then apply-approved.py phases images,
+files, stage, desired, recover, network-probe, activate. Reconcile uncertain outcomes;
+never erase intents or repeat initialization. Original four real journeys remain
+pending, followed separately by two-user acceptance, reboot/recovery and continuous
+deployment. Preserve all unrelated edits. Existing local build volumes are identified
+in the build records; no build container remains running. Earlier evidence follows.
+
+## Historical state after stopped-container recovery (superseded)
 
 Supersedes the pending d33b5d8c approval below. That approved helper applied:
 qualification bb5f4d8b-4a7c-4311-a931-3ed77921f68b completed successfully with all nine
