@@ -155,18 +155,38 @@ def table_rules(raw):
 
 def normalize(parts):
     parts = list(parts)
-    # iptables-save emits an implicit TCP match and canonical state ordering.
-    while ['-m', 'tcp'] == parts[:2]:
-        parts = parts[2:]
-    parts = [v for i, v in enumerate(parts)
-             if not (v == '-m' and i + 1 < len(parts) and parts[i + 1] == 'tcp')
-             and not (v == 'tcp' and i and parts[i - 1] == '-m')]
-    if parts[-2:] == ['--reject-with', 'icmp-port-unreachable']:
-        parts = parts[:-2]
-    for i, value in enumerate(parts):
+    # Kernel output reorders base predicates and spells out protocol matches.
+    # Canonicalize those equivalent spellings only; keep rule and extension order.
+    if '!' in parts:
+        return parts
+    bases, rest = {}, []
+    keys = ('-s', '-d', '-i', '-o', '-p')
+    index = 0
+    while index < len(parts):
+        key = parts[index]
+        if key in keys:
+            if key in bases or index + 1 == len(parts):
+                return parts
+            bases[key] = parts[index + 1]
+            index += 2
+        else:
+            rest.append(key)
+            index += 1
+    protocol = bases.get('-p')
+    if protocol in ('tcp', 'udp'):
+        matches = [i for i in range(len(rest) - 1)
+                   if rest[i:i + 2] == ['-m', protocol]]
+        if len(matches) > 1:
+            return parts
+        if matches:
+            index = matches[0]
+            rest = rest[:index] + rest[index + 2:]
+    if rest[-2:] == ['--reject-with', 'icmp-port-unreachable']:
+        rest = rest[:-2]
+    for index, value in enumerate(rest[:-1]):
         if value == '--ctstate':
-            parts[i + 1] = ','.join(sorted(parts[i + 1].split(',')))
-    return parts
+            rest[index + 1] = ','.join(sorted(rest[index + 1].split(',')))
+    return [value for key in keys if key in bases for value in (key, bases[key])] + rest
 
 
 def verify_rules(policy):

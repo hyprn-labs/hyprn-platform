@@ -94,6 +94,25 @@ class ServiceInstallTests(unittest.TestCase):
         self.assertEqual(installer.normalize(['-j', 'REJECT', '--reject-with', 'icmp-port-unreachable']), ['-j', 'REJECT'])
         self.assertNotEqual(installer.normalize(['-j', 'REJECT', '--reject-with', 'tcp-reset']), ['-j', 'REJECT'])
 
+    def test_kernel_predicate_order_and_udp_match_are_equivalent(self):
+        intended = ['-i', 'br-hyprn-appli', '-s', '172.29.81.2/32', '-d',
+                    '172.29.81.1/32', '-p', 'tcp', '--dport', '3128', '-j', 'ACCEPT']
+        saved = ['-s', '172.29.81.2/32', '-d', '172.29.81.1/32', '-i',
+                 'br-hyprn-appli', '-p', 'tcp', '-m', 'tcp', '--dport', '3128',
+                 '-j', 'ACCEPT']
+        self.assertEqual(installer.normalize(intended), installer.normalize(saved))
+        udp = ['-d', '127.0.0.53/32', '-p', 'udp', '--dport', '53', '-j', 'RETURN']
+        saved_udp = udp[:4] + ['-m', 'udp'] + udp[4:]
+        self.assertEqual(installer.normalize(udp), installer.normalize(saved_udp))
+        for changed in (saved + ['-s', '172.29.81.2/32'],
+                        saved[:1] + ['!'] + saved[1:],
+                        [value.replace('3128', '443') for value in saved],
+                        [value.replace('ACCEPT', 'RETURN') for value in saved],
+                        udp[:4] + ['-m', 'tcp'] + udp[4:]):
+            self.assertNotEqual(installer.normalize(changed), installer.normalize(intended))
+        self.assertNotEqual(installer.normalize(udp[:4] + ['-m', 'tcp'] + udp[4:]),
+                            installer.normalize(udp))
+
     def test_unknown_policy_and_nonmatching_installation_rejected(self):
         p = policy()
         p['command'] = 'unreviewed'
