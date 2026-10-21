@@ -96,6 +96,22 @@ run "database_backup_authority" {
     error_message = "Backup permissions must be restricted to the exact staging instance and bounded child path."
   }
 }
+run "host_fence_read_authority" {
+  command = plan
+  assert {
+    condition = output.offline_policy.host.fence_permissions == toset([
+      "compute.instances.get", "compute.disks.get"
+    ])
+    error_message = "Fence checks must not grant compute mutation or fleet listing."
+  }
+  assert {
+    condition = output.offline_policy.host.fence_condition == join(" || ", [
+      "(resource.type == \"compute.googleapis.com/Instance\" && resource.name == \"projects/hyprn-staging-test/zones/europe-west1-b/instances/hyprn-staging-host\")",
+      "(resource.type == \"compute.googleapis.com/Disk\" && resource.name == \"projects/hyprn-staging-test/zones/europe-west1-b/disks/hyprn-staging-data\")",
+    ])
+    error_message = "Fence access must name only the staging VM and data disk."
+  }
+}
 run "organization_root" {
   command = plan
   assert {
@@ -192,7 +208,7 @@ class InfrastructureTests(unittest.TestCase):
                     events = [json.loads(line) for line in result.stdout.splitlines()]
                     summary = next(event["test_summary"] for event in events
                                    if event.get("type") == "test_summary")
-                    self.assertEqual(summary["passed"], 9)
+                    self.assertEqual(summary["passed"], 10)
                     self.assertEqual(summary["failed"], 0)
 
     def test_access_template_has_no_bypass_and_requires_explicit_admission(self):
