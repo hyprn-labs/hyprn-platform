@@ -50,3 +50,23 @@ installed package states and Debian version comparison. Unsupported dependency
 syntax is refused. A package installation dry-run alone does not establish that
 configure-time dependencies are met. Separate bounded diagnostics distinguish
 that dry-run from actual package installation and configuration failures.
+
+## Restricted application HTTPS proxy
+
+`egress-proxy.json` pins Envoy 1.40.0's official Linux x86-64 executable,
+SHA256, length, Apache-2.0 licence and upstream notice. The downloaded bytes
+match the SHA256 in the upstream GitHub release asset metadata. This is a
+host-only dependency, separately proposed for installation; it is not part of
+candidate execution or the product's Python dependencies.
+
+The renderer enables two exact CONNECT destinations, with TLS remaining between
+the application and its provider. No dynamic destination discovery, administrative
+listener, caching, TLS interception or optional protocol modules are configured.
+The proxy runs under a dedicated unprivileged identity with resource limits;
+host output rules deny private and metadata destinations even after DNS changes.
+Only the application's designated address may reach its listener.
+
+The Debian Bookworm Squid package was not selected: its security tracker lists
+unresolved request-parsing issues in 5.7-2+deb12u6. No Squid package was installed.
+Current official Envoy source and release metadata are recorded in the manifest.
+Live staging containment remains a separate acceptance requirement.

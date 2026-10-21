@@ -1,0 +1,21 @@
+{
+  "schema": "hyprn-host-dependency/v1",
+  "name": "envoy",
+  "version": "1.40.0",
+  "target": "linux/x86_64",
+  "source": "https://github.com/envoyproxy/envoy",
+  "url": "https://github.com/envoyproxy/envoy/releases/download/v1.40.0/envoy-1.40.0-linux-x86_64",
+  "size_bytes": 106905560,
+  "sha256": "8aa137a7d00994ce43f613556f5a120709229f63bedb86eedde5ccbc402c2b80",
+  "license": {
+    "spdx": "Apache-2.0",
+    "url": "https://raw.githubusercontent.com/envoyproxy/envoy/v1.40.0/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "notice": {
+    "url": "https://raw.githubusercontent.com/envoyproxy/envoy/v1.40.0/NOTICE",
+    "sha256": "329d90738f1ee3633da8e7439ea6f9624ec6274a9cbd72437aafa0e8df9de32e"
+  },
+  "scope": "host-only-connect-proxy",
+  "integrity_source": "Official GitHub release asset SHA256; independently hashed downloaded bytes"
+}

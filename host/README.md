@@ -31,3 +31,11 @@ and applies strict host verification before recording completion. Unexpected
 network configuration, interface drift or additional listeners refuse the repair. The corresponding plan explicitly binds a running final VM state;
 other setup plans retain their stopped final state. Fresh setup includes the same
 resolver settings.
+
+`service_network.py --policy <file>` previews the platform's fixed service routes,
+restricted CONNECT proxy and firewall chains. The preview is read-only and leaves
+admission closed. `egress-proxy.json` pins the standalone host executable and its
+notices. The host installer must establish the policy's jumps before starting the
+proxy or product, preserve the closed Docker guard across restarts, and verify the
+positive and negative packet paths. Preview and isolated proxy tests do not prove
+those deployment conditions.
