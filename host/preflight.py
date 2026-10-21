@@ -261,7 +261,10 @@ def network_observation():
             if port in (2375, 2376):
                 refuse('docker_tcp_listener_forbidden')
             if port != 22 and (address == '*' or not ipaddress.ip_address(address).is_loopback):
-                refuse('unexpected_public_listener')
+                error = reconcile.Refused('unexpected_public_listener')
+                error.diagnostic = {'stage': 'host_network_listener_check',
+                                    'address': address, 'port': port}
+                raise error
     except (UnicodeError, ValueError, IndexError):
         refuse('host_listener_observation_invalid')
     return dict(backend='iptables-nft', observed_rules_sha256=digest, ipv6='disabled',

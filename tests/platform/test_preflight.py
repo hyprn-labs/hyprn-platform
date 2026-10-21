@@ -252,8 +252,10 @@ class NetworkTests(unittest.TestCase):
                 preflight.network_observation()
             knobs[-1].read_text = lambda: '1'
             output['/usr/bin/ss'] = b'LISTEN 0 128 0.0.0.0:8000 0.0.0.0:*\n'
-            with self.assertRaisesRegex(preflight.reconcile.Refused, 'unexpected_public_listener'):
+            with self.assertRaisesRegex(preflight.reconcile.Refused, 'unexpected_public_listener') as failure:
                 preflight.network_observation()
+            self.assertEqual(failure.exception.diagnostic, {
+                'stage': 'host_network_listener_check', 'address': '0.0.0.0', 'port': 8000})
             output['/usr/bin/ss'] = b'LISTEN 0 128 127.0.0.1:2375 0.0.0.0:*\n'
             with self.assertRaisesRegex(preflight.reconcile.Refused, 'docker_tcp_listener_forbidden'):
                 preflight.network_observation()
