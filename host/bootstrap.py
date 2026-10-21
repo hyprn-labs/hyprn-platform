@@ -211,12 +211,33 @@ def write_bytes(path, raw):
         temporary.unlink(missing_ok=True)
 
 
+def public_control_directory(path):
+    """Create the fixed public-certificate directory under a protected parent."""
+    path = Path(path)
+    secure(path.parent, directory=True)
+    if not path.exists() and not path.is_symlink():
+        path.mkdir(mode=0o755)
+        path.chmod(0o755)
+    secure(path, directory=True)
+    if stat.S_IMODE(path.stat().st_mode) != 0o755:
+        raise Refused('bootstrap_public_control_directory_mode')
+    return path
+
+
+def load_preflight():
+    """Resolve reviewed siblings even when Python excludes the script directory."""
+    module = sibling('preflight')
+    sibling('service_network_install')
+    return module
+
+
 def publish_controls(target, policy):
     values = control_inputs(policy)
     root = Path(target.binding['control_root'])
     destinations = {'assistant_plan': root / 'assistant-plan.json',
                     'assistant_continuity': root / 'assistant-continuity.json',
                     'database_ca': Path('/etc/hyprn/trust/cloudsql-server-ca.pem')}
+    public_control_directory(destinations['database_ca'].parent)
     for name, path in destinations.items():
         write_bytes(path, values[name])
 
@@ -395,7 +416,7 @@ def run(policy_path):
         reconcile.protected(HOST / (name + '.py'))
     for name in ('host-packages.json', 'egress-proxy.json'):
         reconcile.protected(HOST / name)
-    preflight = sibling('preflight')
+    preflight = load_preflight()
     secure(policy['binding'], private=True)
     if policy['active'] is not None:
         secure(policy['active']['binding'], private=True)

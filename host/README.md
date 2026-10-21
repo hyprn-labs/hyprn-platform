@@ -39,3 +39,10 @@ notices. The host installer must establish the policy's jumps before starting th
 proxy or product, preserve the closed Docker guard across restarts, and verify the
 positive and negative packet paths. Preview and isolated proxy tests do not prove
 those deployment conditions.
+
+
+The bootstrap resolves platform siblings explicitly under isolated Python. Public
+CA material is installed in a protected, readable trust directory before copying
+controls. Runtime credentials remain in their separate private tmpfs folders.
+An interrupted initialization stays blocked until its operation journal and actual
+store state have been reconciled under an explicit recovery plan.

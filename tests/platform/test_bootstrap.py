@@ -201,6 +201,46 @@ class BootstrapTests(unittest.TestCase):
             subject.write_bytes(link, b'changed')
         self.assertEqual(original.read_bytes(), b'keep')
 
+    def test_public_certificate_directory_is_readable_under_private_umask(self):
+        path = self.root / 'trust'
+        previous = os.umask(0o077)
+        try:
+            subject.public_control_directory(path)
+        finally:
+            os.umask(previous)
+        self.assertEqual(path.stat().st_mode & 0o777, 0o755)
+        subject.write_bytes(path / 'ca.pem', b'public certificate')
+        subject.public_control_directory(path)
+        self.assertEqual((path / 'ca.pem').read_bytes(), b'public certificate')
+
+    def test_public_certificate_directory_rejects_links_and_unsafe_modes(self):
+        actual = self.root / 'actual'
+        actual.mkdir(mode=0o755)
+        link = self.root / 'trust'
+        link.symlink_to(actual, target_is_directory=True)
+        with self.assertRaises(subject.Refused):
+            subject.public_control_directory(link)
+        actual.chmod(0o777)
+        with self.assertRaises(subject.Refused):
+            subject.public_control_directory(actual)
+        self.assertEqual(actual.stat().st_mode & 0o777, 0o777)
+
+    def test_isolated_preflight_loads_reviewed_service_network_module(self):
+        code = (
+            'import importlib.util,sys,pathlib; '
+            'path=pathlib.Path(sys.argv[1]); '
+            'spec=importlib.util.spec_from_file_location("subject",path); '
+            'module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); '
+            'preflight=module.load_preflight(); '
+            'import service_network_install; '
+            'assert pathlib.Path(service_network_install.__file__)==path.parent/"service_network_install.py"; '
+            'assert pathlib.Path(preflight.__file__)==path.parent/"preflight.py"'
+        )
+        result = subprocess.run([sys.executable, '-I', '-B', '-c', code,
+                                 str(ROOT / 'host/bootstrap.py')],
+                                capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_native_archive_requires_exact_release_pin_and_relative_inventory(self):
         target = self.target()
         target.release = {'native_bundle': {'sha256': 'b' * 64, 'size_bytes': 7}}
