@@ -320,3 +320,8 @@ for every container; workers retain no network.
 These are deployment inputs. Host firewall/proxy enforcement, private SQL TLS
 verification and live positive/negative connectivity probes must pass before
 admission. A rendered policy does not itself configure or qualify the network.
+
+The database name is an explicit PostgreSQL identifier from the provisioned
+infrastructure. The deployment contract supplies no database-name default.
+Operator preflight verifies that exact database exists in the pinned instance
+before preparing roles or publishing credentials.

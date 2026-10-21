@@ -407,6 +407,19 @@ class ContractTests(unittest.TestCase):
                 self.rejected(self.command(desired=True), code)
                 self.documents["desired"] = saved
 
+    def test_database_name_is_explicit_and_rendered_without_a_hidden_default(self):
+        for name in ("hyprn", "hyprn_app", "engineering_staging"):
+            with self.subTest(name=name):
+                self.documents["runtime"]["database"]["name"] = name
+                preview = self.success(self.command())["preview"]
+                for role in ("app", "dispatcher"):
+                    self.assertEqual(preview["compose"]["services"][role]["environment"]
+                                     ["HYPRN_MVP_DATABASE_NAME"], name)
+        for name in ("", "postgres;DROP DATABASE x", "a/b", "UPPER", "a" * 64):
+            with self.subTest(name=name):
+                self.documents["runtime"]["database"]["name"] = name
+                self.rejected(self.command(), "schema_value")
+
     def test_only_documented_cloudsql_dns_identities_are_accepted(self):
         for suffix in ("sql.goog", "sql-psa.goog"):
             with self.subTest(suffix=suffix):

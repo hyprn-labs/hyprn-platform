@@ -30,7 +30,7 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "718e7467661a15df096f166529ce6fc5aa51bc8f03c25811ee4d0fad9b6b8453",
+        "schema_sha256": "6bd56662fe8d534e8ae890fea49b3e7872eda0ef09265683ee1082c4effcc684",
         "renderer_sha256": "3aa2a0c0b3cfa0ddef472445d766f98f9d1124db80869a4e7814e401ee78b56d",
         "workload_sha256": "b01d60cbdc2aaee26fab40cdc5fddb39e6a597ba8c1d1f8027a308e684400096"
       },
@@ -241,7 +241,7 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "2884b5291b688e93646be297b7889a3d8ebce481dcd117e66dfea9b0046f08b3",
+      "release_sha256": "9d33bcad4c62b1623f128a632749c22b6e8c808736de544e39451fc225338e06",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "config_sha256": "256e8786443b3ef8150d0d796a122cd2c56577ef6a1e1809ed17290df90a4c19",
