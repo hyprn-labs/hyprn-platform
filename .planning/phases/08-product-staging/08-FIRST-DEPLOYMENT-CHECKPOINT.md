@@ -1,54 +1,59 @@
 # First staging deployment — current checkpoint
 
-Updated2026-10-21. VM running; browser/scientific admission closed. Modeling runs;
-application/dispatcher remain exited. First usable staging is not achieved. Local
-Assistant fenced; authoring stores and all nine credential versions preserved.
+Updated 21 October 2026. VM and app/modeling/dispatcher are running. Admission remains
+closed because connector verification failed. Human email-code login reached the
+Cloudflare 1033 error in Chrome; application login, scientific execution, live
+Assistant and answer exploration remain unverified. Stores and credentials preserved.
 
 ## Current state and next action
 
-Owner startup recovery be5ce61f60be56259ac28c4f6d261e01c187cf6dc6c62c53f265c7b0c05e4c84
-was approved. Images/files/stage/desired completed. Desired generation1792597479844287,
-digest4caf592f9bbea8463ff14e8e8a5f7dbf02f3b1975e46868c883365fd0d5150ae,
-release708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459.
-Appfe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886 published.
-Recovery exited2: platform_root_mismatch. The helper instantiated the old binding
-with the new platform module; its path identity guard correctly refused. No stop
-intent or service/store mutation occurred. Original attempt archive preserved.
-Journal stays sequence2 installed_closed/failure=null, old release4afd5b9341dadd97fec05e98fc4d0615f9c9b7eb20e874ce98a3426d6223b68f,
-configdbf6491c51fcb56e97d84bf934815cae3a9936260b6ce14d7e613c0a080caf09.
-Read-only checks confirmed exact container states, identities, closed admission and
-all existing protected source hashes. No initialization/migration/secret reissue.
+The approved container preparation b122a4bb succeeded. Fresh containment operation
+b37cb497-4684-452b-aa9b-03263ed05132 and start 2185e83e-b418-4c05-a398-5e390e3d7b77
+completed. Native owner rebind completed without initialization or migration.
+`/private/tmp/hyprn-staging-container-handoff/application-evidence/` holds recover
+and network-probe success: all 19 actual network tests passed, including database
+TLS, required proxy routes and forbidden metadata/public/private paths. Startup
+HTTP returns the expected unauthenticated 401. No scientific/provider request yet.
 
-Correction prepared, NOT applied:
-/private/tmp/hyprn-staging-owner-handoff-repair/REVIEW.md
-amendment3919b6df74d0efa0855e01146c1fb3cc8edfb879b759c8c14a79d06ca184ba0f,
-policy894df34132dcc7ce5aef91815642f5445090997acdfe1a7549c137c30b2bca09.
-Adds recover-owner-handoff.py and owner-handoff-policy.json beside the staged release;
-loads prior lifecycle in its own isolated interpreter/platform, pins prior archive,
-retains all original guards. No overwritten file or new application/native image.
-Actual corrected helper preflight passed on VM. Four focused handoff checks and six
-state checks pass. Code/readiness61, hosted-lifecycle23 and bootstrap32 evidence from
-product78814803fc87806109f19ac4b558e120a4ee53dd/platformcf1e1f8 remains unchanged.
+Activation partially installed: connector identity/token/units exist, timer inactive,
+original installer intent exists with no installed receipt. Connector restarts because
+it attempts DNS at blocked metadata address 169.254.169.254. A temporary collected
+read-only probe in the same restricted cgroup confirmed: loopback origin times out,
+local DNS connects, metadata HTTP remains blocked; root origin connects. Docker NAT
+returns from 172.29.81.2, which the cgroup currently denies.
 
-After exact approval: packet apply-approved.py stage, recover, network-probe, activate.
-Do not rerun previous packet's failed recover or publication phases. Reconcile any
-uncertain side effects before retry; retain attempts and original initialized stores.
-New helper preserves the existing old-to-new native rebind/containment/HTTP readiness
-sequence and already approved network/tunnel/login/Assistant/execution journeys.
+Prepared correction: `/private/tmp/hyprn-staging-tunnel-network-repair/REVIEW.md`.
+Approval requested, NOT yet received at this checkpoint:
+afd1cb2bcdeece8be0b4c9425ef7d066691d9e97d43ae08323950dd7b8849f3d.
+It changes only connector DNS, the exact application return-address exception, and
+specific origin failure diagnostics. Repair archives original intent/source, verifies
+all preimages and identity, replaces three host config files and one installer source,
+then repeats real connector readiness/metadata denial before bounded admission.
+No app restart, credential/image/IAM/budget change. Do not blindly repeat old activate.
 
-The single authorized replacement2h key has now been used. Initial attempt three
-seconds before expiry refused before mutation; subsequent registration completed.
-New key expires2026-10-21T17:47:38Z. No remaining key renewal authority in this packet.
-Transport still /private/tmp/hyprn-staging-database-correction/application-evidence/transport.py;
-prior key folder ssh-expired-before-owner-recovery retained. Never print credentials.
-Qualification access ends2026-10-22T10:00:00Z. VM remains running as requested.
+Focused verification: `sh tests/platform/run.sh activation-install`: 9 passed
+(original new regressions: 2 failures/1 error); repair test_repair.py: 5 passed.
+Real corrected connector remains unverified until approved apply. Prior 61 readiness,
+23 hosted lifecycle, 32 bootstrap and live containment/service-network results remain
+valid for unchanged product/runtime. No scientific/provider execution was performed.
 
-Evidence: parent /private/tmp/hyprn-staging-owner-startup-recovery/application-evidence
-images/files/stage/desired receipts, recover-result, diagnose-refusal, current-progress,
-verify-old-owner, replacement-key-complete. Correction application-evidence/live-preflight
-pins untouched failed archive. No live human login, provider request, candidate model
-or answer exploration yet. Two-user acceptance, reboot/recovery and automatic staging
-branch deployment remain separate unfinished obligations. Preserve unrelated edits.
+Next: after approval, packet apply-approved.py stage then repair; verify Chrome login,
+real model execution, Assistant tools, joint exploration without reruns. Only then
+conditional ongoing access using corrected activation plan
+70629577dfe850840817ede0436a79c4a7fc2f6036c5a7e30a0ad5ca0acbadf8.
+Two-user acceptance, full reboot/recovery qualification and automatic branch deploys
+remain separate unfinished obligations. Do not describe staging as usable yet.
+
+Desired generation 1792597479844287; digest
+4caf592f9bbea8463ff14e8e8a5f7dbf02f3b1975e46868c883365fd0d5150ae.
+Release 708ac6900c15e1e2b1389f12332215d06d453c1fd87d0e86fa9c1055dee21459.
+App fe70d83261e96f635dfec29d6781d98e49872090f8b15e4c64e43ea5fa94e886.
+Product source 78814803fc87806109f19ac4b558e120a4ee53dd remains unchanged.
+
+The replacement two-hour connection key was used; expiry 17:47:38 UTC 21 October.
+No further renewal authority. Existing database-correction transport remains valid.
+Qualification window ends 22 October 10:00 UTC. Infrastructure €170–220/month and
+shared Assistant €100 (11215 cents total, 501 prior usage) remain unchanged.
 
 ## Previous combined startup correction
 

@@ -71,12 +71,13 @@ def units(policy):
     script = str(Path(policy['platform_root']) / 'host/activation_install.py')
     policy_hash = contract.digest(policy)
     result = activation.units(str(ADMISSION), platform_root=policy['platform_root'])
-    result['hyprn-tunnel.slice'] = '''[Unit]
+    origin_address = contract.service_networks('app')['application']['ipv4_address']
+    result['hyprn-tunnel.slice'] = f'''[Unit]
 Description=HYPRN tunnel network boundary
 
 [Slice]
 IPAddressDeny=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 169.254.0.0/16
-IPAddressAllow=127.0.0.1/32 127.0.0.53/32
+IPAddressAllow=127.0.0.1/32 127.0.0.53/32 {origin_address}/32
 '''
     result['hyprn-tunnel-credential.service'] = f'''[Unit]
 Description=Load the pinned HYPRN tunnel credential
@@ -103,6 +104,7 @@ Type=simple
 User={UID}
 Group={UID}
 Slice=hyprn-tunnel.slice
+BindReadOnlyPaths=/etc/hyprn/tunnel-resolv.conf:/etc/resolv.conf
 LoadCredential=tunnel-token:{TOKEN}
 ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel --protocol http2 --edge-ip-version 4 --metrics 127.0.0.1:20241 --loglevel warn run --token-file %d/tunnel-token
 Restart=on-failure
@@ -156,7 +158,9 @@ TimeoutStartSec=15
 
 def files(policy):
     result = {str(POLICY): (contract.canonical(policy), 0o600),
-              str(ADMISSION): (contract.canonical(policy['activation']), 0o600)}
+              str(ADMISSION): (contract.canonical(policy['activation']), 0o600),
+              '/etc/hyprn/tunnel-resolv.conf': (
+                  b'nameserver 127.0.0.53\noptions timeout:2 attempts:2\n', 0o644)}
     result.update({str(Path('/etc/systemd/system') / name): (text.encode(), 0o644)
                    for name, text in units(policy).items()})
     return result
@@ -269,8 +273,11 @@ def boundary_probe():
     # This process runs in the same IP-filtered cgroup slice and UID as cloudflared.
     if os.getuid() != UID or '/hyprn-tunnel.slice/' not in Path('/proc/self/cgroup').read_text():
         raise Refused('tunnel_probe_scope')
-    with socket.create_connection(('127.0.0.1', 8080), timeout=3):
-        pass
+    try:
+        with socket.create_connection(('127.0.0.1', 8080), timeout=3):
+            pass
+    except OSError:
+        raise Refused('tunnel_origin_unreachable') from None
     try:
         connection = socket.create_connection(('169.254.169.254', 80), timeout=3)
     except OSError as error:

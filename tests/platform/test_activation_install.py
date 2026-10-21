@@ -78,6 +78,31 @@ class ActivationInstallTests(unittest.TestCase):
         self.assertIn('/opt/hyprn/platform/release/host/activation.py',
                       units['hyprn-qualification-access.service'])
 
+    def test_connector_uses_local_dns_without_access_to_metadata_dns(self):
+        unit = subject.units(self.policy)['hyprn-tunnel.service']
+        self.assertIn('BindReadOnlyPaths=/etc/hyprn/tunnel-resolv.conf:/etc/resolv.conf', unit)
+        raw, mode = subject.files(self.policy)['/etc/hyprn/tunnel-resolv.conf']
+        self.assertEqual(raw, b'nameserver 127.0.0.53\noptions timeout:2 attempts:2\n')
+        self.assertEqual(mode, 0o644)
+        self.assertNotIn('169.254.169.254', raw.decode())
+
+    def test_connector_accepts_only_the_exact_nat_origin_among_private_addresses(self):
+        unit = subject.units(self.policy)['hyprn-tunnel.slice']
+        allowed = next(line.split('=', 1)[1].split() for line in unit.splitlines()
+                       if line.startswith('IPAddressAllow='))
+        app = subject.contract.service_networks('app')['application']['ipv4_address']
+        self.assertEqual(set(allowed), {'127.0.0.1/32', '127.0.0.53/32', app + '/32'})
+        self.assertIn('169.254.0.0/16', unit)
+        self.assertIn('172.16.0.0/12', unit)
+
+    def test_unreachable_origin_has_specific_diagnostic(self):
+        with patch.object(subject.os, 'getuid', return_value=subject.UID), \
+                patch.object(subject.Path, 'read_text', return_value='0::/hyprn-tunnel.slice/probe'), \
+                patch.object(subject.socket, 'create_connection', side_effect=TimeoutError()), \
+                self.assertRaises(subject.Refused) as caught:
+            subject.boundary_probe()
+        self.assertEqual(caught.exception.reason, 'tunnel_origin_unreachable')
+
     def test_access_projection_requires_one_exact_origin_and_access_jwt(self):
         target = SimpleNamespace(runtime={'external_origin': 'https://staging.example.test',
             'access': {'issuer': 'https://test.cloudflareaccess.com', 'audience': 'abc'}})
