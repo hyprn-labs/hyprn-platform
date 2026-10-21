@@ -10,6 +10,7 @@ case "$group" in
   install) pattern=test_install_release.py ;;
   images) pattern=test_images.py ;;
   bootstrap) pattern=test_bootstrap.py ;;
+  preflight) pattern=test_preflight.py ;;
   delivery) pattern=test_delivery.py ;;
   infrastructure) pattern=test_infrastructure.py ;;
   state-bootstrap) pattern=test_state_bootstrap.py ;;
