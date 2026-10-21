@@ -7,6 +7,7 @@ case "$group" in
   secrets) pattern=test_secrets.py ;;
   backup) pattern=test_cloudsql_backup.py ;;
   reconcile) pattern=test_reconcile.py ;;
+  install) pattern=test_install_release.py ;;
   delivery) pattern=test_delivery.py ;;
   infrastructure) pattern=test_infrastructure.py ;;
   state-bootstrap) pattern=test_state_bootstrap.py ;;
