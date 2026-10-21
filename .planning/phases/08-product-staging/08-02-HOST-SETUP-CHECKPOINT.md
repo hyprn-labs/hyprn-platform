@@ -72,3 +72,18 @@ closed, not an application-ready network. Opening staging needs that evidence.
 Automatic staging-branch delivery remains an open owner requirement, with GitHub
 settings separately reviewable. Parent retains integration ownership. This is
 not final release qualification or human acceptance.
+
+## Application outcome (supersedes pending approval above)
+
+Owner approved the exact plan; one execution failed at the package dry-run before
+formatting/install intent. VM ID `3112612718549037193` is confirmed TERMINATED.
+The immutable bundle and state lock were created; no format, package installation,
+application startup or secret transfer occurred. Private evidence is in
+`host-setup/application-evidence` alongside the original review. See the runbook's
+2026-10-21 approved setup attempt for details.
+
+The original wrapper lost detailed package stderr/stdout. Source `b2e3a48`
+corrects this for the bounded dry-run only; 21 host-setup checks passed on that
+committed tree. This does not change the frozen original bundle. No live retry.
+Next: owner-approved read-only diagnostic boot, then prepare the exact correction.
+The missing-package hypothesis is unconfirmed; do not install guessed dependencies.

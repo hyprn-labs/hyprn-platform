@@ -397,3 +397,33 @@ then qualify actual AMD64 execution, update/recovery and external Access sign-in
 before admission. The local ARM rehearsal of the released lifecycle wrapper
 refused the AMD64 worker's architecture-warning-prefixed output; it does not
 establish execution qualification for the rebuilt native bundle.
+
+## Approved host setup attempt — 2026-10-21
+
+The owner approved plan
+`0a18d1d19b1951fdc172b4a5ac986c387273e5ea187b3c42f5f8a5c1853c83ee`.
+Its frozen bundle/controller pins were verified and applied once. The VM started,
+IAP login/upload worked, and the root-owned immutable bundle was extracted. Exact
+host/disk and blank-device checks passed. The package dry-run returned nonzero;
+the operation stopped before writing the format/install intent, formatting the
+disk, creating service accounts or installing packages. The root setup state/lock
+and uploaded source/package files remain; no automatic rollback or retry occurred.
+
+The controller confirmed VM ID `3112612718549037193` as TERMINATED. Receipt:
+`host-setup/application-evidence/result.json` under the private inventory root,
+with `setup_completed: false` and `product_started: false`. The failure record is
+`last-error.log`, reason `host_command_refused:dpkg`. The exact package failure
+cannot be inferred: the original command wrapper discarded stderr/stdout.
+
+Commit `b2e3a48` preserves bounded diagnostic output for the package dry-run only;
+other command output remains private. `tests/platform/run.sh host-setup` passes
+21/21 on the committed tree (0.122 s). No unchanged preflight checks were repeated.
+This code fix has not been installed on the VM or substituted into the approved
+bundle. The original immutable approval artifact remains available unchanged.
+
+A bounded start/read-only-package-diagnosis/stop proposal is prepared at
+`host-package-diagnosis/REVIEW.md` under the private inventory root. It captures the
+same dry-run diagnostics and actual package inventory without installing anything.
+Script SHA256: `7470146c6f377bcff0b573c27118e73d6fb3194999df868aca9476cdc76c3aec`.
+Approval is pending; no second start has occurred. Parent owns diagnosis, revised
+exact installation plan and subsequent integration. Working staging remains open.
