@@ -1,5 +1,43 @@
 # First staging deployment — current checkpoint
 
+21 October2026: runtime correction0b528369 images/files/stage/desired succeeded.
+Desiredgeneration1792609058877867/digest68408d9029155d606657ff4e1f3138b52fb5ba764c22a107cfc49dea92e5a35b;
+targetreleasefd809f9f61e0af811298b45d0f9ad867fc547e7e3552f29df8a624aceec2af5c.
+Old runtime131f3e8b/product3aa4415 still running; replacement never started.
+Admission renewal stopped and browser/scientific admission closed. VM stays running.
+
+Approved recovery created private execution home but graceful cancellation failed:
+AiiDA scheduler cancellation cannot await from this signal callback without a
+portal. PID67090 still owns pre-upload pausedprocesse8ca1e78, nojob/remote/output.
+Original nominal5666c078 remains dispatching; adverse0495c773 queued. No rerun,
+data deletion, migration or credential change. Failed archive preserved at
+/srv/hyprn/staging/deployment-journal/runtime-correction-15034aa166f0bab84a761c21dfdcc700dd31d78d7c8679ff7f826f00892bd24d.
+
+Prepared NOT APPLIED continuation:
+/private/tmp/hyprn-staging-paused-lifecycle-recovery/REVIEW.md;
+amendment55cbe5a30cd169b479917b63f55f777e332bf9d54cb09afc066e810e2d14c3d7.
+Approval required for one forced stop of exact stuck owner after dispatcher stop,
+and official AiiDA lifecycle termination of the unchanged checkpoint under exclusive
+execution lock. Never step/resume/resubmit it; retain original node/request.
+Then same approved artifacts/containment/start, normal reconciliation of both
+accepted requests,19network probes and live Assistant/calculations/slider checks.
+No new images, permissions, credentials or fixed costs. Native helper source/test
+productcommit472eeea;19native-owner checks pass10.27s plus5mocked recovery-order guards.
+Exact logs/initial failures in packet and product06-OWNER-STARTUP-CHECKPOINT.md.
+
+Next after approval: newpacket stage/recover/reconcile-runs/network-probe/activate.
+Do not replay old recovery. Operator key expires19:52:04UTC; previously approved one
+replacement2h key remains unused. Qualification deadline22October10:00UTC;
+conditional ongoing activation only after real journeys pass. Platform artifact
+3488a51 unchanged; product artifact3529f76 plus explicitly transferred helper.
+EUR170–220/month infrastructure and EUR100shared Assistant budget unchanged.
+General signal cancellation hardening, two-user human acceptance, reboot/recovery
+qualification and automatic staging-branch deploys remain unfinished.
+
+Earlier prepared/not-applied statements below are superseded by this section.
+
+# Earlier staging evidence
+
 Updated21October2026. VM and all three services remain running. Tunnel and Assistant
 amendments applied successfully. Chrome email login, private study creation and real
 Assistant authoring pass. Real execution exposed defects; staging is not complete.
