@@ -49,7 +49,72 @@ class ProductBoundary:
         return {'operation_id': operation_id, 'operation': operation,
                 'installation_id': self.target.runtime['installation_id'],
                 'status': 'success', 'reason_code': 'completed',
-                'observed_schema_versions': None, 'evidence_refs': []}
+                'observed_schema_versions': {name: dict(schema='hyprn-owner-schema/v1',
+                    installation_id=self.target.runtime['installation_id'], store_id=store,
+                    owner=name, observed={'protocol_peer': True})
+                    for name, store in self.target.runtime['store_ids'].items()}, 'evidence_refs': []}
+
+
+class OwnerCompatibilityTests(unittest.TestCase):
+    """The platform compares owner evidence; product tests prove the real probes."""
+    def scenario(self):
+        from types import SimpleNamespace
+        documents = json.loads((ROOT / 'contracts/v1/fixtures.json').read_text())['valid']
+        active = reconcile.Product.__new__(reconcile.Product)
+        incoming = reconcile.Product.__new__(reconcile.Product)
+        active.target = SimpleNamespace(runtime=copy.deepcopy(documents['runtime']),
+                                        release=copy.deepcopy(documents['release']), path=Path('/active-binding'))
+        incoming.target = copy.deepcopy(active.target)
+        incoming.target.path = Path('/incoming-binding')
+        observations = {name: dict(schema='hyprn-owner-schema/v1', installation_id=active.target.runtime['installation_id'],
+                                  store_id=store, owner=name, observed={'ledger': ['real-owner-protocol-peer']})
+                        for name, store in active.target.runtime['store_ids'].items()}
+        calls = []
+        def inspect(label, value):
+            def call(operation, operation_id, **kwargs):
+                calls.append((label, operation, kwargs))
+                return {'observed_schema_versions': value}
+            return call
+        active.call = inspect('active', observations)
+        after = copy.deepcopy(observations)
+        incoming.call = inspect('incoming', after)
+        return active, incoming, observations, after, calls
+
+    def test_same_observed_owner_schemas_allow_replacement_under_both_releases(self):
+        active, incoming, before, _, calls = self.scenario()
+        self.assertEqual(active.compatibility(incoming), before)
+        self.assertEqual(calls, [('active', 'inspect', {}), ('incoming', 'inspect',
+            {'compatibility_active_binding': active.target.path})])
+
+    def test_missing_changed_or_foreign_observations_never_allow_replacement(self):
+        for kind in ('missing', 'identity', 'owner', 'schema', 'changed', 'empty'):
+            with self.subTest(kind=kind):
+                active, incoming, _, after, _ = self.scenario()
+                if kind == 'missing':
+                    del after['execution']
+                elif kind == 'changed':
+                    after['execution']['observed']['ledger'] = ['different']
+                elif kind == 'empty':
+                    after['execution']['observed'] = {}
+                else:
+                    field = {'identity': 'store_id', 'owner': 'owner', 'schema': 'schema'}[kind]
+                    after['execution'][field] = 'foreign'
+                with self.assertRaises(reconcile.Refused):
+                    active.compatibility(incoming)
+
+    def test_integer_declaration_change_is_not_inferred_from_equal_ledgers(self):
+        active, incoming, _, _, calls = self.scenario()
+        incoming.target.release['stores']['execution']['write_version'] += 1
+        with self.assertRaisesRegex(reconcile.Refused, 'owner_schema_compatibility_unproven'):
+            active.compatibility(incoming)
+        self.assertEqual(calls, [])
+
+    def test_store_relocation_is_refused_before_inspection(self):
+        active, incoming, _, _, calls = self.scenario()
+        incoming.target.runtime['mounts']['execution'] += '-foreign'
+        with self.assertRaisesRegex(reconcile.Refused, 'installation_identity_changed'):
+            active.compatibility(incoming)
+        self.assertEqual(calls, [])
 
 
 class HostBoundary:
@@ -151,6 +216,31 @@ class ReconcileTests(unittest.TestCase):
         self.assertIn('migrate', candidate.calls)
         self.assertEqual(self.record()['installed']['binding_sha256'], candidate.target.binding_sha256)
         self.assertEqual(self.record()['stage'], 'installed_closed')
+
+    def test_incompatible_schema_closes_admission_before_backup_without_mutation(self):
+        self.run_reconcile(initialize=True)
+        candidate = ProductBoundary(self.make_target(2))
+        retained = self.control / 'retained-store'
+        retained.write_bytes(b'private authoring records')
+        def incompatible(incoming):
+            self.assertIs(incoming, candidate)
+            self.assertEqual(self.product.calls[-3:], ['admission', 'drain', 'stop'])
+            raise reconcile.Refused('owner_schema_changed')
+        self.product.compatibility = incompatible
+        def backup(*_args):
+            self.fail('An incompatible schema must not start a backup or migration')
+        with self.assertRaisesRegex(reconcile.Refused, 'owner_schema_changed'):
+            self.run_reconcile(candidate, active_product=self.product, backup=backup)
+        self.assertEqual(retained.read_bytes(), b'private authoring records')
+        self.assertEqual(candidate.calls, [])
+        self.assertFalse(self.record()['mutation'])
+        self.assertEqual(self.record()['stage'], 'quiesced')
+        self.assertEqual(self.product.calls[-1], 'admission')
+
+    def test_start_returns_stopped_observation_without_inspecting_running_owners(self):
+        self.run_reconcile(initialize=True)
+        self.assertEqual(self.product.calls[-2:], ['qualify', 'start'])
+        self.assertNotIn('inspect', self.product.calls)
 
     def test_ambiguous_migration_never_retries_even_with_higher_sequence(self):
         self.product.fail = 'initialize'

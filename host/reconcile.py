@@ -421,18 +421,18 @@ and dependencies must be root-owned; provisioning/import remain separate steps.
                 or result['inventory_sha256'] != contract.digest(contract.read_json(self.target.binding['payload_inventory']))):
             raise Refused('product_payload_unverified')
 
-    def compatibility(self, target):
-        result = self.call('inspect', str(uuid4()))
-        observed = result['observed_schema_versions']
-        # The current product returns the application SQL migration ledger only.
-        # It cannot be converted to all-owner compatibility by trusting a release
-        # declaration, so the real second activation refuses until the owner
-        # observation contract is extended and its adapter reviewed.
-        if not isinstance(observed, dict) or set(observed) != set(target.release['stores']):
-            raise Refused('owner_schema_observation_unavailable')
-        raise Refused('owner_schema_mapping_unimplemented')
+    def compatibility(self, incoming):
+        stable_installation(self.target, incoming.target)
+        before = self.call('inspect', str(uuid4()))['observed_schema_versions']
+        after = incoming.call('inspect', str(uuid4()),
+                              compatibility_active_binding=self.target.path)['observed_schema_versions']
+        for observed in (before, after):
+            owner_observation(self.target, observed)
+        if before != after:
+            raise Refused('owner_schema_changed')
+        return before
 
-    def call(self, operation, operation_id, *, migration_binding=None):
+    def call(self, operation, operation_id, *, migration_binding=None, compatibility_active_binding=None):
         if operation not in OPERATIONS:
             raise Refused('unsupported_operation')
         self.target.unchanged()
@@ -452,6 +452,11 @@ and dependencies must be root-owned; provisioning/import remain separate steps.
             binding = migration_binding
         args = [self.python, '-B', str(self.script), operation, '--binding', str(binding),
                 '--operation-id', operation_id, '--timeout', '300']
+        if compatibility_active_binding is not None:
+            if operation != 'inspect':
+                raise Refused('unsupported_compatibility_operation')
+            protected(compatibility_active_binding)
+            args += ['--compatibility-active-binding', str(compatibility_active_binding)]
         if operation == 'admission':
             args += ['--surface', 'browser', '--state', 'closed']
         result = decode(bounded(args, timeout=310))
@@ -468,12 +473,26 @@ and dependencies must be root-owned; provisioning/import remain separate steps.
         return result
 
 
+def owner_observation(target, observed):
+    if not isinstance(observed, dict) or set(observed) != set(target.runtime['store_ids']):
+        raise Refused('owner_schema_observation_unavailable')
+    for name, value in observed.items():
+        if (not isinstance(value, dict) or set(value) !=
+                {'schema', 'installation_id', 'store_id', 'owner', 'observed'}
+                or value['schema'] != 'hyprn-owner-schema/v1'
+                or value['installation_id'] != target.runtime['installation_id']
+                or value['store_id'] != target.runtime['store_ids'][name]
+                or value['owner'] != name or not value['observed']):
+            raise Refused('owner_schema_identity_invalid')
+    return observed
+
+
 def stable_installation(old, new):
     keys = ('installation_id', 'project_id', 'project_number', 'disk_uuid', 'store_ids', 'mounts')
     if any(old.runtime[key] != new.runtime[key] for key in keys):
         raise Refused('installation_identity_changed')
-    # Until inspect reports all three live owner schemas, a changed migration
-    # contract cannot establish compatibility merely from release declarations.
+    # Integer store-format declarations are a separate compatibility restriction;
+    # they are never synthesized from migration IDs, ledger lengths or hashes.
     if old.release['stores'] != new.release['stores']:
         raise Refused('owner_schema_compatibility_unproven')
 
@@ -532,7 +551,6 @@ No retry/restore/open-admission operation exists on this interface.
         if active_product is not None:
             stable_installation(active_product.target, target)
             active_product.preflight()
-            active_product.compatibility(target)
         elif not initialize:
             raise Refused('explicit_initialization_required')
         elif initialize is not True:
@@ -588,6 +606,7 @@ No retry/restore/open-admission operation exists on this interface.
                 call(active_product, 'drain')
                 call(active_product, 'stop')
                 checkpoint('quiesced')
+                active_product.compatibility(product)
                 if backup is None:
                     raise Refused('coherent_backup_adapter_required')
                 record['backup'] = backup(active_product, journal, record['operations'], recheck)
@@ -614,10 +633,11 @@ No retry/restore/open-admission operation exists on this interface.
             journal.write(record)
             # Native attestation requires a stopped native owner in current CLI.
             checkpoint('qualifying')
-            call(product, 'qualify')
+            qualified = owner_observation(target, call(product, 'qualify')['observed_schema_versions'])
             checkpoint('starting')
-            call(product, 'start')
-            call(product, 'inspect')
+            started = owner_observation(target, call(product, 'start')['observed_schema_versions'])
+            if started != qualified:
+                raise Refused('owner_schema_changed')
             checkpoint('installed_closed')
             return dict(status='qualification_pending', admission='closed', sequence=record['sequence'])
         except BaseException as error:
