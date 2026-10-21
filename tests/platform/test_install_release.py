@@ -128,3 +128,40 @@ class InstallTests(unittest.TestCase):
         with self.assertRaises(subject.contract.Invalid):
             self.install(path, specification)
         self.assertEqual(list(self.parent.iterdir()), [])
+
+
+class VerifyInstalledTests(unittest.TestCase):
+    setUp = InstallTests.setUp
+    bundle = InstallTests.bundle
+    install = InstallTests.install
+    def test_verifies_existing_tree_without_replacing_or_executing_it(self):
+        path, specification = self.bundle()
+        self.install(path, specification)
+        before = (self.target / 'build.json').stat().st_mtime_ns
+        inventory = subject.verify_native(path, specification, self.target, source_commit=self.commit)
+        self.assertEqual(set(inventory), {'build.json', 'source/deployment/probe.py', 'native/bin/python'})
+        self.assertEqual((self.target / 'build.json').stat().st_mtime_ns, before)
+
+    def test_modified_missing_extra_and_linked_files_are_refused(self):
+        path, specification = self.bundle()
+        self.install(path, specification)
+        item = self.target / 'source/deployment/probe.py'
+        original = item.read_bytes()
+        for change in ('modified', 'missing', 'extra', 'symlink', 'mode', 'hardlink'):
+            with self.subTest(change=change):
+                extra = self.target / 'extra'
+                if change == 'modified': item.write_bytes(b'changed')
+                elif change == 'missing': item.unlink()
+                elif change == 'extra': extra.write_bytes(b'unlisted')
+                elif change == 'symlink':
+                    item.unlink()
+                    item.symlink_to(path)
+                elif change == 'mode': item.chmod(0o666)
+                elif change == 'hardlink': os.link(item, self.root / 'hardlink')
+                with self.assertRaises(subject.contract.Invalid):
+                    subject.verify_native(path, specification, self.target, source_commit=self.commit)
+                extra.unlink(missing_ok=True)
+                (self.root / 'hardlink').unlink(missing_ok=True)
+                item.unlink(missing_ok=True)
+                item.write_bytes(original)
+                item.chmod(0o644)

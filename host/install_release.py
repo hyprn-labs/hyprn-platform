@@ -135,3 +135,82 @@ def install_native(bundle, specification, destination, *, source_commit):
         os.close(fd)
         if stage is not None:
             shutil.rmtree(stage)
+
+
+def verify_native(bundle, specification, destination, *, source_commit):
+    """Reauthenticate an installed tree before executing any of its programs.
+
+    The caller holds the deployment lock. Existing releases are read only here;
+    an unexpected file, link, permission or byte requires operator recovery.
+    """
+    destination = Path(destination)
+    protected_directory(destination)
+    if (destination.name != source_commit or len(source_commit) != 40
+            or any(c not in '0123456789abcdef' for c in source_commit)):
+        raise contract.Invalid('release_destination')
+    path = Path(bundle)
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(fd)
+        if (not stat.S_ISREG(info.st_mode) or info.st_mode & 0o022
+                or info.st_uid not in (0, os.geteuid())):
+            raise contract.Invalid('release_bundle_authority')
+        contract.check_bundle(path, specification)
+        with os.fdopen(os.dup(fd), 'rb') as raw:
+            hasher = hashlib.sha256()
+            for block in iter(lambda: raw.read(1024 * 1024), b''):
+                hasher.update(block)
+        if (hasher.hexdigest() != specification['sha256']
+                or info.st_size != specification['size_bytes']):
+            raise contract.Invalid('release_bundle_changed')
+        os.lseek(fd, 0, os.SEEK_SET)
+        with os.fdopen(os.dup(fd), 'rb') as raw, tarfile.open(fileobj=raw) as archive:
+            build = document(archive, 'build.json', 16384)
+            inventory = document(archive, 'bundle-inventory.json', 32 * 1024 * 1024)
+            if (build.get('source_commit') != source_commit or build.get('prefix') != str(destination)
+                    or build.get('target') != 'linux/amd64' or not isinstance(inventory, dict)):
+                raise contract.Invalid('release_build_identity')
+            members = {member.name: member for member in archive.getmembers()}
+            if (set(members) != {*inventory, 'bundle-inventory.json'}
+                    or any(not item.isfile() for item in members.values())):
+                raise contract.Invalid('release_inventory')
+            observed = set()
+            for current, dirs, files in os.walk(destination, followlinks=False):
+                for name in dirs + files:
+                    item = Path(current) / name
+                    details = item.lstat()
+                    if (stat.S_ISLNK(details.st_mode) or details.st_uid not in (0, os.geteuid())
+                            or details.st_mode & 0o022):
+                        raise contract.Invalid('installed_release_authority')
+                    if name in dirs:
+                        if not stat.S_ISDIR(details.st_mode):
+                            raise contract.Invalid('installed_release_authority')
+                    else:
+                        relative = item.relative_to(destination).as_posix()
+                        observed.add(relative)
+                        if (not stat.S_ISREG(details.st_mode) or details.st_nlink != 1
+                                or relative not in members):
+                            raise contract.Invalid('installed_release_inventory')
+                        expected_mode = 0o755 if members[relative].mode & 0o111 else 0o644
+                        if stat.S_IMODE(details.st_mode) != expected_mode:
+                            raise contract.Invalid('installed_release_mode')
+                        expected = inventory.get(relative)
+                        if relative == 'bundle-inventory.json':
+                            with archive.extractfile(members[relative]) as stream:
+                                original = stream.read()
+                            expected = {'sha256': hashlib.sha256(original).hexdigest(),
+                                        'size': len(original)}
+                        if (not isinstance(expected, dict) or set(expected) != {'sha256', 'size'}
+                                or type(expected['size']) is not int or expected['size'] != details.st_size):
+                            raise contract.Invalid('installed_release_inventory')
+                        hashed = hashlib.sha256()
+                        with item.open('rb') as stream:
+                            for block in iter(lambda: stream.read(1024 * 1024), b''):
+                                hashed.update(block)
+                        if hashed.hexdigest() != expected['sha256']:
+                            raise contract.Invalid('installed_release_bytes')
+            if observed != set(members):
+                raise contract.Invalid('installed_release_inventory')
+            return inventory
+    finally:
+        os.close(fd)
