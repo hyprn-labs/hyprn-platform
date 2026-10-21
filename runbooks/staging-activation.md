@@ -4,7 +4,10 @@
 installed release. A root-owned policy names the protected product binding,
 desired digest, deployment journal, disk policy, pinned service-network policy
 and UTC Unix `not_before` / `not_after` times. Windows are at most 24 hours.
-The deployment plan must include the actual times and policy digest for approval.
+The deployment plan includes the actual times and policy digest for approval, plus
+an explicit conditional promotion to ongoing staging after the public-boundary
+checks below. Ongoing staging retains the same short leases and fresh checks; it
+does not grant an unexpiring admission record.
 
 The timer renews a 240-second admission lease after fresh observations. It takes
 the existing deployment lock, verifies the live Google host and desired object,
@@ -99,6 +102,52 @@ specific heat: that comparison is its own explicit configuration/analysis.
 Record tested release/configuration, actual paths and statuses, output values,
 validation tolerances and observed errors, provider cost and cleanup. Keep
 credentials out of records. Automated checks and human acceptance are separate.
-Disable the qualification timer after verification. Persistent staging admission
-requires an explicitly reviewed ongoing policy; extending a timestamp silently
-is not approval.
+The authorized operator uses the exact-plan `promote` action after login, native
+execution, Assistant tool use and joint exploration checks succeed. The plan
+explicitly includes the proposed ongoing mode. That action preserves release,
+configuration, host, network and budget pins and changes only the renewal window.
+It does not claim human acceptance or two-human isolation verification if those
+remain pending. No caller-supplied `qualified=true` value is accepted. Changes to
+the reviewed plan, host or release require a new reviewed plan.
+
+
+## Installer interface
+
+`host/activation_install.py plan --policy <file>` is offline and mutation-free.
+The install policy embeds the qualification policy, the installed platform root,
+Cloudflare account and tunnel identities, one numeric version of the existing
+host-only tunnel secret, and a protected, hashed projection of the actual Access
+and tunnel configuration. The projection requires the single loopback origin,
+required Access validation and final 404 route. The deployment review links the
+original live Cloudflare API responses supporting that projection.
+
+After approval, `apply --policy <file> --approve-sha256 <plan digest>` installs the
+exact units and policy files. It refuses any existing attempt requiring recovery.
+It creates only the dedicated local tunnel user; it neither installs packages nor
+creates or changes a cloud tunnel, DNS record, Access rule or Secret Manager
+version. It reads the already-provisioned numeric tunnel secret and verifies its
+account/tunnel identity before placing it in private tmpfs. Systemd passes the
+credential by file, never argv or environment. Startup re-reads the same numeric
+secret; automatic updates are disabled.
+
+The pinned connector uses IPv4 HTTP/2 over TCP 7844. The existing VPC rules govern
+that external connection. HTTPS 443 supports provider discovery/Access JWKS, DNS
+uses the host resolver, origin traffic goes to 127.0.0.1:8080, and readiness metrics
+bind only 127.0.0.1:20241. A systemd cgroup slice denies private and link-local
+ranges including metadata. Verification pairs a host metadata TCP connection
+(without an HTTP request) with a denied connection from a process in the connector
+slice and a successful loopback origin connection. A unit declaration alone does
+not establish kernel enforcement. Readiness and socket ownership are checked.
+These are checks of deployed Linux behavior and remain unverified until apply.
+
+`promote --policy <same file> --approve-sha256 <same plan digest>` is the explicit
+operator action after the approved live checklist. It compares installed source
+pins, identities and current policy; rechecks the live system; then changes the
+reviewed qualification policy to its already-reviewed ongoing staging form.
+The root-owned promotion record records this operator transition, not a synthetic
+user-journey result. Login, isolation and scientific evidence stay in the actual
+verification report. A failure or interrupted operation requires reconciliation.
+
+Upstream format/flag references for the pinned connector:
+[2026.10.2 token-file implementation](https://github.com/cloudflare/cloudflared/blob/2026.10.2/cmd/cloudflared/tunnel/subcommands.go)
+and [token identity fields](https://github.com/cloudflare/cloudflared/blob/2026.10.2/connection/connection.go).

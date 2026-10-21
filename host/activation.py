@@ -17,7 +17,7 @@ import bootstrap
 contract, reconcile = bootstrap.contract, bootstrap.reconcile
 Refused = reconcile.Refused
 FIELDS = {'schema', 'binding', 'desired_sha256', 'journal_root', 'disk',
-          'network_policy', 'not_before', 'not_after'}
+          'network_policy', 'mode', 'not_before', 'not_after'}
 LEASE_SECONDS = 240
 
 
@@ -26,9 +26,14 @@ def validate_policy(value):
             or value['schema'] != 'hyprn-qualification-access/v1'
             or not all(bootstrap.absolute(value[k]) for k in ('binding', 'journal_root'))
             or not bootstrap.sha(value['desired_sha256'])
-            or any(type(value[k]) is not int for k in ('not_before', 'not_after'))
-            or not 0 < value['not_after'] - value['not_before'] <= 86400):
+            or type(value['not_before']) is not int or value['not_before'] < 0
+            or value['mode'] not in ('qualification', 'staging')):
         raise Refused('activation_policy')
+    if ((value['mode'] == 'qualification' and
+            (type(value['not_after']) is not int
+             or not 0 < value['not_after'] - value['not_before'] <= 86400))
+            or (value['mode'] == 'staging' and value['not_after'] is not None)):
+        raise Refused('activation_window_policy')
     network = value['network_policy']
     if (not bootstrap.exact_fields(network, {'path', 'sha256'})
             or not bootstrap.absolute(network['path']) or not bootstrap.sha(network['sha256'])
@@ -42,7 +47,7 @@ def load_policy(path):
 
 
 def window(policy, now):
-    if not policy['not_before'] <= now < policy['not_after']:
+    if now < policy['not_before'] or (policy['not_after'] is not None and now >= policy['not_after']):
         raise Refused('activation_window_closed')
 
 
@@ -215,6 +220,13 @@ def renew(path):
             running = containers(target)
             native(target, running['dispatcher'])
             ingress(target)
+            connector = bootstrap.sibling('activation_install')
+            installed = connector.validate(contract.read_json(reconcile.protected(connector.POLICY)))
+            expected_policy = (installed['activation'] if policy['mode'] == 'qualification'
+                               else connector.promoted_policy(installed))
+            if expected_policy != policy:
+                raise Refused('activation_connector_policy_changed')
+            connector.verify(installed)
             if time.monotonic() - started > 180:
                 raise Refused('activation_observation_expired')
             window(policy, int(time.time()))
@@ -222,22 +234,27 @@ def renew(path):
                     or host.desired() != generation):
                 raise Refused('activation_authority_changed')
             bound_state(target, policy, journal)
-            expires = min(int(time.time()) + LEASE_SECONDS, policy['not_after'])
+            expires = int(time.time()) + LEASE_SECONDS
+            if policy['not_after'] is not None:
+                expires = min(expires, policy['not_after'])
             reconcile.atomic(Path(target.binding['control_root']) / 'admission.json',
                 dict(schema='hyprn-admission/v1', **target.identity,
                      browser=True, scientific=True, expires_at=expires), mode=0o644)
             return {'schema': 'hyprn-qualification-access-result/v1', 'identity': target.identity,
-                    'expires_at': expires, 'mode': 'qualification-access',
+                    'expires_at': expires, 'mode': policy['mode'],
                     'human_acceptance': 'not-established', 'user_journeys': 'not-established'}
         except BaseException:
             close(target)
             raise
 
 
-def units(policy_path):
+def units(policy_path, *, platform_root=None):
     if not bootstrap.absolute(policy_path) or any(c.isspace() or c in '%"\\' for c in policy_path):
         raise Refused('activation_unit_path')
-    executable = str(Path(__file__).resolve())
+    executable = (str(Path(__file__).resolve()) if platform_root is None
+                  else str(Path(platform_root) / 'host/activation.py'))
+    if any(c.isspace() or c in '%"\\' for c in executable):
+        raise Refused('activation_unit_path')
     return {'hyprn-qualification-access.service': f'''[Unit]
 Description=HYPRN bounded qualification access
 After=docker.service hyprn-egress.service hyprn-service-network.service

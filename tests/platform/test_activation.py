@@ -23,7 +23,7 @@ class ActivationTests(unittest.TestCase):
             'desired_sha256': 'a' * 64, 'journal_root': '/host/journal',
             'disk': {'disk_name': 'test-data', 'device_name': 'test-data', 'retired_hosts': []},
             'network_policy': {'path': '/host/network.json', 'sha256': 'b' * 64},
-            'not_before': 1000, 'not_after': 8200}
+            'mode': 'qualification', 'not_before': 1000, 'not_after': 8200}
 
     def test_no_arbitrary_success_receipts_or_executable_hooks(self):
         subject.validate_policy(self.policy)
@@ -151,6 +151,11 @@ class ActivationTests(unittest.TestCase):
                 stack.enter_context(patch.object(subject.reconcile, 'Journal', return_value=journal))
                 stack.enter_context(patch.object(subject.reconcile, 'GoogleHost', return_value=host))
                 stack.enter_context(patch.object(subject, 'bound_state'))
+                connector = SimpleNamespace(POLICY='/host/install.json', validate=lambda p: p,
+                    verify=lambda p: None, promoted_policy=lambda p: p['activation'])
+                stack.enter_context(patch.object(subject.bootstrap, 'sibling', return_value=connector))
+                stack.enter_context(patch.object(subject.contract, 'read_json',
+                    return_value={'activation': self.policy}))
                 closed = stack.enter_context(patch.object(subject, 'close'))
                 published = stack.enter_context(patch.object(subject.reconcile, 'atomic'))
                 for name in ('network', 'containers', 'native', 'ingress'):
