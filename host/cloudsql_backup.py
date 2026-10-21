@@ -10,6 +10,7 @@ import fcntl
 import hashlib
 import http.client
 import json
+import ipaddress
 import os
 import re
 import resource
@@ -115,7 +116,7 @@ class GoogleSQL:
         finally:
             connection.close()
 
-    def source(self, binding):
+    def source(self, binding, expected_endpoint=None):
         value = self.request('GET', self.base)
         if (value.get('kind') != 'sql#instance' or value.get('project') != binding['project_id'] or
                 value.get('name') != binding['instance'] or value.get('state') != 'RUNNABLE'):
@@ -136,6 +137,37 @@ class GoogleSQL:
         source = {key: value[key] for key in ('project', 'name', 'createTime', 'databaseVersion')}
         source['policy'] = {'private_network': network['privateNetwork'], 'ipv4_enabled': False,
                             'ssl_mode': 'ENCRYPTED_ONLY', 'backup_tier': 'STANDARD', 'backups_enabled': True}
+        if expected_endpoint is not None:
+            if (not isinstance(expected_endpoint, dict) or set(expected_endpoint) != {'host', 'server_name'}
+                    or not isinstance(expected_endpoint['host'], str)
+                    or not matches(expected_endpoint['server_name'], r'[a-z0-9][a-z0-9.-]{1,251}[a-z0-9]')):
+                raise Invalid('source_endpoint_binding')
+            try:
+                address = ipaddress.ip_address(expected_endpoint['host'])
+                if address.version != 4 or not address.is_private or str(address) != expected_endpoint['host']:
+                    raise ValueError
+            except ValueError:
+                raise Invalid('source_endpoint_binding') from None
+            mappings = value.get('ipAddresses')
+            if (not isinstance(mappings, list) or not mappings or
+                    any(not isinstance(item, dict) or item.get('type') != 'PRIVATE' for item in mappings) or
+                    [item.get('ipAddress') for item in mappings] != [expected_endpoint['host']]):
+                raise Invalid('source_endpoint_mismatch')
+            # Instance PSA names only; cluster/write endpoints cannot identify
+            # the one private instance that this whole-store backup must cover.
+            names = value.get('dnsNames')
+            if names is None:
+                names = [value.get('dnsName')]
+            elif isinstance(names, list) and all(isinstance(item, dict) for item in names):
+                names = [item.get('name') for item in names
+                         if item.get('connectionType') == 'PRIVATE_SERVICES_ACCESS'
+                         and item.get('dnsScope') == 'INSTANCE']
+            else:
+                raise Invalid('source_endpoint_mismatch')
+            if (len(names) != 1 or not isinstance(names[0], str) or
+                    names[0].removesuffix('.') != expected_endpoint['server_name']):
+                raise Invalid('source_endpoint_mismatch')
+            source['endpoint'] = dict(expected_endpoint)
         return source
 
     def dispatch(self, binding, description):
@@ -220,7 +252,7 @@ def save(directory, name, value, replace=False):
     os.fsync(directory)
 
 
-def backup(args):
+def backup(args, *, expected_endpoint=None):
     binding = bindings(args)
     resource_name = 'projects/' + binding['project_id'] + '/instances/' + binding['instance']
     if args.command == 'create' and args.approve_resource != resource_name:
@@ -243,7 +275,7 @@ def backup(args):
             if intent['description'] != expected:
                 raise Invalid('backup_intent_mismatch')
         google = GoogleSQL(args)
-        source = google.source(binding)
+        source = google.source(binding, expected_endpoint=expected_endpoint)
         if intent is not None and intent['source'] != source:
             raise Invalid('source_instance_changed')
         if intent is None:
