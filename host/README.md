@@ -22,3 +22,10 @@ the existing engine; it has no format action. Its source bundle includes the
 original `base-plan.json`, and a distinct repair plan hash is required. Uncertain
 or interrupted repairs are refused until reconciled. The same IAP controller
 validates either a fresh-setup or repair bundle and stops the VM afterwards.
+
+`finalize_setup.py` completes the verified package repair after disabling
+systemd-resolved link-local discovery. It preserves DNS servers, checks normal
+DNS, and applies the unchanged strict listener verification before recording host
+completion. The corresponding plan explicitly binds a running final VM state;
+other setup plans retain their stopped final state. Fresh setup includes the same
+resolver settings.

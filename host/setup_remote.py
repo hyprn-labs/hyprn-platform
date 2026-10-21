@@ -65,7 +65,10 @@ def digest(raw):
 
 
 def reviewed(bundle, review):
-    if set(review) != {'schema', 'plan_sha256', 'bundle_sha256', 'controller_sha256', 'source_commit'}:
+    fields = {'schema', 'plan_sha256', 'bundle_sha256', 'controller_sha256', 'source_commit'}
+    if 'keep_running' in review:
+        fields.add('keep_running')
+    if set(review) != fields or type(review.get('keep_running', False)) is not bool:
         raise ValueError('review_fields')
     if (review['schema'] != 'hyprn-host-setup-deployment/v1'
             or review['controller_sha256'] != digest(Path(__file__).read_bytes())):
@@ -85,9 +88,13 @@ def reviewed(bundle, review):
             raise ValueError('review_plan_pin')
         expected = {'plan.json', 'policy.json'} | {'platform/' + name for name in plan['sources']} | {
             'packages/' + row['filename'] for row in plan['packages']}
+        if review.get('keep_running', False) != (plan.get('host_final_state') == 'RUNNING'):
+            raise ValueError('review_host_final_state')
         sources = {'setup.py', 'reconcile.py', 'secrets.py', 'contract.py', 'host-packages.json', 'preflight.py'}
         if plan.get('schema') == 'hyprn-host-setup-repair/v1':
             sources |= {'repair_setup.py', 'base-plan.json'}
+        elif plan.get('schema') == 'hyprn-host-setup-finalize/v1':
+            sources |= {'finalize_setup.py', 'repair-plan.json'}
         elif plan.get('schema') != 'hyprn-host-setup-plan/v1':
             raise ValueError('review_plan_schema')
         if (set(plan['sources']) != sources
@@ -149,12 +156,14 @@ class Operator:
     def apply(self, bundle, review, expected):
         p = self.policy
         before = self.observe()
-        if before['status'] != 'TERMINATED':
+        keep_running = review.get('keep_running', False)
+        if before['status'] != 'TERMINATED' and not (keep_running and before['status'] == 'RUNNING'):
             raise RuntimeError('host_not_stopped')
         self.record('intent.json', dict(review, instance_id=p['instance_id']))
         completed = False
         try:
-            self.call(['compute', 'instances', 'start', p['host_id'], '--zone=' + p['zone']], timeout=600)
+            if before['status'] == 'TERMINATED':
+                self.call(['compute', 'instances', 'start', p['host_id'], '--zone=' + p['zone']], timeout=600)
             for attempt in range(6):
                 if self.observe()['status'] != 'RUNNING':
                     raise RuntimeError('host_left_running')
@@ -171,8 +180,9 @@ class Operator:
                 '--zone=' + p['zone'], '--tunnel-through-iap', '--ssh-key-file=' + str(self.root / 'operator-key'),
                 '--ssh-key-expire-after=30m', '--scp-flag=-oStrictHostKeyChecking=yes',
                 '--scp-flag=-oUserKnownHostsFile=' + str(self.root / 'known-hosts')], timeout=600)
-            installer = (INSTALLER.replace('platform/setup.py', 'platform/repair_setup.py')
-                         if 'platform/repair_setup.py' in expected else INSTALLER)
+            entrypoint = ('finalize_setup.py' if 'platform/finalize_setup.py' in expected else
+                          'repair_setup.py' if 'platform/repair_setup.py' in expected else 'setup.py')
+            installer = INSTALLER.replace('platform/setup.py', 'platform/' + entrypoint)
             arguments = ['sudo', '-n', '/usr/bin/python3', '-I', '-B', '-c', installer,
                          remote + '/bundle.tar.gz', review['bundle_sha256'], review['plan_sha256'], json.dumps(expected)]
             raw = self.call(self.ssh + ['--command=' + shlex.join(arguments)], timeout=960)
@@ -184,14 +194,15 @@ class Operator:
             completed = True
         finally:
             current = self.observe(startup=False)
-            if current['status'] != 'TERMINATED':
+            if not keep_running and current['status'] != 'TERMINATED':
                 self.call(['compute', 'instances', 'stop', p['host_id'], '--zone=' + p['zone']], timeout=600)
             final = self.observe(startup=False)
-            if final['status'] != 'TERMINATED':
-                raise RuntimeError('host_stop_not_confirmed')
+            wanted = 'RUNNING' if keep_running else 'TERMINATED'
+            if final['status'] != wanted:
+                raise RuntimeError('host_final_state_not_confirmed')
             self.record('result.json', dict(setup_completed=completed, vm_status=final['status'],
                         instance_id=p['instance_id'], product_started=False))
-        return dict(setup_completed=completed, vm_status='TERMINATED', product_started=False)
+        return dict(setup_completed=completed, vm_status=final['status'], product_started=False)
 
 
 def main():

@@ -27,6 +27,8 @@ STATE = Path('/var/lib/hyprn-host-setup')
 CONFIG = Path('/etc/hyprn/host-setup')
 DATA = Path('/srv/hyprn/staging')
 MOUNT = 'srv-hyprn-staging.mount'
+RESOLVED = Path('/etc/systemd/resolved.conf.d/70-hyprn.conf')
+RESOLVED_TEXT = '[Resolve]\nLLMNR=no\nMulticastDNS=no\n'
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C', 'LC_ALL': 'C',
        'DEBIAN_FRONTEND': 'noninteractive'}
 FIELDS = {'schema', 'project_id', 'project_number', 'zone', 'host_id', 'instance_id',
@@ -140,6 +142,7 @@ ExecStartPost={CONFIG}/container-guard
               'bridge': 'none', 'iptables': True, 'ip6tables': False, 'ipv6': False,
               'userland-proxy': False}
     return {
+        str(RESOLVED): (RESOLVED_TEXT, 0o644),
         '/etc/systemd/system/' + MOUNT: (mount, 0o644),
         '/etc/systemd/system/docker.service.d/hyprn.conf': (dropin, 0o644),
         str(CONFIG / 'container-guard'): (guard, 0o755),
@@ -175,6 +178,7 @@ def plan(policy, folder):
                  'mount-by-pinned-filesystem-uuid', 'install-pinned-packages-with-services-blocked',
                  'create-native-service-account-and-owner-directories',
                  'install-closed-firewall-and-bounded-docker-storage',
+                 'disable-link-local-discovery-preserving-dns',
                  'start-empty-docker-behind-closed-firewall', 'verify-host-prerequisites'],
         product_started=False, secrets_transferred=False, admission='closed')
     return dict(value, plan_sha256=digest(canonical(value)))
@@ -453,6 +457,8 @@ def apply(policy_path, folder, approved):
         run(['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
         run(['/usr/bin/systemd-tmpfiles', '--create', '/etc/tmpfiles.d/hyprn.conf'])
         run(['/usr/bin/systemctl', 'daemon-reload'])
+        run(['/usr/bin/systemctl', 'restart', 'systemd-resolved.service'], timeout=60)
+        run(['/usr/bin/getent', 'ahostsv4', 'compute.googleapis.com'])
         run(['/usr/bin/systemctl', 'enable', '--now', 'docker.service', 'docker.socket'], timeout=120)
         receipt = verify(policy, expected)
         write_new(done, canonical(receipt), 0o600)

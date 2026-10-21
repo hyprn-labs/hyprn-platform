@@ -283,6 +283,31 @@ class RemoteSetupTests(unittest.TestCase):
         self.assertNotIn('platform/setup.py', execution)
         self.assertEqual(op.call.call_args_list[-1].args[0][:3], ['compute','instances','stop'])
 
+    def test_explicit_keep_running_plan_does_not_restart_or_stop_existing_host(self):
+        from unittest.mock import Mock
+        op = self.operator()
+        review = {'plan_sha256':'a'*64, 'bundle_sha256':'b'*64, 'keep_running':True}
+        receipt = {'plan_sha256':'a'*64, 'admission':'closed', 'product_started':False}
+        op.observe = Mock(return_value={'status':'RUNNING'})
+        op.call = Mock(side_effect=[b'', b'', b'', json.dumps(receipt).encode()])
+        result = op.apply(self.root/'bundle', review, ['platform/finalize_setup.py'])
+        self.assertEqual(result['vm_status'], 'RUNNING')
+        commands = [call.args[0] for call in op.call.call_args_list]
+        self.assertFalse(any(c[:2]==['compute','instances'] for c in commands))
+        self.assertIn('platform/finalize_setup.py', commands[-1][-1])
+
+    def test_keep_running_failure_records_state_without_relaunch_or_stop(self):
+        from unittest.mock import Mock
+        op = self.operator()
+        op.observe = Mock(return_value={'status':'RUNNING'})
+        op.call = Mock(side_effect=[b'', b'', b'', RuntimeError('fixture failure')])
+        with self.assertRaisesRegex(RuntimeError, 'fixture failure'):
+            op.apply(self.root/'bundle', {'plan_sha256':'a'*64, 'bundle_sha256':'b'*64,
+                                         'keep_running':True}, ['platform/finalize_setup.py'])
+        self.assertEqual(op.record.call_args.args[1]['vm_status'], 'RUNNING')
+        self.assertFalse(op.record.call_args.args[1]['setup_completed'])
+        self.assertFalse(any(c.args[0][:2]==['compute','instances'] for c in op.call.call_args_list))
+
     def test_uncertain_start_is_reconciled_by_observation_and_stop_never_restarted(self):
         from unittest.mock import Mock
         op = self.operator()
@@ -393,6 +418,47 @@ class RepairSetupTests(unittest.TestCase):
         self.assertTrue((self.root/'state/repair-intent.json').exists())
         self.assertFalse((self.root/'state/completed.json').exists())
         self.assertFalse((self.root/'policy-rc.d').exists())
+
+
+class FinalizeSetupTests(unittest.TestCase):
+    def setUp(self):
+        import finalize_setup
+        self.finalize = finalize_setup
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def test_discovery_is_disabled_without_overriding_dns_servers(self):
+        self.assertEqual(setup.files(policy())[str(setup.RESOLVED)],
+                         ('[Resolve]\nLLMNR=no\nMulticastDNS=no\n', 0o644))
+
+    def test_only_identified_resolver_listener_can_be_corrected(self):
+        error = setup.reconcile.Refused('unexpected_public_listener')
+        for address, port, process, allowed in (
+                ('0.0.0.0',5355,'systemd-resolve',True),
+                ('0.0.0.0',8000,'systemd-resolve',False),
+                ('0.0.0.0',5355,'other-daemon',False)):
+            error.diagnostic = dict(stage='host_network_listener_check',address=address,port=port)
+            line = f'LISTEN 0 4096 {address}:{port} 0.0.0.0:* users:(("{process}",pid=1,fd=1))\n'
+            with patch.object(setup.reconcile.contract,'read_json',return_value={}), \
+                    patch.object(setup,'verify',side_effect=error), \
+                    patch.object(setup,'run',return_value=line.encode()), \
+                    patch.object(self.finalize,'RESOLVED',self.root/'new.conf'):
+                if allowed:
+                    self.finalize.before_change(policy(),{})
+                else:
+                    with self.assertRaises(setup.reconcile.Refused):
+                        self.finalize.before_change(policy(),{})
+
+    def test_existing_resolver_override_is_never_replaced(self):
+        path=self.root/'existing.conf';path.write_text('[Resolve]\nDNS=192.0.2.1\n')
+        with patch.object(setup.reconcile.contract,'read_json',return_value={}), \
+                patch.object(setup,'verify',return_value={}), \
+                patch.object(setup.reconcile,'protected',return_value=path), \
+                patch.object(self.finalize,'RESOLVED',path):
+            with self.assertRaisesRegex(setup.reconcile.Refused,'existing_resolver_override'):
+                self.finalize.before_change(policy(),{})
+        self.assertEqual(path.read_text(),'[Resolve]\nDNS=192.0.2.1\n')
 
 
 if __name__ == '__main__':
