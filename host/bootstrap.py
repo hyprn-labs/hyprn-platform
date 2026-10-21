@@ -386,6 +386,9 @@ def run(policy_path):
     for name in ('bootstrap', 'contract', 'reconcile', 'install_release', 'secrets', 'images', 'backup_set', 'cloudsql_backup', 'preflight'):
         reconcile.protected(HOST / (name + '.py'))
     preflight = sibling('preflight')
+    secure(policy['binding'], private=True)
+    if policy['active'] is not None:
+        secure(policy['active']['binding'], private=True)
     target = reconcile.Target(policy['binding'])
     active = reconcile.Target(policy['active']['binding']) if policy['active'] is not None else None
     target.protect()
