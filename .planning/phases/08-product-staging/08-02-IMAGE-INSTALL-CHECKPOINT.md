@@ -30,3 +30,14 @@ and [Docker digest pulls](https://docs.docker.com/reference/cli/docker/image/pul
 
 Bootstrap must hold its deployment lock, validate descriptors/payloads first,
 protect policy/source paths, and run release code without bytecode writes.
+
+
+## Explicit daemon endpoint correction
+
+Source `089db32` binds image retrieval to the runtime's exact protected Unix
+socket, instead of Docker's default context. The staging descriptor uses the
+canonical `/run/docker.sock`; `/var/run` is a symlink on Debian and is rejected
+by the protected-path rule. Real temporary Unix socket metadata is exercised.
+Parent `tests/platform/run.sh images`: **9 passed, 0 failed, 0 skipped**,
+0.029 s, `/private/tmp/hyprn-images-endpoint-parent.log`. No registry read or
+actual cloud Docker pull is established by the simulated external boundary.

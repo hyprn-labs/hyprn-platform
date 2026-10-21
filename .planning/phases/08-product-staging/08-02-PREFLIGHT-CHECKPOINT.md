@@ -90,3 +90,10 @@ Correction commit: `821be76`. Focused discovery on that correction passed
 **18 tests, 0 failures, 0 skips**, 0.026 s. Parent owns the final registered
 `preflight` rerun; this checkpoint-only status update changes no implementation
 or behavioral input. Implementation commits are `586b103` and `821be76`.
+
+
+Final registered parent acceptance on correction `821be76`, with checkpoint-only
+HEAD `640de53`: `tests/platform/run.sh preflight` — **18 passed, 0 failed,
+0 skipped**, 0.025 s. Log `/private/tmp/hyprn-preflight-final-parent.log`.
+No production or test source changed after that run. Live containment and
+whole-host qualification remain unverified as stated above.
