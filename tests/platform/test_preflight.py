@@ -82,7 +82,16 @@ class PolicyAndCheckTests(unittest.TestCase):
                 preflight.policy_at(self.target, self.path)
         self.policy['compose']['version'] = '1.29.2'
         self.write()
-        with self.assertRaisesRegex(preflight.reconcile.Refused, 'compose_v2_required'):
+        with self.assertRaisesRegex(preflight.reconcile.Refused, 'compose_plugin_required'):
+            preflight.policy_at(self.target, self.path)
+
+    def test_reviewed_plugin_major_five_keeps_exact_version_and_hash_pins(self):
+        self.policy['compose']['version'] = '5.6.0'
+        self.write()
+        self.assertEqual(preflight.policy_at(self.target, self.path), self.policy)
+        self.policy['compose']['version'] = '6.0.0'
+        self.write()
+        with self.assertRaisesRegex(preflight.reconcile.Refused, 'compose_plugin_required'):
             preflight.policy_at(self.target, self.path)
 
     def test_observed_prerequisites_only_allow_closed_bootstrap(self):

@@ -73,8 +73,8 @@ def policy_at(target, path):
                 or not isinstance(pin['sha256'], str) or not re.fullmatch('[0-9a-f]{64}', pin['sha256'])
                 or not isinstance(pin['version'], str) or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:[-+~.][A-Za-z0-9.+~_-]+)?', pin['version'])):
             refuse('host_tool_policy')
-    if not value['compose']['version'].startswith('2.'):
-        refuse('compose_v2_required')
+    if value['compose']['version'].split('.')[0] not in ('2', '5'):
+        refuse('compose_plugin_required')
     if not isinstance(value['database_ca_source'], str) or not Path(value['database_ca_source']).is_absolute():
         refuse('database_ca_source_required')
     return value
