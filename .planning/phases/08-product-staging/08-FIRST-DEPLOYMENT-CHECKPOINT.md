@@ -4,6 +4,48 @@ Updated2026-10-21. First usable staging remains pending. VM running; browser and
 scientific admission closed; no product service running. Local web Assistant stopped
 as explicitly approved; authoring records/native processes preserved.
 
+## Current state after approved stopped-container recovery (2026-10-21)
+
+Supersedes the pending d33b5d8c approval below. That approved helper applied:
+qualification bb5f4d8b-4a7c-4311-a931-3ed77921f68b completed successfully with all nine
+real containment probes passed, candidate executions zero. Start39a8839c-2b28-4668-9603-3e32b5c708a6
+then failed component_operation_failed (exit6). The exact app/modeling containers
+exited1; no dispatcher or tunnel started. VM running, admission closed. Stores and
+all nine credential versions preserved; initialization remains complete.
+
+Redacted container logs show app artifact folder absent and Rails refusing
+/native/tmp/sockets on the read-only image. Read-only mount/path inspection confirms
+both. No credentials printed. Actual evidence lives under the earlier packet's
+application-evidence/{progress,containment-progress,start-container-diagnosis,start-logs}.json,
+and /private/tmp/hyprn-staging-service-start-recovery/application-evidence/paths.json.
+
+Permanent platform fix c0cc454 prepares the private application artifact directory,
+adds only a32MiB modeling tmpfs and verifies all actual tmpfs mounts. Product b0f5372
+pins that contract and includes the already-tested canary directory fix2ef0c8d.
+Platform76 focused checks pass; product hosted-lifecycle21 passes36.329s, check
+2b323793-5022-4de1-b149-37a0c22990a0; canary regression17 retained. Six recovery guards
+pass. Native bundle built and fresh-extraction imports verified. All app image build
+inputs unchanged: existing three published images reused, new cached app image explicitly
+unpublished. Initial worker inventory refusal reconciled by new host-source inventory;
+new live attestation required, never copied. Local test/build limitations and failures
+are recorded in the packet EVIDENCE.md. Unrelated repo edits/index preserved.
+
+Prepared, not applied: /private/tmp/hyprn-staging-service-start-recovery/REVIEW.md.
+Amendment c369a6abaff76b968cb2dbfd914e6200c6e8c35a3e62dca0c8b940e0753d9655.
+New release4afd5b9341dadd97fec05e98fc4d0615f9c9b7eb20e874ce98a3426d6223b68f;
+23 new nonsecret objects230891836bytes,32 reused. Packet validation passed. Exact
+publication/staging, desired CAS, stopped-owner recovery, native rebind/attestation,
+startup, actual network checks and original activation are prepared. No initializer,
+SQL migration, credential rewrite, new permission or new fixed cost. Original failed
+journal is retained. Current key expires15:47:31UTC; one authorized replacement unused.
+
+Next: obtain this exact amendment approval, then apply-approved.py phases files,
+stage, desired, recover, network-probe, activate in order. Inspect any failure;
+never reset intent or rerun initialization. All frozen evidence files must remain
+unchanged; put new diagnostics elsewhere. Original four real acceptance journeys,
+conditional promotion, two-user qualification, recovery testing and automatic branch
+deployment remain outstanding. This is not a working staging or qualified release.
+
 ## Current state after qualification recovery attempt (2026-10-21)
 
 This section supersedes the pending approval in the next section. Approval8593236f
