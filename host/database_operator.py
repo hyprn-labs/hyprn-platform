@@ -177,7 +177,8 @@ class Operation:
         if result.get('nextPageToken'):
             raise Invalid('database_operator_user_listing_incomplete')
         users = [u for u in result.get('items', []) if u.get('name') == self.db['bootstrap_role']]
-        if len(users) > 1 or users and users[0].get('type') != 'BUILT_IN':
+        # Cloud SQL omits the default BUILT_IN enum in user-list responses.
+        if len(users) > 1 or users and users[0].get('type', 'BUILT_IN') != 'BUILT_IN':
             raise Invalid('database_operator_user_identity')
         return bool(users)
 

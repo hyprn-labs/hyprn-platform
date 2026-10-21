@@ -176,6 +176,27 @@ class DatabaseOperatorTests(unittest.TestCase):
             self.assertEqual(operation.create_user(reconcile=True)['status'], 'created')
         self.assertEqual(len([c for c in self.google.calls if c[1] == 'POST']), 1)
 
+    def test_omitted_default_user_type_reconciles_without_second_creation(self):
+        self.assertEqual(self.create()['status'], 'created')
+        del self.google.users[0]['type']
+        with self.operation() as operation:
+            self.assertTrue(operation.user())
+            self.assertEqual(operation.create_user(reconcile=True)['status'], 'created')
+        self.assertEqual(len([call for call in self.google.calls if call[1] == 'POST']), 1)
+
+    def test_explicit_invalid_user_type_and_duplicate_identity_are_rejected(self):
+        name = self.policy['database']['bootstrap_role']
+        for value in (None, '', 'CLOUD_IAM_USER', 'CLOUD_IAM_SERVICE_ACCOUNT', 0, False):
+            with self.subTest(value=value), self.operation() as operation:
+                self.google.users = [{'name': name, 'type': value}]
+                with self.assertRaisesRegex(Invalid, 'database_operator_user_identity'):
+                    operation.user()
+        self.google.users = [{'name': name}, {'name': name, 'type': 'BUILT_IN'}]
+        with self.operation() as operation:
+            with self.assertRaisesRegex(Invalid, 'database_operator_user_identity'):
+                operation.user()
+        self.assertTrue(all(call[1] == 'GET' for call in self.google.calls))
+
     def test_lost_user_create_response_never_creates_again(self):
         self.google.lose = 'POST'
         with self.assertRaises(Invalid):
