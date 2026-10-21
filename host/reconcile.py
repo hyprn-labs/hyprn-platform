@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import fcntl
 import hashlib
 import http.client
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -26,7 +27,14 @@ from urllib.parse import quote
 from uuid import uuid4
 
 import contract
-from secrets import AttachedServiceAccount, request_google
+# The standard library's secrets module may already be loaded by bootstrap or
+# native dependencies. Load this fixed trusted sibling under its own name.
+_secret_spec = importlib.util.spec_from_file_location(
+    'hyprn_reconcile_secret_loader', Path(__file__).with_name('secrets.py'))
+_secret_loader = importlib.util.module_from_spec(_secret_spec)
+_secret_spec.loader.exec_module(_secret_loader)
+AttachedServiceAccount = _secret_loader.AttachedServiceAccount
+request_google = _secret_loader.request_google
 
 MAX_OUTPUT = 2 * 1024 * 1024
 RESULT_FIELDS = {'operation_id', 'operation', 'installation_id', 'status',

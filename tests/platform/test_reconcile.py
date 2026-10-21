@@ -242,6 +242,16 @@ class ReconcileTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_embedded_import_preserves_preloaded_standard_library_secrets(self):
+        code = ("import secrets, sys; original = secrets; "
+                "sys.path.insert(0, sys.argv[1]); import reconcile; "
+                "assert sys.modules['secrets'] is original; "
+                "assert len(secrets.token_hex(8)) == 16; "
+                "assert reconcile.AttachedServiceAccount.__module__ != 'secrets'")
+        result = subprocess.run([sys.executable, '-B', '-c', code, str(ROOT / 'host')],
+                                capture_output=True, text=True, timeout=10, cwd=Path(tempfile.gettempdir()).resolve())
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_two_processes_cannot_own_deployment_lock(self):
         with tempfile.TemporaryDirectory(prefix='hyprn-lock-') as directory:
             journal = reconcile.Journal(directory)
