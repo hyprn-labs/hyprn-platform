@@ -211,9 +211,9 @@ def access_readback(policy, target):
                 'tunnel_id': policy['tunnel_id'], 'origin': target.runtime['external_origin'],
                 'issuer': target.runtime['access']['issuer'], 'audience': target.runtime['access']['audience']}
     ingress = [{'hostname': target.runtime['external_origin'].removeprefix('https://'),
-                'service': 'http://127.0.0.1:8080', 'origin_request': {'access': {
-                    'required': True, 'team_name': target.runtime['access']['issuer'][8:].split('.')[0],
-                    'aud_tag': [target.runtime['access']['audience']]}}}, {'service': 'http_status:404'}]
+                'service': 'http://127.0.0.1:8080', 'originRequest': {'access': {
+                    'required': True, 'teamName': target.runtime['access']['issuer'][8:].split('.')[0],
+                    'audTag': [target.runtime['access']['audience']]}}}, {'service': 'http_status:404'}]
     if value != dict(expected, ingress=ingress):
         raise Refused('tunnel_access_readback_changed')
 

@@ -85,14 +85,14 @@ class ActivationInstallTests(unittest.TestCase):
             'tunnel_id': self.policy['tunnel_id'], 'origin': target.runtime['external_origin'],
             'issuer': target.runtime['access']['issuer'], 'audience': 'abc',
             'ingress': [{'hostname': 'staging.example.test', 'service': 'http://127.0.0.1:8080',
-                'origin_request': {'access': {'required': True, 'team_name': 'test', 'aud_tag': ['abc']}}},
+                'originRequest': {'access': {'required': True, 'teamName': 'test', 'audTag': ['abc']}}},
                 {'service': 'http_status:404'}]}
         with patch.object(subject.bootstrap, 'read_pinned', return_value=json.dumps(value).encode()):
             subject.access_readback(self.policy, target)
         for mutation in ('disable_access', 'remote_origin', 'wildcard'):
             wrong = copy.deepcopy(value)
             if mutation == 'disable_access':
-                wrong['ingress'][0]['origin_request']['access']['required'] = False
+                wrong['ingress'][0]['originRequest']['access']['required'] = False
             elif mutation == 'remote_origin':
                 wrong['ingress'][0]['service'] = 'http://169.254.169.254'
             else:
