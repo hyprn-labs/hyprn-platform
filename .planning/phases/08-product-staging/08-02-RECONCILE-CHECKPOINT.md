@@ -14,7 +14,8 @@ Linux/GCE lifecycle acceptance, deployment authorization or human acceptance.
 
 `Target` checks exact closed descriptors/configuration. `GoogleHost` reads attached
 metadata identity, live instance/disk ownership, retired-host stopped state,
-READ_WRITE_SINGLE attachment, Linux kernel mount UUID/device and generation-bound
+the exact zonal pd-balanced type and exclusive attachment, Linux kernel mount
+UUID/device and generation-bound
 GCS current desired bytes. Read errors, redirects, missing permission, unsupported
 mounts and unproven replacement refuse; this code creates no cloud resource.
 `Product` verifies bootstrap-pinned protected scripts/interpreter and payload
@@ -58,7 +59,7 @@ All TemporaryDirectory fixture scopes were released, child processes were waited
 or killed on timeout, and no retained test store or artifact was created. No user
 installation was a test fixture; unrelated modifications/index entries preserved.
 
-## Artifact identities (SHA-256)
+## Initial artifact identities at 167ef7b (SHA-256)
 
 | File | Digest |
 |---|---|
@@ -88,8 +89,8 @@ installation was a test fixture; unrelated modifications/index entries preserved
    implementation, never a caller-supplied successful-backup receipt. Parent and
    backup executor own integration; current tests explicitly use protocol peers.
 4. GCE ownership checks require reviewed `compute.instances.get` and
-   `compute.disks.get` permissions. None were granted. READ_WRITE_SINGLE,
-   fixed by-id device naming, nonpartitioned mount and metadata behavior need a
+   `compute.disks.get` permissions. None were granted. The exact pd-balanced
+   type policy, explicit attachment device name, nonpartitioned mount and metadata behavior need a
    real scoped Linux/GCE exercise; unsupported cases refuse. GCS publisher
    authority remains the documented platform trust boundary.
 5. Current product admission-opening refuses without trusted host qualification.
@@ -97,3 +98,50 @@ installation was a test fixture; unrelated modifications/index entries preserved
    identity, provider spending continuity, scientific qualification, reboot
    renewal, second activation preserving seeded private records and isolated
    Cloud SQL recovery remain mandatory parent-owned acceptance gates.
+
+
+## Disk attachment correction — 2026-10-21
+
+Parent read-only staging inspection found that the actual disk resource is
+`hyprn-staging-data` with type pd-balanced and no accessMode field, while its
+attachment deviceName is `hyprn-data`. The initial code wrongly required the two
+names to match and required READ_WRITE_SINGLE to be explicitly present. Commit
+`923c8d0c12b07e0b75d02d680e83704c14cc1f98` corrects this narrow mismatch.
+
+`GoogleHost` now requires separate bootstrap `disk_name` and `device_name`.
+The Compute observation validator accepts only the exact expected project/zone
+pd-balanced disk-type URL. An absent accessMode is accepted for that type only;
+any explicitly present value other than READ_WRITE_SINGLE is rejected.
+Absent multiWriter or boolean false is accepted; true, null, integers, strings
+and other malformed values are rejected. Other disk types, foreign type URLs,
+nonexclusive users, wrong attachment source/mode/device or duplicate attachments
+remain refused. The real Linux check still resolves the reviewed device by-id
+name and compares its block device, every store mount device and filesystem UUID.
+
+This interpretation follows Google's official
+[Persistent Disk multi-writer restrictions](https://docs.cloud.google.com/compute/docs/disks/sharing-disks-between-vms#restrictions_for_sharing_a_disk_in_multi-writer_mode),
+checked 2026-10-21: multi-writer Persistent Disk is supported for SSD Persistent
+Disk. It does not infer single-writer behavior for Hyperdisk or any other type.
+The parent supplied the staging readback; this executor performed no Google
+resource call or mutation. The regression fixture preserves that response shape
+with a synthetic project. No Cloud IAM, VM, disk or settings changed.
+
+Verification invalidation: changed host policy and regression tests required a
+new run. Red focused discovery ran 35 tests: existing 25 passed; new test methods
+reported 1 failure and 34 subtest errors before the helper/device argument existed.
+After implementation, `python3 -B -m unittest discover -s tests/platform -p
+test_reconcile.py -v` passed 35 tests, 0 failed/skip, 0.593 seconds.
+`git diff --check -- host/reconcile.py tests/platform/test_reconcile.py` exited 0.
+`tests/platform/run.sh reconcile` on committed `923c8d0` passed 35 tests,
+0 failed/skip, 0.595 seconds. Parent owns the independent committed-tree acceptance.
+All temporary fixture scopes were released. The provider-policy fixture does not
+prove a Linux mount or combined hosted lifecycle; all remaining gates above remain.
+
+Current SHA-256 at `923c8d0`:
+
+| File | Digest |
+|---|---|
+| host/reconcile.py | fdbf17dcf127ff878f18e7345610f2ee25ac660039463aca5a578415a597b5e8 |
+| tests/platform/test_reconcile.py | 1aaf175f4b0ffcfd60aecd2790253c6004fe3a232752b00b82f4d9928cf8fd35 |
+
+This checkpoint update is the only subsequent owned delta; it changes no behavior.
