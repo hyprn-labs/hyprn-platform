@@ -307,6 +307,8 @@ def execute(policy, ca_path, admin_path, root, approved, *, reconcile=False,
                            temporary_admin=policy['bootstrap_role'])
         receipt = {'schema': 'hyprn-database-setup-receipt/v1', 'plan_sha256': approved,
                    'status': 'roles_verified', 'roles': ROLES,
+                   'credential_sha256': {alias: hashlib.sha256(protected(root / alias)).hexdigest()
+                                         for alias in ROLES},
                    'secrets_uploaded': False, 'bootstrap_admin_removed': False,
                    'product_started': False}
         if not (root / 'complete.json').exists():

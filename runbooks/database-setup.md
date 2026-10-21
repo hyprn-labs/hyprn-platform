@@ -55,14 +55,15 @@ credentials authenticate and privileges are read back.
 
 ## Operator actions in the combined deployment approval
 
-The script deliberately has no cloud API mutation or Secret Manager write authority.
-The combined deployment plan must explicitly bind these operator actions:
+The host script deliberately has no cloud API mutation or Secret Manager write authority.
+The [operator helper](database-operator.md) performs these separately reviewed actions.
+The combined deployment plan explicitly binds their order and exact identities:
 
 1. Verify the existing SQL instance, its private endpoint/DNS/CA, existing database,
    and absence of the exact temporary bootstrap name. Create **only** that temporary
    built-in Cloud SQL user through the operator identity. Generate its password in
    protected memory/file storage; never pass it as a CLI argument. The API request
-   is `POST /sql/v1/projects/{project}/instances/{instance}/users`, with the
+   is `POST /v1/projects/{project}/instances/{instance}/users`, with the
    exact JSON fields `name`, `type: BUILT_IN`, and generated `password`. Record the
    intent before submission and poll its returned operation to completion. A lost
    response requires inspection of users/operations, not another create/reset.
@@ -78,7 +79,7 @@ The combined deployment plan must explicitly bind these operator actions:
    version identity and payload equality before retrying. Preserve the existing
    Assistant provider secret. The runtime service account remains accessor-only.
 4. Delete the **same** temporary bootstrap user via
-   `DELETE /sql/v1/projects/{project}/instances/{instance}/users?name={name}`
+   `DELETE /v1/projects/{project}/instances/{instance}/users?name={name}`
    with an empty body, and poll the operation. Verify user absence through the
    API and the command below. No schema/database object is owned by this temporary
    user; its removal is not a cascade deletion of application objects.
