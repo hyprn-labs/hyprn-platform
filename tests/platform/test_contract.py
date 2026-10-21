@@ -77,9 +77,9 @@ class ContractTests(unittest.TestCase):
     def test_private_routes_and_proxy_are_bound_to_the_exact_runtime(self):
         rendered = self.success(self.command())["preview"]
         services = rendered["compose"]["services"]
-        self.assertFalse(rendered["compose"]["networks"]["dispatcher"]["internal"])
-        self.assertTrue(rendered["compose"]["networks"]["modeling"]["internal"])
-        for network in rendered['compose']['networks'].values():
+        self.assertFalse(rendered['network_policy']['bridges']['dispatcher']['internal'])
+        self.assertTrue(rendered['network_policy']['bridges']['modeling']['internal'])
+        for network in rendered['network_policy']['bridges'].values():
             bridge = network['driver_opts']['com.docker.network.bridge.name']
             self.assertTrue(bridge.startswith('br-'))
             self.assertLessEqual(len(bridge), 15)
@@ -167,7 +167,7 @@ class ContractTests(unittest.TestCase):
                          "hyprn_assistant_background")
         self.assertEqual(dispatcher["networks"], {"modeling": {"ipv4_address": "172.29.82.4"},
                                                "dispatcher": {"ipv4_address": "172.29.83.2"}})
-        self.assertFalse(preview["compose"]["networks"]["dispatcher"]["internal"])
+        self.assertFalse(preview['network_policy']['bridges']['dispatcher']['internal'])
         self.assertEqual(dispatcher["profiles"], ["host-dispatcher"])
         self.assertEqual(dispatcher["entrypoint"],
                          ["python", "-B", "-m", "hyprn_mvp_app.dispatcher"])

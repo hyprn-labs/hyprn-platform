@@ -328,3 +328,34 @@ class OwnerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ServiceNetworkBindingTests(unittest.TestCase):
+    def test_proxy_listener_exception_requires_exact_target_and_live_verification(self):
+        import service_network_install
+        value = target()
+        policy = {'installation_id': value.runtime['installation_id'],
+                  'network': value.preview['network_policy'],
+                  'host': {key: value.runtime[key] for key in
+                           ('project_id', 'project_number', 'zone', 'host_id', 'disk_uuid')}}
+        def observe(command, reason):
+            return b'iptables v1.8.9 (nf_tables)' if '--version' in command else RULES
+        with patch.object(preflight, 'observe', side_effect=observe), \
+                patch.object(preflight, 'ipv6_observation'), \
+                patch.object(preflight, 'tcp_listeners', return_value=[('172.29.81.1', 3128)]), \
+                patch.object(preflight.reconcile, 'protected', return_value=Path('/policy')), \
+                patch.object(preflight.reconcile.contract, 'read_json', return_value=policy), \
+                patch.object(service_network_install, 'verify_live', return_value={'verified': True}) as verify:
+            self.assertEqual(preflight.network_observation(value)['service_network'], {'verified': True})
+            verify.assert_called_once_with(policy)
+            policy['installation_id'] = 'wrong-installation'
+            with self.assertRaisesRegex(preflight.reconcile.Refused, 'service_network_target_mismatch'):
+                preflight.network_observation(value)
+            self.assertEqual(verify.call_count, 1)
+
+    def test_proxy_listener_without_bound_service_is_rejected(self):
+        with patch.object(preflight, 'observe', side_effect=[b'iptables (nf_tables)', RULES]), \
+                patch.object(preflight, 'ipv6_observation'), \
+                patch.object(preflight, 'tcp_listeners', return_value=[('172.29.81.1', 3128)]):
+            with self.assertRaises(preflight.reconcile.Refused):
+                preflight.network_observation()

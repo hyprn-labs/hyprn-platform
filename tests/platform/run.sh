@@ -6,6 +6,9 @@ case "$group" in
   contracts) pattern=test_contract.py ;;
   service-network) pattern=test_service_network.py ;;
   service-network-live) pattern=test_service_network_live.py ;;
+  service-network-install) pattern=test_service_network_install.py ;;
+  database-setup) pattern=test_database_setup.py ;;
+  activation) pattern=test_activation.py ;;
   secrets) pattern=test_secrets.py ;;
   backup) pattern=test_cloudsql_backup.py ;;
   reconcile) pattern=test_reconcile.py ;;

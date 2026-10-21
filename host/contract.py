@@ -282,6 +282,11 @@ def container_networks():
     } for name, octet in (("application", 81), ("modeling", 82), ("dispatcher", 83))}
 
 
+def external_networks(runtime):
+    return {name: {"external": True, "name": runtime["installation_id"] + "_" + name}
+            for name in container_networks()}
+
+
 def service_networks(component):
     indices = {"app": "2", "modeling": "3", "dispatcher": "4"}
     value = {"modeling": {"ipv4_address": "172.29.82." + indices[component]}}
@@ -398,7 +403,7 @@ def render(release, runtime):
         )},
         "compose": {
             "services": services,
-            "networks": container_networks(),
+            "networks": external_networks(runtime),
         },
         "execution": {
             "kind": "host-service", "user": 10003, "root": root + "/execution",
@@ -538,7 +543,7 @@ def check_render(value, runtime, release):
         raise Invalid("render_policy")
     if value["execution"]["application_secrets"]:
         raise Invalid("render_policy")
-    if value["compose"]["networks"] != container_networks():
+    if value["compose"]["networks"] != external_networks(runtime):
         raise Invalid("render_policy")
     if value.get("network_policy") != network_policy(runtime):
         raise Invalid("render_policy")

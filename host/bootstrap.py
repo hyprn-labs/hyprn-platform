@@ -383,7 +383,8 @@ def run(policy_path):
     os.umask(0o077)
     policy = load_policy(policy_path)
     # Exact reviewed platform modules are protected before any privileged effect.
-    for name in ('bootstrap', 'contract', 'reconcile', 'install_release', 'secrets', 'images', 'backup_set', 'cloudsql_backup', 'preflight'):
+    for name in ('bootstrap', 'contract', 'reconcile', 'install_release', 'secrets', 'images', 'backup_set', 'cloudsql_backup', 'preflight',
+                 'service_network_install', 'service_network', 'setup'):
         reconcile.protected(HOST / (name + '.py'))
     preflight = sibling('preflight')
     secure(policy['binding'], private=True)

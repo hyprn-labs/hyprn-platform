@@ -281,16 +281,27 @@ def check_listener(address, port):
         raise error
 
 
-def network_observation():
+def network_observation(target=None):
     version = observe(['/usr/sbin/iptables', '--version'], 'iptables_nft_required').decode()
     if '(nf_tables)' not in version:
         refuse('iptables_nft_required')
     raw = observe(['/usr/sbin/iptables-save', '-t', 'filter'], 'firewall_observation_unavailable')
     digest = firewall_structure(raw)
     ipv6_observation()
+    service = None
+    if target is not None:
+        import service_network_install
+        policy = reconcile.contract.read_json(reconcile.protected(service_network_install.POLICY))
+        if (policy.get('installation_id') != target.runtime['installation_id']
+                or policy.get('network') != target.preview['network_policy']
+                or any(policy.get('host', {}).get(key) != target.runtime[key]
+                       for key in ('project_id', 'project_number', 'zone', 'host_id', 'disk_uuid'))):
+            refuse('service_network_target_mismatch')
+        service = service_network_install.verify_live(policy)
     for address, port in tcp_listeners():
-        check_listener(address, port)
-    return dict(backend='iptables-nft', observed_rules_sha256=digest, ipv6='disabled',
+        if service is None or (address, port) != ('172.29.81.1', 3128):
+            check_listener(address, port)
+    return dict(service_network=service, backend='iptables-nft', observed_rules_sha256=digest, ipv6='disabled',
                 assurance='minimum-structure-only', live_container_probe=False)
 
 
@@ -310,7 +321,7 @@ def check(target, policy_path, *, host):
             refuse('database_ca_source_mismatch')
     except OSError:
         refuse('database_ca_source_unavailable')
-    network = network_observation()
+    network = network_observation(target)
     target.unchanged()
     connector_present = any(Path(path).is_file() for path in ('/usr/bin/cloudflared', '/usr/local/bin/cloudflared'))
     return dict(schema='hyprn-host-preflight/v1', identity=target.identity,
