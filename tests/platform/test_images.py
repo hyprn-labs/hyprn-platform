@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import socket
 from pathlib import Path
 import sys
 import tempfile
@@ -22,13 +23,19 @@ class ImageTests(unittest.TestCase):
         self.tool = self.root / 'docker'
         self.tool.write_text('reviewed fixture tool')
         self.pin = hashlib.sha256(self.tool.read_bytes()).hexdigest()
+        self.socket_path = self.root / 'docker.sock'
+        self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.addCleanup(self.socket.close)
+        self.socket.bind(str(self.socket_path))
+        self.endpoint = 'unix://' + str(self.socket_path)
         self.config = self.root / 'config'
         self.config.mkdir(mode=0o700)
         self.refs = {role: 'europe-west1-docker.pkg.dev/hyprn-staging/product/' + role
                      + '@sha256:' + c * 64
                      for role, c in (('app', 'a'), ('modeling', 'b'), ('worker', 'c'))}
         self.target = SimpleNamespace(runtime={'registry': 'europe-west1-docker.pkg.dev/hyprn-staging/product',
-            'project_id': 'hyprn-staging', 'project_number': '123'}, release={'images': self.refs},
+            'project_id': 'hyprn-staging', 'project_number': '123',
+            'execution_host': {'docker_endpoint': self.endpoint}}, release={'images': self.refs},
             protect=lambda: None, unchanged=lambda: None)
         self.calls = []
         self.credentials_used = False
@@ -48,7 +55,7 @@ class ImageTests(unittest.TestCase):
     def command(self, args, *, timeout):
         self.calls.append(args)
         self.assertEqual(args[:2], [str(self.tool), '--config'])
-        self.assertEqual(args[3:5], ['--host', 'unix:///var/run/docker.sock'])
+        self.assertEqual(args[3:5], ['--host', self.endpoint])
         config = Path(args[2]) / 'config.json'
         self.assertEqual(config.stat().st_mode & 0o777, 0o600)
         auth = json.loads(config.read_text())
@@ -125,3 +132,15 @@ class ImageTests(unittest.TestCase):
         with self.assertRaises(images.reconcile._secret_loader.Invalid):
             self.run_images()
         self.assertFalse(self.credentials_used)
+
+    def test_remote_and_linked_daemon_are_refused_before_credentials(self):
+        self.target.runtime['execution_host']['docker_endpoint'] = 'tcp://foreign:2375'
+        with self.assertRaisesRegex(images.reconcile.Refused, 'docker_socket_identity'):
+            self.run_images()
+        link = self.root / 'linked.sock'
+        link.symlink_to(self.socket_path)
+        self.target.runtime['execution_host']['docker_endpoint'] = 'unix://' + str(link)
+        with self.assertRaisesRegex(images.reconcile.Refused, 'docker_socket_identity'):
+            self.run_images()
+        self.assertFalse(self.credentials_used)
+        self.assertEqual(self.calls, [])

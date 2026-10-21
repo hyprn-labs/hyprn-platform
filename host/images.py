@@ -9,10 +9,12 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import tempfile
 from types import SimpleNamespace
 
 import reconcile
+import install_release
 
 
 def ensure_images(target, *, docker, docker_sha256, config_root):
@@ -22,6 +24,16 @@ def ensure_images(target, *, docker, docker_sha256, config_root):
     if (not re.fullmatch('[0-9a-f]{64}', docker_sha256)
             or reconcile.digest_file(tool) != docker_sha256):
         raise reconcile.Refused('docker_tool_pin')
+    endpoint = target.runtime['execution_host']['docker_endpoint']
+    if not isinstance(endpoint, str) or not endpoint.startswith('unix:///'):
+        raise reconcile.Refused('docker_socket_identity')
+    socket = Path(endpoint[7:])
+    if '..' in socket.parts or 'unix://' + str(socket) != endpoint:
+        raise reconcile.Refused('docker_socket_identity')
+    install_release.protected_directory(socket.parent)
+    info = socket.lstat()
+    if not stat.S_ISSOCK(info.st_mode) or info.st_uid not in (0, os.geteuid()):
+        raise reconcile.Refused('docker_socket_identity')
     registry = target.runtime['registry']
     project = target.runtime['project_id']
     if (not re.fullmatch(r'[a-z0-9-]+-docker\.pkg\.dev/[a-z][a-z0-9-]+/[a-z0-9-]+', registry)
@@ -48,7 +60,7 @@ def ensure_images(target, *, docker, docker_sha256, config_root):
             json.dump(auth, stream)
         # Explicit host/config and bounded()'s clean environment exclude inherited
         # contexts, credential helpers, proxy variables and alternate daemons.
-        prefix = [str(tool), '--config', str(stage), '--host', 'unix:///var/run/docker.sock']
+        prefix = [str(tool), '--config', str(stage), '--host', endpoint]
         for role, image in images.items():
             target.unchanged()
             if reconcile.digest_file(tool) != docker_sha256:
