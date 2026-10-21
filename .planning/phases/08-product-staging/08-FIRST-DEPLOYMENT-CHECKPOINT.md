@@ -1,101 +1,88 @@
-# First application deployment preparation — 2026-10-21
+# First staging deployment — current checkpoint
 
-## Current stopping point
+Updated 2026-10-21. First usable staging is pending; VM running, application closed.
 
-The owner approved the original deployment, publisher correction and network
-repair. Network repair was applied successfully on2026-10-21: actual firewall,
-bridges and proxy passed, with admission closed. Host directories are prepared;
-all three pinned runtime images are pulled and verified. All61 published/staged
-nonsecret files remain intact. Desired state is still absent; product/tunnel and
-Assistant delivery have not started. The original local Assistant is unchanged.
+## Current state and next action
 
-Database creation first stopped on a transient Google identity timeout before
-any intent/mutation. After read-only identity verification, the next attempt
-created the single approved temporary bootstrap user. Its recorded CREATE_USER
-operation is DONE with no error. Google omitted the default built-in user-type
-field, so the operator's post-create identity check failed. Do not recreate the
-user or reset its password. The original password and intent/operation receipts
-remain protected under the private packet's private-transfer directory.
-No database roles or runtime credential versions have been published yet.
+The owner approved the original deployment, publisher correction, network repair
+and database-user-type correction. The latter was applied: original CREATE_USER
+operation reconciled successfully. Do not recreate the user or reset its password.
+The original private-transfer intents/password remain unchanged. The replacement
+30-minute OS Login key was used; its recorded expiry has passed.
 
-Committed correction44bb931 accepts only an omitted type as the documented
-BUILT_IN default; explicit malformed or IAM types and duplicates still fail.
-Focused database-operator checks:15passed. A sandbox-only repeat failed one
-loopback fixture bind (14passed/1error); the committed-tree run with socket
-permission passed15/15. GET-only verification against actual Google records
-confirmed the corrected parser and completed operation; no receipt was fabricated.
+The actual DB setup then refused TLS before creating roles. Read-only diagnosis
+found Google's exact SAN has a trailing dot, and Terraform's real database is
+hyprn while the old runtime required hyprn_app. Full verified TLS to hyprn passed;
+application roles and credential folder are empty, and owner memberships are true.
+No application, native dispatcher, modeling service, tunnel or hosted Assistant
+has started. No nine runtime credential versions published. Original local Assistant
+remains untouched. Network/proxy and original image pulls/publication are complete.
 
-Next: obtain approval for the concrete operator amendment in
-`/private/tmp/hyprn-staging-final-plan/application-evidence/database-user-type-repair/REVIEW.md`,
-SHA256 `23f63375a3aae178d45e016cce0f8cde1bb7c1bcc38deb2725de12677532f228`.
-Its pinned wrapper verifies the corrected source plan, preserves original receipt
-lineage and has no create-user action. Reconcile the existing creation, then
-continue role setup, secret publication and the remaining approved deployment.
-No permissions, costs, payloads or user passwords change.
+Next: approval of the consolidated correction:
+`/private/tmp/hyprn-staging-database-correction/REVIEW.md`.
+Amendment SHA256 `6e474f7755de53f07f2362eab83e4d5cde1d9f09f1938cb1db9ca265068e8461`.
+It replaces the database/TLS/deployment pins, reuses the existing temporary user,
+permits one two-hour connection key if needed, and resumes original deployment.
+It adds no IAM, infrastructure or fixed charge. Exact operations and recovery
+are in that packet. Prior frozen packets are retained unchanged, not overwritten.
+Original conditional ongoing access, budget, allowlist and acceptance remain binding.
 
-The network amendment's desired publisher and activation SHA remain binding:
-`57262e02cf8c3c11b379cfa3eb2a8d98be338e96557632ba9d2664c7c2381c37`.
-The original operator key expires12:52:09UTC. The one replacement30-minute key
-already approved in the network amendment has not been used. Preserve knownhosts.
-The initial qualification window ends2026-10-22 10:00UTC. VM remains running;
-no live login, contained execution, Assistant or slider success is claimed.
+## Corrected source and artifact preparation
 
-## Frozen source and evidence
+Platform code commits cbefafe (exact TLS name, target DB preflight) and8af657a
+(explicit safe database-name schema) are prepared, not applied to cloud. Product
+commit3744603 pins that contract. All three exact container manifests remain unchanged.
+Real native rebuild/fresh-extraction checks passed at its new exact product prefix.
 
-- Product source: `ac1fe308b7936e951c90caf0de6a60cd0d0ccb33`.
-- Platform host source: `3fb8aa13b334865a385414361800b73acf9ee1ee`.
-- Consumer contract pin: `2a3cc534ac1e044ecb15c327b37f97cc77293323`.
-- Release digest: `62e216ca44884eb96868b2210c11c08e3dc28371d3a150179641f12a2f0b4b0f`.
-- Final staging manifest: `7606980e07fc5f1b1d3242fe3ecb8264fe805089546f94fd4170e6b166c56d85`.
-- Publication plan: `ef8100ec8dcd0b4865471843353d7bf2109ea6e4d11bfb613224aa214e4f876e`.
-- Activation plan: `9ef83f013b38721844c9cf0224bd7e3be4dc1cb1b0df354f97fe90bd797ba8b7`.
+Release `839a67dc216d20d301e71093b4de9e604901644293f9c156147747023b70c46e`.
+Config `ad4ce2cd9738f2cb16c0f176c32e2bf48ee49f215daaaea08a3220a989990bf7`.
+The new platform is staged inside that release's deployment directory, satisfying
+existing loader restrictions without weakening them. Thirty existing objects are
+reused; thirty new nonsecret objects total230933716bytes. Old releases remain intact.
+The network update changes only its pinned source path; rules and proxy routes match.
 
-The payload contains actual verified AMD64 OCI archives, native bundle and build
-provenance. See product build checkpoint and the platform database checkpoint for
-artifact/test detail. The final manifest stages 61 nonsecret files, 1,098,528,133
-bytes; no credential or live store is included. Private operator scripts and
-manifests are hashed by the root plan. Their final read-only verification checked
-source hashes, all publication bytes/sizes, rendered plans, exact binding/runtime
-agreement, budget continuity and script syntax; exit 0. It performs no cloud call.
+Prepared network plan17c619f9faf37402ea9921b2314ac0fb15e8d93e624783eeaa93453576d88458;
+DB plan5075acc24ee879d63d1beed497d5002a1782260d58907d6cd385a983fdaa0977;
+operator plandcfd4e7eb884f0d0cdf27aac626d29ac19bcb6ab684d1e27ef667b3cf07ab522;
+activation plan528a62e842d12b240c542d2cd8c92b59abf85026f91caa46fa641bb9e7f7ccc8.
+These supersede old execution identities only after approval. The operator wrapper
+keeps the original operation lineage50d1bf8d and has no create-user action.
 
-## Focused evidence retained
+## Verification and failures
 
-Platform runner groups already passed on their relevant implementation commits:
-contracts 24; service-network 5; service-network-install 7; preflight 21;
-service-network-probe 4; activation 8; activation-install 6; database-setup 15;
-database-operator 13; release-stage 11. Final bootstrap hardening on 3fb8aa1 passed
-26 tests via `tests/platform/run.sh bootstrap`. Actual isolated PostgreSQL/TLS
-migrations/role boundaries and proxy positive/negative paths are recorded in the
-existing checkpoints; they were not repeated without a source change.
+Platform runner checks at relevant corrected source: database-setup16,
+database-operator15, service-network-install8, service-network-probe4,
+activation-install6, bootstrap26 passed. Final schema source contracts25 passed.
+Initial contracts fixture pins were stale and failed; regenerated exact fixture
+pins restored24pass before adding the safe-name test. An earlier sandbox repeat
+failed only a loopback socket bind; authorized run passed15/15. No source test is
+claimed repeated after documentation-only checkpoint changes.
 
-Product groups: hosted-lifecycle 21, cloud-execution-config 16, cloud build helper
-8. Native extraction/import and all three OCI graphs verified. An initial native
-fixture disk-budget refusal was resolved using an explicitly larger isolated
-budget, without deleting shared cache. No passing mock is treated as live staging.
-This checkpoint-only commit does not alter any tested or frozen host input.
+Product final hosted-lifecycle21pass,21.622s, checkda13d781-dad0-4f2b-95ed-9b248f6eb50b.
+Execution-config16pass retained before the final schema-only pin delta. Build-helper8
+retained because helper source unchanged. Actual image/native build evidence is in
+`/private/tmp/hyprn-staging-build-3744603`; payload verification passed in
+`/private/tmp/hyprn-staging-payload-3744603`. Packet verify-packet.py passes all bytes,
+plans, source pins, network equivalence and manifest-location checks without cloud
+calls. Initial packet preparation rejected an out-of-root platform path; relocation
+used existing allowed release roots. No remote action used the rejected packet.
 
-## First-use acceptance and remaining obligations
+Live diagnosis receipts, original network/publication/user receipts and all failures
+remain under `/private/tmp/hyprn-staging-final-plan/application-evidence`.
+New packet EVIDENCE.md links focused logs and exact build/check identities. Scoped
+build volumes are retained; no build container remains running. Runner-owned fixtures
+were released. No unrelated files/index entries were staged or reverted.
 
-The approved batch must prove real Cloudflare login, native containment/execution,
-Assistant tool authoring and jointly movable answer sliders with calculated or
-validated estimated values and no model reruns. Pending cloud SQL ownership,
-secret publication, live network and product startup conditions fail closed.
-Temporary credentials remain protected until durable publication and verification;
-uncertain mutations reconcile read-only before any further effect.
+## Remaining obligations
 
-The host preparation corrects shared control-folder traversal while leaving
-secret folders private, and keeps the deployment journal outside all owner data
-stores. It runs after the network installer verifies the previous setup. Exact
-source and operation bytes are in the private packet, not a broad authorization.
+Continue database roles/credentials, delete only the temporary user, verify ordinary
+roles, fence old Assistant, preserve501c prior spend and11215c total, publish corrected
+desired, bootstrap/attest, network-probe, activate and exercise real login/execution/
+Assistant/joint-slider journeys. No model reruns on slider movement and no weakened
+accuracy, containment or TLS checks. Qualification window ends22October10:00UTC;
+ongoing promotion requires original four real journeys. No silent expiry extension.
 
-Remaining owner: this deployment workstream. Two-human isolation and acceptance,
-full reboot/recovery and aggregate installed-release qualification remain pending.
-The first working staging milestone does not complete a qualified release. The
-automatic staging-branch delivery workflow is not yet implemented in either repo;
-prepare that narrow GitHub/authority delta after the first installed path works.
-Existing shared Assistant approval and all prior spending remain intact. The
-narrow Secret Manager master-copy exception for machine runtime credentials is
-explicitly approved in the original deployment review.
-
-No unrelated planning/design edits were staged or reverted. Build evidence and
-scoped build volumes remain retained for review; no running build containers remain.
+Owner: this deployment workstream. Two-human isolation/acceptance, full reboot and
+recovery, aggregate release qualification and automatic staging-branch delivery
+remain pending. Neither a passing local fixture nor healthy endpoint establishes
+these. Existing €170–220/month estimate and €100 shared Assistant budget apply.
