@@ -4,6 +4,41 @@ Updated2026-10-21. First usable staging remains pending. VM running; browser and
 scientific admission closed; no product service running. Local web Assistant stopped
 as explicitly approved; authoring records/native processes preserved.
 
+## Current state after qualification recovery attempt (2026-10-21)
+
+This section supersedes the pending approval in the next section. Approval8593236f
+was received, verified against all packet/external hashes, and its two nonsecret
+files staged at/opt/hyprn/staging-operator/qualification-recovery-3845d94efc154c7a.
+The exact helper refused all_product_writers_must_be_stopped before any recovery
+mutation. No archive created; journal, initialization, credentials and sources unchanged.
+
+Diagnosis: prior progress inspection used dockerps without-a, omitting two created
+containers. App0ea718fad76a and modelingcb7ecb71f200 were prepared during initialization
+at14:25:19UTC, never started, PID0, restart policy no, exact approved image/project.
+The recovery's requirement for an empty container inventory was overly strict.
+No container was deleted/stopped/recreated. New helper instead validates exactIDs,
+images, labels, unchanged observations and never-started state; rejects any extra,
+foreign, running, paused, restarting, started or altered container. Rechecks before
+recovery intent. All other qualification/start actions remain unchanged.
+
+Remaining actual read-only prerequisites passed: source closure, existing pinned
+secret versions, installed product artifact, all three actual owner schemas/identities.
+An inspect receipt was recorded through the real product command; journal unchanged,
+no initialization/qualification/start repeated. Evidence:
+/private/tmp/hyprn-staging-qualification-stopped-containers/preflight-result.json.
+
+Prepared replacement review (not applied):
+/private/tmp/hyprn-staging-qualification-stopped-containers/REVIEW.md
+ApprovalSHA d33b5d8c4405be4dcb4a24a7d3dd2b3ec15fb5c121796ebdfe6aa82b99657b02;
+policy78e368209ea359ba02791fef8436b60ac8eabf46eaf9c771112ce0e6d712e509.
+Six local guard tests passed0.019s. Original recovery result and container diagnosis
+are pinned under/private/tmp/hyprn-staging-qualification-recovery/application-evidence.
+Use new targetfolderqualification-recovery-78e368209ea359ba after approval; preserve
+previous staged helper. Existing key still expires15:47:31UTC; replacement unused.
+No new resources, costs or authority. All original live acceptance work remains.
+Chrome native accessibility reaches the existing staging Access login form; no email
+or OTP submitted yet. CDP remains unnecessary; no login claim.
+
 ## Current state after approved initialization recovery (2026-10-21)
 
 This section supersedes the earlier pending-initialization state below. Approval
