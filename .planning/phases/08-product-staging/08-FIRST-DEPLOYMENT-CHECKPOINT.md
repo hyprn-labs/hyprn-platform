@@ -1,43 +1,91 @@
-# Staging installation continuation — current checkpoint
+# Working private staging — 22 October 2026
 
-21 October 2026: owner approved paused-lifecycle amendment 55cbe5a3. Stage succeeded.
-Recovery terminated original process e8ca1e78 through AiiDA kill(force_kill=True),
-retained/sealed its original record, stopped all three old services and installed
-and verified the new native runtime. No rerun, initialization, migration or deletion.
-VM stays running; admission and renewal remain closed/stopped. Current control/journal
-still identifies old release131f3e8b. New app image has not started.
+Live: https://staging.hyprn.ai/ui/ . Restricted to the existing named email users.
+Owner continuing authorization is recorded in
+`/private/tmp/hyprn-staging-install-continuation/OWNER-AUTHORIZATION.md`.
+Delayed approvals and prior repairs are completed; do not replay them.
 
-Recovery then refused FileExistsError when creating shared network sources. Read-only
-inspection proves all nine already match approved bytes/modes. Completed recovery
-archive: /srv/hyprn/staging/deployment-journal/runtime-correction-ec36d5fcc4c977bedc41a71d4fcc1fc029a23d4e76c6937b41ffe0ddcdecc8fc.
-Do not replay that recovery: termination/stop/install are complete. Original nominal
-and adverse requests remain retained for normal dispatcher reconciliation after restart.
+Product `a1ee452cb30426637c19c46537da4ff3caeed344`; platform runtime artifact
+`3488a518cbae96b283d3ab88e5096215744f756d`. Release
+`eb6f7f8b3a5263d7370f3f2ec6a0c20f36b1dbc195839ce26a908e01dd024d8f`;
+config `c0a35307a16364eb4deff92007c617a5e6602fbebda71a0673bf1addb2c2a73f`;
+desired sequence 11, generation `1792622649640043`.
+Exact packet and evidence: `/private/tmp/hyprn-staging-exploration-ready/`.
+Amendment `bc8ddb2f879f440afab5982cb57510e39226fc2318b6145da6af901742fca747`.
 
-Prepared NOT APPLIED: /private/tmp/hyprn-staging-install-continuation/REVIEW.md.
-Amendment 692d7c4e9f8f16f18a7d2ff8388a812afe3eaf5190201f12763a3a294cce477e.
-Nine focused continuation guards pass (0.005s); actual read-only VM preflight verifies
-71 frozen files, three stopped containers, nine shared network sources, native install,
-owner/process receipts, closed admission and unchanged network plan. First diagnostic
-script syntax error made no change; fixed before successful preflight. Isolated local
-test directories released. Earlier 307 product /19 native-owner checks remain valid;
-no runtime source changed, so no repeated product checks. No provider request this turn.
+Publication, staging, idle-stop, desired publication, native installation, fresh
+containment, startup, all 19 real network probes and private activation passed.
+Ongoing private access was promoted successfully (`mode: staging`), after live
+verification. First promotion collided with the scheduled renewal's journal lock;
+read-back proved no promotion had occurred. The same installed promotion was then
+serialized with that timer, completed, and the timer restarted. Both receipts remain.
+No initialization, migration, new secret version or scientific model run was repeated
+in this update. Database schema remains 6. Budgets remain EUR100 shared Assistant
+and EUR170–220/month infrastructure estimate.
 
-Continuation adds two protected operator files, verifies completed evidence and exact
-state, reuses existing network sources, then resumes native rebind/containment/start.
-No interruption or database setup repeated. Next after approval: stage, recover,
-reconcile-runs, network-probe, activate; verify live real nominal/adverse results,
-Assistant-authored validated sampling/answer and joint sliders without model reruns.
-Ongoing admission only after those journeys pass. Original frozen-plan rule requires
-approval for changed privileged continuation bytes. Stores and credentials preserved.
+## Observed user journey
 
-Target release fd809f9f61e0af811298b45d0f9ad867fc547e7e3552f29df8a624aceec2af5c;
-product artifact3529f76, platform3488a51. Desired generation1792609058877867.
-Current key expires19:52:04UTC; previously approved one replacement2h key unused.
-EUR100 shared Assistant and EUR170–220/month unchanged. General native cancellation
-hardening, two-user human acceptance, reboot/recovery qualification and automatic
-staging-branch deployment remain unfinished. Staging is not yet a working product.
+Chrome retained the real email-authenticated session and opened the saved study.
+The first exploration after a fresh app start completed without timeout or retry;
+its basis was visible by 35.346 seconds and estimated outputs followed. This is an
+observation upper bound, not a precise request timing. The installed predecessor's
+isolated measurement was 28.716 s cold / 0.581 s warm, down from 11.888 s warm before
+the database-maintained fingerprint change. Cold verification still has noticeable
+latency; it is saved-record integrity checking, not model execution.
 
-Historical prepared/not-applied statements below are superseded by this section.
+Moving both load and flow sliders produced estimated 11.8844605254 K and
+-2.15751929548 kW at 13.5964175892 kW / 0.272354721279 kg/s, observed within 11.318 s.
+Selecting calculated point 2 showed 9.52380952381 K / +0.6 kW within 0.403 s.
+Both curves displayed real calculated and estimated points. No manual retry.
+Assistant turn `0244dc5f-ef53-4813-b03f-49b0cccc0c5c` successfully called get_analysis
+and get_surrogate (accepted receipts, no tool errors), confirmed validation, and
+finished idle. Authoring counts stayed 27 runs, 26 configurations, 3 analysis versions,
+1 answer. No surrogate refit, sampling or model rerun occurred during these checks.
+
+Study `ae232ccb-d48b-4e9d-928d-879d97d86d22`; answer
+`1fa6d0a2-78cb-4e61-82c5-6f3f00f20a80`; surrogate
+`b90ad5f0-f7cd-5874-a239-6a4c86f1658a`. The Assistant authored the brief, model,
+comparison, 24 real sample runs, checked surrogate and saved answer in earlier turns.
+16 training points / 1 method-selection point / 7 independent validation points;
+predeclared 0.05 K or kW absolute plus 1% relative tolerances remain unchanged and pass.
+Original killed nominal run is preserved; the answer cites the successful replacement.
+
+## Verification and cleanup
+
+On committed product a1ee452c: calculations-api 73 passed (44.43 s); UI build,
+design guard, token freshness and UI contract checks passed. Nine operator guards
+passed. Verified 37 actual packages, unchanged Assistant definition, 54 unchanged
+worker/modeling input hashes, 8 actual UI assets and fresh native extraction.
+Earlier unchanged hosted-postgres 29 and contracts 127 evidence retained.
+Development failures are preserved: sandbox cache refusal before tests; new test's
+initial exact recheck-count assertion corrected because internal integrity checking
+adds another check; build output-file collision before Docker started; UI extraction
+attempt before the completed image receipt was copied. All affected checks completed
+successfully before publication. No test targeted live stores.
+
+Six explicitly labelled, unattached build volumes were removed after delivery;
+one expired temporary private key was deleted. Release archives, nonsecret receipts,
+live stores/containers and the current time-limited operator key were preserved.
+Evidence: `application-evidence/live-verification.json`, `final-assistant-tools.json`,
+`study-before-browser.json`, `study-after-sliders.json`, `promotion-resume-result.jsonl`,
+`local-build-cleanup.json`, `expired-key-cleanup.json`, and `staging-study.png`.
+
+The prior fingerprint deployment completed one additive application migration with
+successful database-only backup `1792621192860`; its packet is
+`/private/tmp/hyprn-staging-stored-fingerprint`. That backup is not a qualified
+whole-installation recovery proof. No new database backup or migration in this release.
+
+## Remaining obligations
+
+This establishes a first working private staging product, not a qualified release.
+- Product/platform orchestration: automatic deployment from protected staging-branch
+  merges is not implemented; product 06-06 and platform 08-03 remain open.
+- Platform: full reboot and coherent whole-installation restore qualification.
+- Owner: second-user sign-in/isolation human acceptance; do not impersonate Guerric.
+- Product: native cancellation hardening and further cold-load/prediction performance.
+- Product UI: Assistant table/Markdown rendering remains rough; no cosmetic fix was
+  folded into the deployment repair.
+No subscription changes or wider access are authorized by this completion record.
 
 # Earlier staging evidence
 
