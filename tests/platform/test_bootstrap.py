@@ -54,7 +54,8 @@ class BootstrapTests(unittest.TestCase):
             runtime={'installation_id': 'test-install', 'project_id': 'hyprn-staging-fixture',
                      'project_number': '123456789012', 'disk_uuid': 'test-disk', 'store_ids': {},
                      'secrets': {'modeling-auth': {'name': 'hyprn-staging-modeling-auth', 'version': 3}},
-                     'mounts': {'secrets': str(self.root / 'secrets')},
+                     'mounts': {name: str(self.root / name)
+                                for name in ('application', 'modeling', 'execution', 'secrets')},
                      'database': {'ca_sha256': 'c' * 64}})
 
     def test_loads_exact_private_policy_without_effects(self):
@@ -124,6 +125,18 @@ class BootstrapTests(unittest.TestCase):
         self.policy['secret_versions']['modeling-auth'] = 4
         with self.assertRaisesRegex(subject.Refused, 'bootstrap_secret_pin'):
             subject.bind_policy(self.policy, target)
+
+    def test_journal_cannot_populate_or_share_an_owned_store(self):
+        target = self.target()
+        for owner in ('application', 'modeling', 'execution'):
+            for suffix in ('', '/deployment-journal'):
+                with self.subTest(owner=owner, suffix=suffix):
+                    self.policy['journal_root'] = target.runtime['mounts'][owner] + suffix
+                    with self.assertRaisesRegex(subject.Refused, 'bootstrap_journal_inside_owner_store'):
+                        subject.bind_policy(self.policy, target)
+        self.policy['journal_root'] = str(self.root / 'deployment-journal')
+        subject.bind_policy(self.policy, target)
+        self.assertEqual(list(self.root.iterdir()), [])
 
     def test_registry_credentials_cannot_share_runtime_secret_scope(self):
         target = self.target()

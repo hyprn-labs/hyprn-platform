@@ -138,6 +138,13 @@ def load_policy(path):
 def bind_policy(policy, target, active=None):
     if contract.digest(target.desired) != policy['desired_sha256'] or str(target.path) != policy['binding']:
         raise Refused('bootstrap_desired_pin')
+    journal_root = Path(policy['journal_root'])
+    for owner in ('application', 'modeling', 'execution'):
+        store_root = Path(target.runtime['mounts'][owner])
+        if journal_root == store_root or store_root in journal_root.parents:
+            # Host bookkeeping cannot populate a fresh owner store before its
+            # explicit initialization or enter an owner's writable namespace.
+            raise Refused('bootstrap_journal_inside_owner_store')
     expected = {alias: item['version'] for alias, item in target.runtime['secrets'].items()}
     if policy['secret_versions'] != expected:
         raise Refused('bootstrap_secret_pin')
@@ -386,6 +393,8 @@ def run(policy_path):
     for name in ('bootstrap', 'contract', 'reconcile', 'install_release', 'secrets', 'images', 'backup_set', 'cloudsql_backup', 'preflight',
                  'service_network_install', 'service_network', 'setup'):
         reconcile.protected(HOST / (name + '.py'))
+    for name in ('host-packages.json', 'egress-proxy.json'):
+        reconcile.protected(HOST / name)
     preflight = sibling('preflight')
     secure(policy['binding'], private=True)
     if policy['active'] is not None:
