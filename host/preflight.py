@@ -123,7 +123,7 @@ def docker_observation(target, policy):
     prefix = [DOCKER, '--host', endpoint]
     observed = reconcile.decode(observe(prefix + ['info', '--format', '{{json .}}'], 'docker_daemon_unavailable'))
     required = {'OSType': 'linux', 'Architecture': 'x86_64', 'CgroupVersion': '2',
-                'ServerVersion': policy['docker']['version'], 'LiveRestoreEnabled': False,
+                'ServerVersion': policy['docker']['version'], 'LiveRestoreEnabled': False, 'IPv4Forwarding': True,
                 'MemoryLimit': True, 'CpuCfsPeriod': True, 'CpuCfsQuota': True, 'PidsLimit': True}
     if (not isinstance(observed, dict) or any(observed.get(key) != value or
             type(observed.get(key)) is not type(value) for key, value in required.items())

@@ -163,7 +163,7 @@ class DockerTests(unittest.TestCase):
         self.target = target()
         self.policy = policy(self.target, '/reviewed/ca.pem')
         self.info = dict(OSType='linux', Architecture='x86_64', CgroupVersion='2', ServerVersion='27.5.1',
-            LiveRestoreEnabled=False, MemoryLimit=True, CpuCfsPeriod=True, CpuCfsQuota=True, PidsLimit=True,
+            LiveRestoreEnabled=False, IPv4Forwarding=True, MemoryLimit=True, CpuCfsPeriod=True, CpuCfsQuota=True, PidsLimit=True,
             Swarm={'LocalNodeState': 'inactive'}, SecurityOptions=['name=seccomp,profile=builtin'],
             ClientInfo={'Plugins': [dict(Name='compose', Version='v2.32.4', Path='/usr/libexec/docker/cli-plugins/docker-compose')]})
         self.stat = SimpleNamespace(st_mode=stat.S_IFSOCK | 0o660, st_uid=0, st_gid=998)
@@ -192,7 +192,7 @@ class DockerTests(unittest.TestCase):
 
     def test_missing_resource_limit_or_wrong_runtime_refuses(self):
         for key, bad in (('PidsLimit', False), ('MemoryLimit', False), ('CgroupVersion', '1'),
-                         ('LiveRestoreEnabled', True), ('ServerVersion', 'unreviewed')):
+                         ('LiveRestoreEnabled', True), ('IPv4Forwarding', False), ('ServerVersion', 'unreviewed')):
             previous = self.info[key]
             self.info[key] = bad
             with self.assertRaisesRegex(preflight.reconcile.Refused, 'docker_runtime_prerequisites'):

@@ -70,3 +70,17 @@ All policy/CA/tool temporary directories and the temporary descriptor were
 released. No socket server, Docker command or external request ran. Container
 UIDs require exact numeric directory ownership, not unnecessary host login
 accounts; only the native execution owner requires a real host account/group.
+
+
+## Parent acceptance and forwarding correction
+
+Parent registered the group at `c586889` and ran `tests/platform/run.sh preflight`
+against source `586b103`: **18 passed, 0 failed, 0 skipped**, 0.036 s; log
+`/private/tmp/hyprn-preflight-parent.log`.
+
+A subsequent source review identified that actual Docker-reported IPv4 forwarding
+must also be enabled for the app's route to private Cloud SQL. The narrow
+correction requires boolean `IPv4Forwarding: true` alongside the other daemon
+capabilities and adds the false case to the existing failure matrix. This source
+change invalidates only preflight evidence; the parent reruns that group on the
+corrective commit. No host sysctl or Docker setting was changed.
