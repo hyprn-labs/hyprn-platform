@@ -1,3 +1,39 @@
+# Current staging performance release — 22 October 2026
+
+Product runtime cc5d6a196072d1e6e6dc05acb472fed3c4e117f0; unchanged platform runtime
+3488a518cbae96b283d3ab88e5096215744f756d. Release
+6a69cfaa07b39f3fbd112eef3020288bc063f622f6901e74ac308a59b2d90e74, config
+b890c7d7655698329be1c84926199b59e7ec1fe5a407f64c4efa8d3bd1f1f649; desired sequence
+13, generation 1792628281291356; application schema 8. Backup 1792628416356 completed
+before the generated run-list projection migration. Native installation, containment,
+startup and 19 actual network probes passed. No new infrastructure, credentials,
+IAM, budget, worker image or scientific calculation. Original records are preserved.
+
+Exact packet: /private/tmp/hyprn-staging-readers; amendment
+51ecc9226f5f7dc8b99e459c68b9abdb37a1e2d8964d1e60c023c20f4d77fb85, under continuing
+owner authority. Previous performance packet /private/tmp/hyprn-staging-performance
+has the first release's completed browser/Assistant verification and promotion.
+Current follow-up is activated in the existing qualification window until 10:00 UTC;
+its ongoing promotion awaits final browser/Assistant verification after the human
+refreshes the expired Cloudflare email session. Admission renewal currently succeeds.
+
+Measured final server-side readers: run list 0.702/0.254 s, ten analysis evaluations
+1.791/1.227 s, run detail 1.217/0.102 s, prepared answer 4.752/0.115 s, joint surrogate
+3.416/0.279 s (first/repeat). Changed-reader cache preparation is still 28.884 s and
+must be distinguished from normal reads. Counts unchanged: 27 runs, 26 configurations,
+3 analysis versions, 1 answer. No model rerun or surrogate refit. Six exact temporary
+build volumes and an expired connection private key cleaned; other sessions preserved.
+
+Next: finish Chrome/Assistant read-only verification, then the prepared serialized
+promote-verified.py. Do not repeat migrations, initialization or completed recovery.
+Automatic staging-branch deployment, full recovery/reboot qualification and second-user
+human acceptance remain open. This is not a fully qualified release. Product evidence:
+hyprn-mvp/.planning/phases/06-hosted-staging/06-PERFORMANCE-CHECKPOINT.md.
+
+---
+
+## Historical deployment evidence
+
 # Working private staging — 22 October 2026
 
 Live: https://staging.hyprn.ai/ui/ . Restricted to the existing named email users.
