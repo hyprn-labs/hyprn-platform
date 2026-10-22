@@ -26,6 +26,8 @@ class RetentionTests(unittest.TestCase):
         self.assertEqual(plan['limits']['SystemMaxUse'], '1G')
         self.assertEqual(plan['limits']['MaxRetentionSec'], '30day')
         self.assertEqual(plan['file'], str(subject.PATH))
+        self.assertEqual(set(plan['sources']), {
+            'retention.py', 'setup.py', 'reconcile.py', 'contract.py', 'secrets.py'})
 
     def test_fresh_and_existing_host_have_one_policy(self):
         from test_host_setup import policy

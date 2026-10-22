@@ -24,7 +24,8 @@ def plan():
         'schema': 'hyprn-operational-retention/v1',
         'sources': {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                     for path in (source, source.with_name('setup.py'),
-                                 source.with_name('reconcile.py'), source.with_name('contract.py'))},
+                                 source.with_name('reconcile.py'), source.with_name('contract.py'),
+                                 source.with_name('secrets.py'))},
         'file': str(PATH), 'sha256': hashlib.sha256(configuration().encode()).hexdigest(),
         'limits': LIMITS,
         'actions': ['install-identical-or-new-journal-drop-in', 'restart-journald',
