@@ -44,3 +44,20 @@ Deployment should execute the new plan/apply before updated fresh-host verificat
 verify actual effective journald configuration, active journal service and disk usage,
 and record the release identity. New limits prune archived journals through systemd
 rotation; no immediate vacuum is invoked. Managed cloud audit retention is unchanged.
+
+## Deployment packet refinement
+
+Preparing the offline activation packet exposed one imported source omitted from
+retention's source manifest: `reconcile.py` imports the fixed sibling `secrets.py`.
+Commit `31f42b1` pins that fifth source and checks its protected path before apply.
+The focused retention suite was red at 5 pass / 1 fail, then green at 6 pass
+(0.375 seconds), using `python3 -B -m unittest discover -s tests/platform -p test_retention.py`.
+No policy limits, setup behavior or cloud state changed.
+
+The exact offline packet is `/private/tmp/hyprn-retention-activation/REVIEW.md`, with
+`plan.json` and `target-evidence.json`. Final retention plan digest:
+`46a5aba739d15588bd8beaa5844d92d85f552bede04d8992b590712acb2235ed`.
+The packet verifies the retained current release, prior host plan/bundle/source
+hashes and old platform snapshot, and records target identity plus integration
+ordering. Parent deploys through the existing controller from the new immutable
+platform snapshot; this lane performed no SSH, cloud API, secret read or apply.
