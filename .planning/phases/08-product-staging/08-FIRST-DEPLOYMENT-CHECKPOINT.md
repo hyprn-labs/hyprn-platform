@@ -1,34 +1,52 @@
-# Current staging performance release — 22 October 2026
+# Current private staging — working and promoted, 22 October 2026
 
-Product runtime cc5d6a196072d1e6e6dc05acb472fed3c4e117f0; unchanged platform runtime
+Live https://staging.hyprn.ai/ now redirects to /ui/. Real Chrome email login, study,
+joint estimates, calculated point and actual Assistant tool calls passed. Final
+promotion completed in staging mode; the renewal timer was restarted. Human acceptance
+remains separate. Existing named-user access, infrastructure and budgets unchanged.
+
+Product runtime f7a33f5a8681c7683e9376827a8b3fcd9586ce4f, unchanged platform runtime
 3488a518cbae96b283d3ab88e5096215744f756d. Release
-6a69cfaa07b39f3fbd112eef3020288bc063f622f6901e74ac308a59b2d90e74, config
-b890c7d7655698329be1c84926199b59e7ec1fe5a407f64c4efa8d3bd1f1f649; desired sequence
-13, generation 1792628281291356; application schema 8. Backup 1792628416356 completed
-before the generated run-list projection migration. Native installation, containment,
-startup and 19 actual network probes passed. No new infrastructure, credentials,
-IAM, budget, worker image or scientific calculation. Original records are preserved.
+fd63aa0ddbdd29c7b38f7509cb191132df95dea92d9da1d1b859c2e3e0e6831a, config
+218083f696a20f73de592d3fda46220c4a0e1b32f4c60e5edf9fb2b4890df316; desired sequence
+14 / generation 1792650593728076. Schema 8 unchanged. Native installation,
+containment, startup and 19 network probes passed. No initialization, migration,
+credential reissue, model rerun or surrogate refit. Counts remain 27 runs,
+26 configurations, 3 analysis versions and 1 saved answer.
 
-Exact packet: /private/tmp/hyprn-staging-readers; amendment
-51ecc9226f5f7dc8b99e459c68b9abdb37a1e2d8964d1e60c023c20f4d77fb85, under continuing
-owner authority. Previous performance packet /private/tmp/hyprn-staging-performance
-has the first release's completed browser/Assistant verification and promotion.
-Current follow-up is activated in the existing qualification window until 10:00 UTC;
-its ongoing promotion awaits final browser/Assistant verification after the human
-refreshes the expired Cloudflare email session. Admission renewal currently succeeds.
+Exact packet /private/tmp/hyprn-staging-landing; amendment
+8ab482201f01b566bb7bb1473ecf304d2690922dfe4f48cca55209a2e8054591, under continuing
+owner authority. Activation plan e50f9eb755bcf17c95109f033b86919df9644b510d4408c97acfa7a7d09f1b0a.
+Promotion receipt application-evidence/promotion-resume-result.jsonl in that packet.
+Prior runtime 6a69cfaa and database backup 1792628416356 remain recoverable.
 
-Measured final server-side readers: run list 0.702/0.254 s, ten analysis evaluations
-1.791/1.227 s, run detail 1.217/0.102 s, prepared answer 4.752/0.115 s, joint surrogate
-3.416/0.279 s (first/repeat). Changed-reader cache preparation is still 28.884 s and
-must be distinguished from normal reads. Counts unchanged: 27 runs, 26 configurations,
-3 analysis versions, 1 answer. No model rerun or surrogate refit. Six exact temporary
-build volumes and an expired connection private key cleaned; other sessions preserved.
+Platform commit 73cfc06 fixes the one-time artifact downloader: a valid metadata token
+with 740 seconds remaining was rejected by its 900-second minimum. Reconciliation
+proved all 54 targets missing and no partial staging. The corrected downloader accepts
+usable credentials and refreshes before expiry; wrong identity, invalid/expired
+refresh, redirects, TLS, exact bytes and create-only file rules remain protected.
+13 release-stage tests pass on the committed tree; two regression errors reproduced
+before the fix. The frozen continuation installed no changed platform runtime files;
+only the operator loader changed. Failed and successful receipts are both retained.
+No credential value was logged. This generic refresh belongs to future staging too.
 
-Next: finish Chrome/Assistant read-only verification, then the prepared serialized
-promote-verified.py. Do not repeat migrations, initialization or completed recovery.
-Automatic staging-branch deployment, full recovery/reboot qualification and second-user
-human acceptance remain open. This is not a fully qualified release. Product evidence:
-hyprn-mvp/.planning/phases/06-hosted-staging/06-PERFORMANCE-CHECKPOINT.md.
+Final product contracts 127 pass; public-api 62 pass and 23 stale-modeling-fixture
+errors (not full-group success). Root regression passes real auth/host middleware.
+Recovery 9 and activation 1 checks pass. Prior numerical evidence remains applicable
+because ui.py is the sole runtime delta. Final Assistant turn
+7dd8b66d-b5b5-4f91-99a9-49e0b8131cab completed get_surrogate with accepted receipt.
+Prior reader release also passed pagination and pinned model/configuration/run reads.
+
+Warm answer 0.119 s; fresh prepared process 5.353 s misses the 5-second target.
+Changed-reader preparation 27.077 s; three real warm-worker joint queries 0.353–0.371 s.
+Earlier reader results and before/after measurements are in the product performance
+checkpoint. Nine exact build volumes across three builds and expired connection keys
+cleaned; shared images, recovery artifacts and other sessions preserved. Current
+connection retained until its existing expiry.
+
+Next: cold-start/renewal CPU profiling; automatic staging-branch delivery; recovery/
+reboot qualification and second-user human acceptance. Not a fully qualified release.
+Product evidence: hyprn-mvp/.planning/phases/06-hosted-staging/06-PERFORMANCE-CHECKPOINT.md.
 
 ---
 
