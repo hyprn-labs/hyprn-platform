@@ -32,6 +32,13 @@ RESOLVED_TEXT = '[Resolve]\nLLMNR=no\nMulticastDNS=no\n'
 NETWORK_BASE = Path('/run/systemd/network/10-netplan-all-en.network')
 NETWORK_OVERRIDE = Path('/etc/systemd/network/10-netplan-all-en.network.d/70-hyprn.conf')
 NETWORK_TEXT = '[Network]\nDHCP=ipv4\nLinkLocalAddressing=no\nIPv6AcceptRA=no\n'
+JOURNAL_PATH = Path('/etc/systemd/journald.conf.d/80-hyprn-retention.conf')
+JOURNAL_LIMITS = {
+    'SystemMaxUse': '1G', 'SystemKeepFree': '1G', 'SystemMaxFileSize': '64M',
+    'RuntimeMaxUse': '128M', 'RuntimeKeepFree': '128M', 'RuntimeMaxFileSize': '16M',
+    'MaxRetentionSec': '30day', 'MaxFileSec': '1day',
+}
+JOURNAL_TEXT = '[Journal]\n' + ''.join(f'{key}={value}\n' for key, value in JOURNAL_LIMITS.items())
 NETWORK_BASE_TEXT = ('[Match]\nName=en*\n\n[Network]\nDHCP=yes\nLinkLocalAddressing=ipv6\n'
                      '\n[DHCP]\nRouteMetric=100\nUseMTU=true\nUseDomains=true\n')
 ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C', 'LC_ALL': 'C',
@@ -147,6 +154,7 @@ ExecStartPost={CONFIG}/container-guard
               'bridge': 'none', 'iptables': True, 'ip6tables': False, 'ipv6': False,
               'userland-proxy': False}
     return {
+        str(JOURNAL_PATH): (JOURNAL_TEXT, 0o644),
         str(RESOLVED): (RESOLVED_TEXT, 0o644),
         str(NETWORK_OVERRIDE): (NETWORK_TEXT, 0o644),
         '/etc/systemd/system/' + MOUNT: (mount, 0o644),
@@ -499,6 +507,7 @@ def apply(policy_path, folder, approved):
         run(['/usr/sbin/sysctl', '--load=/etc/sysctl.d/70-hyprn-containers.conf'])
         run(['/usr/bin/systemd-tmpfiles', '--create', '/etc/tmpfiles.d/hyprn.conf'])
         run(['/usr/bin/systemctl', 'daemon-reload'])
+        run(['/usr/bin/systemctl', 'restart', 'systemd-journald.service'], timeout=30)
         configure_ipv4()
         run(['/usr/bin/systemctl', 'restart', 'systemd-resolved.service'], timeout=60)
         run(['/usr/bin/getent', 'ahostsv4', 'compute.googleapis.com'])

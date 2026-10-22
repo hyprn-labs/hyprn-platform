@@ -59,3 +59,11 @@ archives are fully verified during installation; inert OCI archives are not reha
 on each renewal. Phase timing logs contain only a fixed phase name, duration and
 success/failure, with no credentials or product content. Lease duration and refusal
 behavior are unchanged.
+
+`retention.py plan` renders the fixed operational journal policy;
+`retention.py apply --approve-sha256 <plan hash>` installs it on an existing host
+and verifies effective limits after restarting journald. Fresh host setup uses the
+same policy. Persistent journals target 1 GiB, volatile journals 128 MiB, and log
+history 30 days; size limits may shorten that history. Docker logs already rotate
+at three 10 MiB files per container. [Retention operations](../runbooks/host-retention.md)
+describe ownership and remaining release/work cleanup constraints.
