@@ -1,5 +1,6 @@
 """Qualification access has bounded authority and uses real observation adapters."""
 import copy
+import io
 from contextlib import ExitStack, contextmanager
 import importlib.util
 import json
@@ -24,6 +25,36 @@ class ActivationTests(unittest.TestCase):
             'disk': {'disk_name': 'test-data', 'device_name': 'test-data', 'retired_hosts': []},
             'network_policy': {'path': '/host/network.json', 'sha256': 'b' * 64},
             'mode': 'qualification', 'not_before': 1000, 'not_after': 8200}
+
+    def test_observations_log_only_fixed_phase_duration_and_outcome(self):
+        stream = io.StringIO()
+        with patch.object(subject.sys, 'stderr', stream):
+            self.assertEqual(subject.observe('network', lambda: 7), 7)
+            with self.assertRaisesRegex(ValueError, 'private detail'):
+                subject.observe('native', lambda: (_ for _ in ()).throw(ValueError('private detail')))
+        rows = [json.loads(line) for line in stream.getvalue().splitlines()]
+        self.assertEqual([row['outcome'] for row in rows], ['ok', 'failed'])
+        self.assertTrue(all(set(row) == {'event', 'phase', 'duration_ms', 'outcome'} for row in rows))
+        self.assertNotIn('private detail', stream.getvalue())
+
+    def test_native_renewal_verifies_installed_bytes_without_rehashing_delivery_images(self):
+        target = SimpleNamespace(path=Path('/host/binding.json'),
+            binding={'control_root': '/host/control'},
+            preview={'execution': {'configuration': {'source': '/host/source'}}})
+        product = SimpleNamespace(python='/host/python',
+            preflight=lambda: self.fail('Delivery archives belong to installation verification'))
+        owner = {'release': 'pinned'}
+        with patch.object(subject.bootstrap, 'prepared_product', return_value=product) as prepared, \
+                patch.object(subject, 'command', return_value=json.dumps({
+                    'owner': owner, 'container_id': 'dispatcher'}).encode()), \
+                patch.object(subject.reconcile, 'protected', side_effect=lambda path: path), \
+                patch.object(subject.contract, 'read_json', return_value=owner):
+            subject.native(target, 'dispatcher')
+            prepared.assert_called_once_with(target, install=False)
+        with patch.object(subject.bootstrap, 'prepared_product', side_effect=subject.Refused('changed')), \
+                patch.object(subject, 'command') as probe, self.assertRaises(subject.Refused):
+            subject.native(target, 'dispatcher')
+        probe.assert_not_called()
 
     def test_no_arbitrary_success_receipts_or_executable_hooks(self):
         subject.validate_policy(self.policy)

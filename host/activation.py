@@ -21,6 +21,20 @@ FIELDS = {'schema', 'binding', 'desired_sha256', 'journal_root', 'disk',
 LEASE_SECONDS = 240
 
 
+def observe(phase, operation, *args):
+    """Bounded diagnostic metadata only; no policies, credentials or model content."""
+    started = time.monotonic()
+    outcome = 'failed'
+    try:
+        result = operation(*args)
+        outcome = 'ok'
+        return result
+    finally:
+        print(json.dumps({'event': 'activation_observation', 'phase': phase,
+                          'duration_ms': round((time.monotonic() - started) * 1000),
+                          'outcome': outcome}), file=sys.stderr)
+
+
 def validate_policy(value):
     if (not bootstrap.exact_fields(value, FIELDS)
             or value['schema'] != 'hyprn-qualification-access/v1'
@@ -152,11 +166,13 @@ print(json.dumps({'owner':actual,'container_id':process['container_id']}))
 def native(target, dispatcher_id):
     # The immutable archive verifier checks every installed byte before importing
     # the product's fixed lifecycle probe. The probe checks, never re-attests.
-    product = bootstrap.prepared_product(target, install=False)
-    product.preflight()
+    product = observe('installed_native', lambda: bootstrap.prepared_product(target, install=False))
+    # Installation verifies the delivery archives once before opening admission.
+    # Renewal verifies the installed native bytes above and actual pinned images
+    # in containers(); inert OCI delivery archives are not running authority.
     source = target.preview['execution']['configuration']['source']
-    result = reconcile.decode(command([product.python, '-I', '-B', '-c', NATIVE_PROBE,
-                                       source, str(target.path)], timeout=130))
+    result = reconcile.decode(observe('native_state', lambda: command(
+        [product.python, '-I', '-B', '-c', NATIVE_PROBE, source, str(target.path)], timeout=130)))
     owner = contract.read_json(reconcile.protected(Path(target.binding['control_root']) / 'native-owner.json'))
     if result != {'owner': owner, 'container_id': dispatcher_id}:
         raise Refused('activation_native_owner_changed')
@@ -214,19 +230,19 @@ def renew(path):
             window(policy, int(time.time()))
             bound_state(target, policy, journal)
             host = reconcile.GoogleHost(target, **policy['disk'])
-            fence = host.check()
-            generation = host.desired()
-            network(target, policy)
-            running = containers(target)
-            native(target, running['dispatcher'])
-            ingress(target)
+            fence = observe('host', host.check)
+            generation = observe('desired', host.desired)
+            observe('network', network, target, policy)
+            running = observe('containers', containers, target)
+            observe('native', native, target, running['dispatcher'])
+            observe('ingress', ingress, target)
             connector = bootstrap.sibling('activation_install')
             installed = connector.validate(contract.read_json(reconcile.protected(connector.POLICY)))
             expected_policy = (installed['activation'] if policy['mode'] == 'qualification'
                                else connector.promoted_policy(installed))
             if expected_policy != policy:
                 raise Refused('activation_connector_policy_changed')
-            connector.verify(installed)
+            observe('connector', connector.verify, installed)
             if time.monotonic() - started > 180:
                 raise Refused('activation_observation_expired')
             window(policy, int(time.time()))

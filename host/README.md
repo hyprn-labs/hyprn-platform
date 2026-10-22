@@ -52,3 +52,10 @@ It preserves existing contents and refuses linked or differently owned paths.
 The modeling container has a bounded, non-executable temporary filesystem for
 Rails sockets and process files; its image filesystem remains read-only. Activation
 compares every rendered temporary mount with the engine's actual configuration.
+
+Activation renewals verify installed native files, pinned running images, container
+isolation, network enforcement, owner identity and ingress authentication. Delivery
+archives are fully verified during installation; inert OCI archives are not rehashed
+on each renewal. Phase timing logs contain only a fixed phase name, duration and
+success/failure, with no credentials or product content. Lease duration and refusal
+behavior are unchanged.
