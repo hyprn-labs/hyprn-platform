@@ -67,6 +67,49 @@ class StageTests(unittest.TestCase):
         host.metadata.assert_called_once_with('project/project-id')
         self.assertIsNone(host.token)
 
+    def verified_host(self, lifetime=740):
+        host = stage.AttachedHost()
+        identity = manifest()['identity']
+        host.metadata = Mock(side_effect=[*identity.values(), json.dumps({
+            'token_type': 'Bearer', 'expires_in': lifetime, 'access_token': 'test-token'})])
+        host.verify(identity)
+        return host
+
+    def test_valid_short_lived_token_is_refreshed_before_later_download(self):
+        with patch.object(stage.time, 'monotonic', return_value=100) as clock:
+            host = self.verified_host()
+            host.opener = Mock()
+            host.download('first')
+            self.assertEqual(host.opener.open.call_args.args[0].headers['Authorization'],
+                             'Bearer test-token')
+            clock.return_value = 800
+            host.metadata = Mock(return_value=json.dumps({
+                'token_type': 'Bearer', 'expires_in': 3600, 'access_token': 'replacement'}))
+            host.download('second')
+            host.metadata.assert_called_once_with('instance/service-accounts/default/token')
+            self.assertEqual(host.opener.open.call_args.args[0].headers['Authorization'],
+                             'Bearer replacement')
+
+    def test_invalid_refresh_or_changed_identity_cannot_reuse_previous_token(self):
+        for invalid in (True, -1, 0, 59, '3600'):
+            with self.subTest(lifetime=invalid), \
+                    self.assertRaisesRegex(stage.Refused, 'attached_token_invalid'):
+                self.verified_host(invalid)
+        with patch.object(stage.time, 'monotonic', return_value=100) as clock:
+            host = self.verified_host()
+            host.opener = Mock()
+            clock.return_value = 800
+            host.metadata = Mock(return_value=json.dumps({
+                'token_type': 'Bearer', 'expires_in': 0, 'access_token': 'expired'}))
+            with self.assertRaisesRegex(stage.Refused, 'attached_token_invalid'):
+                host.download('object')
+            host.opener.open.assert_not_called()
+            host.metadata = Mock(return_value='wrong-project')
+            with self.assertRaisesRegex(stage.Refused, 'attached_host_mismatch'):
+                host.verify(manifest()['identity'])
+            with self.assertRaisesRegex(stage.Refused, 'unverified'):
+                host.download('object')
+
     def test_redirects_cannot_send_attached_token_to_another_origin(self):
         with self.assertRaisesRegex(stage.Refused, 'redirect_refused'):
             stage.NoRedirect().redirect_request(None, None, None, None, None, None)

@@ -139,6 +139,8 @@ class AttachedHost:
     def __init__(self):
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
         self.token = None
+        self.token_expires_at = 0
+        self.verified = False
 
     def metadata(self, suffix):
         request = Request('http://169.254.169.254/computeMetadata/v1/' + suffix,
@@ -152,6 +154,8 @@ class AttachedHost:
             return data.decode().strip()
 
     def verify(self, identity):
+        self.verified = False
+        self.token = None
         paths = {'project_id': 'project/project-id', 'project_number': 'project/numeric-project-id',
                  'instance_id': 'instance/id', 'instance_name': 'instance/name',
                  'zone': 'instance/zone', 'service_account': 'instance/service-accounts/default/email'}
@@ -161,16 +165,25 @@ class AttachedHost:
                 observed = observed.rsplit('/', 1)[-1]
             if observed != identity[name]:
                 raise Refused('attached_host_mismatch')
+        self.refresh_token()
+        self.verified = True
+
+    def refresh_token(self):
+        self.token = None
+        started = time.monotonic()
         token = json.loads(self.metadata('instance/service-accounts/default/token'))
         if (token.get('token_type') != 'Bearer' or type(token.get('expires_in')) is not int
-                or token['expires_in'] < 900 or not isinstance(token.get('access_token'), str)
+                or token['expires_in'] < 60 or not isinstance(token.get('access_token'), str)
                 or not token['access_token'] or any(c.isspace() for c in token['access_token'])):
             raise Refused('attached_token_invalid')
         self.token = token['access_token']
+        self.token_expires_at = started + token['expires_in']
 
     def download(self, obj):
-        if self.token is None:
+        if not self.verified:
             raise Refused('attached_host_unverified')
+        if self.token is None or self.token_expires_at - time.monotonic() < 90:
+            self.refresh_token()
         request = Request('https://storage.googleapis.com/download/storage/v1/b/' + BUCKET
                           + '/o/' + quote(obj, safe='') + '?alt=media',
                           headers={'Authorization': 'Bearer ' + self.token})
