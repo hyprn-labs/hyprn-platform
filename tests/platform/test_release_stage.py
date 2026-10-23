@@ -279,3 +279,19 @@ class CacheReceiptTests(unittest.TestCase):
         host.opener.open.return_value.__exit__ = Mock(return_value=False)
         with self.assertRaisesRegex(stage.Refused, 'object_metadata'):
             host.object_version('prefix/archive')
+
+    def test_helper_only_seed_never_claims_the_full_delivery_receipt(self):
+        value = manifest(); value['schema'] = 'hyprn-release-stage/v2'
+        with patch.object(stage, 'OWNER', os.getuid()), patch.object(stage, 'mounted_data'), \
+                patch.object(stage, 'space_available', return_value=20 * 1024 ** 3), \
+                patch.object(stage, 'stage', return_value='staged'), \
+                patch.object(stage, 'transfer_receipt') as receipt:
+            stage.apply(value, stage.digest(value), Mock())
+            receipt.assert_not_called()
+            root = stage.DATA_DEPLOYMENT_ROOT + '/' + value['release_sha256'] + '/'
+            for name in ('payload.json', 'worker.oci.tar'):
+                row = copy.deepcopy(value['files'][0])
+                row.update(destination=root + name, object='release/' + name)
+                value['files'].append(row)
+            stage.apply(value, stage.digest(value), Mock())
+            receipt.assert_called_once_with(value)

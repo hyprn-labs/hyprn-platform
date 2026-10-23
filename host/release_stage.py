@@ -356,7 +356,12 @@ def apply(value, approved, host=None):
     deadline = time.monotonic() + 600
     files = [{'destination': row['destination'], 'state': stage(row, host, deadline)}
              for row in value['files']]
-    if value['schema'] == 'hyprn-release-stage/v2':
+    delivery_root = DATA_DEPLOYMENT_ROOT + '/' + value['release_sha256'] + '/'
+    destinations = {row['destination'] for row in value['files']}
+    if (value['schema'] == 'hyprn-release-stage/v2'
+            and delivery_root + 'payload.json' in destinations
+            and any(delivery_root + name in destinations for name in (
+                'app.oci.tar', 'modeling.oci.tar', 'worker.oci.tar', 'native.tar.gz'))):
         transfer_receipt(value)
     return {'plan_sha256': approved, 'files': files, 'application_started': False}
 
