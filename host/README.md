@@ -82,3 +82,18 @@ installed and backup-source releases, every declared retained copy, metadata and
 installed native trees. Source and retained payload inventories pin each file's
 bytes; linked, changed, missing-retained or unknown files refuse removal. See
 [retention operations](../runbooks/host-retention.md) for the scoped recovery procedure.
+
+Successful v2 staging records exact object locations, hashes and sizes in a protected
+`transfer-receipt.json`. Transfers require 4 GiB free after reserving the complete
+incoming payload. The receipt is written only after all files pass verification.
+
+`deployment_cache_setup.py plan --policy <file>` renders an immutable maintenance
+policy/code snapshot and its systemd service/timer. Its reviewed `apply` installs
+an hourly, low-priority bounded cleanup schedule. The existing cleanup helper's
+`discover --policy <file>` reports eligibility and storage pressure; `maintain`
+requires the pinned policy hash. Only obsolete receipted transfer archives are
+removed, after their exact generation in durable object storage passes a full
+SHA-256 check. Current and rollback transfers, all controls, installed native
+releases, execution work and scientific stores remain retained. Read the
+[cache lifecycle procedure](../runbooks/host-retention.md#durable-artifacts-and-bounded-transfer-cache)
+for policy fields, recovery and installation commands.

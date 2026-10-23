@@ -229,3 +229,53 @@ class StageTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class CacheReceiptTests(unittest.TestCase):
+    def test_receipt_records_exact_mapping_and_refuses_changed_existing_bytes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            value = manifest(); value['schema'] = 'hyprn-release-stage/v2'
+            with patch.object(stage, 'DATA_DEPLOYMENT_ROOT', str(root)), \
+                    patch.object(stage, 'OWNER', os.getuid()), \
+                    patch.object(stage, 'directory', side_effect=lambda path, **kw: (
+                        Path(path).mkdir(parents=True, exist_ok=True) or
+                        os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW))):
+                stage.transfer_receipt(value)
+                receipt = root / value['release_sha256'] / stage.RECEIPT
+                self.assertEqual(json.loads(receipt.read_bytes()), value)
+                stage.transfer_receipt(value)
+                receipt.write_bytes(b'changed')
+                with self.assertRaisesRegex(stage.Refused, 'differs'):
+                    stage.transfer_receipt(value)
+
+    def test_headroom_refuses_before_staging_and_receipt_follows_all_files(self):
+        active = patch.object(stage, 'OWNER', os.getuid()); active.start(); self.addCleanup(active.stop)
+        value = manifest(); value['schema'] = 'hyprn-release-stage/v2'
+        with patch.object(stage, 'mounted_data'), patch.object(stage, 'space_available', return_value=0), \
+                patch.object(stage, 'stage') as write, patch.object(stage, 'transfer_receipt') as receipt:
+            with self.assertRaisesRegex(stage.Refused, 'storage_headroom'):
+                stage.apply(value, stage.digest(value), Mock())
+            write.assert_not_called(); receipt.assert_not_called()
+        with patch.object(stage, 'mounted_data'), \
+                patch.object(stage, 'space_available', return_value=20 * 1024 ** 3), \
+                patch.object(stage, 'stage', side_effect=stage.Refused('transfer_failed')), \
+                patch.object(stage, 'transfer_receipt') as receipt:
+            with self.assertRaisesRegex(stage.Refused, 'transfer_failed'):
+                stage.apply(value, stage.digest(value), Mock())
+            receipt.assert_not_called()
+
+    def test_generation_pinned_download_and_metadata_identity(self):
+        host = stage.AttachedHost(); host.verified = True
+        host.token = 'test-token'; host.token_expires_at = time.monotonic() + 1000
+        host.opener = Mock()
+        host.download('prefix/archive', generation='1234')
+        self.assertTrue(host.opener.open.call_args.args[0].full_url.endswith('&generation=1234'))
+        with self.assertRaisesRegex(stage.Refused, 'generation'):
+            host.download('prefix/archive', generation='123&other=1')
+        response = Mock(); response.status = 200
+        response.read.return_value = json.dumps(dict(bucket=stage.BUCKET, name='other',
+            generation='123', size='4')).encode()
+        host.opener.open.return_value.__enter__ = Mock(return_value=response)
+        host.opener.open.return_value.__exit__ = Mock(return_value=False)
+        with self.assertRaisesRegex(stage.Refused, 'object_metadata'):
+            host.object_version('prefix/archive')

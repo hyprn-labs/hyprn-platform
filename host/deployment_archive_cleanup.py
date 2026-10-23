@@ -216,16 +216,42 @@ def run(value, approved=None, *, host=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('plan', 'apply'))
-    parser.add_argument('--manifest', required=True)
+    parser.add_argument('operation', choices=('plan', 'apply', 'discover', 'maintain'))
+    parser.add_argument('--manifest')
+    parser.add_argument('--policy')
     parser.add_argument('--approve-sha256')
     args = parser.parse_args()
     try:
-        if args.operation == 'apply' and not args.approve_sha256:
+        if args.operation in ('apply', 'maintain') and not args.approve_sha256:
             raise Refused('approval_required')
-        result = run(read_document(args.manifest),
-                     args.approve_sha256 if args.operation == 'apply' else None)
+        if args.operation in ('discover', 'maintain'):
+            if not args.policy or args.manifest:
+                raise Refused('cache_policy_required')
+            lifecycle = sibling('deployment_archive_lifecycle')
+            try:
+                result = lifecycle.run(read_document(args.policy),
+                    args.approve_sha256 if args.operation == 'maintain' else None)
+            except lifecycle.cleanup.reconcile.Refused as error:
+                if args.operation == 'maintain' and error.reason == 'deployment_conflict':
+                    print(json.dumps({'status': 'skipped', 'reason': 'deployment_in_progress'}))
+                    return
+                raise Refused(error.reason) from None
+            except lifecycle.Refused as error:
+                raise Refused(str(error)) from None
+        else:
+            if not args.manifest or args.policy:
+                raise Refused('cleanup_manifest_required')
+            result = run(read_document(args.manifest),
+                args.approve_sha256 if args.operation == 'apply' else None)
         print(json.dumps(result, sort_keys=True))
+        if args.operation == 'maintain' and result.get('pressure'):
+            raise SystemExit(3)
+    except reconcile.Refused as error:
+        if args.operation == 'maintain' and error.reason == 'deployment_conflict':
+            print(json.dumps({'status': 'skipped', 'reason': 'deployment_in_progress'}))
+        else:
+            print(json.dumps({'refused': error.reason}))
+            raise SystemExit(2)
     except (OSError, ValueError, KeyError, TypeError) as error:
         print(json.dumps({'refused': str(error) if isinstance(error, Refused) else 'cleanup_failed'}))
         raise SystemExit(2)

@@ -19,6 +19,8 @@ DATA_ROOT = '/srv/hyprn/staging'
 DATA_DEPLOYMENT_ROOT = DATA_ROOT + '/deployment'
 MAX_BYTES = 2 * 1024 ** 3
 MAX_MANIFEST = 4 * 1024 ** 2
+RECEIPT = 'transfer-receipt.json'
+MIN_FREE_BYTES = 4 * 1024 ** 3
 
 
 class Refused(ValueError):
@@ -67,7 +69,7 @@ def validate(value):
         obj = PurePosixPath(row['object'])
         if (not row['destination'].startswith(roots) or '..' in destination.parts
                 or str(destination) != row['destination'] or not destination.is_absolute()
-                or destination.name.startswith('.stage-')
+                or destination.name.startswith('.stage-') or destination.name == RECEIPT
                 or obj.is_absolute() or '..' in obj.parts or str(obj) != row['object']
                 or not row['object'] or '\\' in row['object']
                 or any(ord(c) < 32 for c in row['object'] + row['destination'])
@@ -183,13 +185,35 @@ class AttachedHost:
         self.token = token['access_token']
         self.token_expires_at = started + token['expires_in']
 
-    def download(self, obj):
+    def object_version(self, obj):
         if not self.verified:
             raise Refused('attached_host_unverified')
         if self.token is None or self.token_expires_at - time.monotonic() < 90:
             self.refresh_token()
+        request = Request('https://storage.googleapis.com/storage/v1/b/' + BUCKET
+                          + '/o/' + quote(obj, safe=''),
+                          headers={'Authorization': 'Bearer ' + self.token})
+        with self.opener.open(request, timeout=30) as reply:
+            raw = reply.read(65537)
+            if reply.status != 200 or len(raw) > 65536:
+                raise Refused('object_metadata')
+        value = json.loads(raw)
+        if (value.get('bucket') != BUCKET or value.get('name') != obj
+                or not re.fullmatch('[1-9][0-9]{0,30}', str(value.get('generation', '')))
+                or not re.fullmatch('[0-9]{1,20}', str(value.get('size', '')))):
+            raise Refused('object_metadata')
+        return value
+
+    def download(self, obj, generation=None):
+        if not self.verified:
+            raise Refused('attached_host_unverified')
+        if self.token is None or self.token_expires_at - time.monotonic() < 90:
+            self.refresh_token()
+        if generation is not None and not re.fullmatch('[1-9][0-9]{0,30}', generation):
+            raise Refused('object_generation')
         request = Request('https://storage.googleapis.com/download/storage/v1/b/' + BUCKET
-                          + '/o/' + quote(obj, safe='') + '?alt=media',
+                          + '/o/' + quote(obj, safe='') + '?alt=media'
+                          + ('&generation=' + generation if generation is not None else ''),
                           headers={'Authorization': 'Bearer ' + self.token})
         return self.opener.open(request, timeout=30)
 
@@ -294,6 +318,31 @@ def mounted_data():
         os.close(fd)
 
 
+def transfer_receipt(value):
+    """Save exact durable object locations only after every reviewed transfer succeeds."""
+    parent = directory(DATA_DEPLOYMENT_ROOT + '/' + value['release_sha256'], create=True)
+    raw = canonical(value)
+    row = dict(sha256=hashlib.sha256(raw).hexdigest(), size_bytes=len(raw), mode=0o644)
+    try:
+        if inspect_file(parent, RECEIPT, row):
+            return
+        partial = '.stage-' + row['sha256'] + '.receipt'
+        fd = os.open(partial, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                     0o600, dir_fd=parent)
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(raw); os.fchmod(stream.fileno(), 0o644)
+            stream.flush(); os.fsync(stream.fileno())
+        os.link(partial, RECEIPT, src_dir_fd=parent, dst_dir_fd=parent, follow_symlinks=False)
+        os.unlink(partial, dir_fd=parent); os.fsync(parent)
+    finally:
+        os.close(parent)
+
+
+def space_available(path):
+    value = os.statvfs(path)
+    return value.f_bavail * value.f_frsize
+
+
 def apply(value, approved, host=None):
     validate(value)
     if os.geteuid() != OWNER or approved != digest(value):
@@ -302,10 +351,14 @@ def apply(value, approved, host=None):
     host.verify(value['identity'])
     if value['schema'] == 'hyprn-release-stage/v2':
         mounted_data()
+        if space_available(DATA_ROOT) < MIN_FREE_BYTES + sum(r['size_bytes'] for r in value['files']):
+            raise Refused('deployment_storage_headroom')
     deadline = time.monotonic() + 600
-    return {'plan_sha256': approved, 'files': [
-        {'destination': row['destination'], 'state': stage(row, host, deadline)}
-        for row in value['files']], 'application_started': False}
+    files = [{'destination': row['destination'], 'state': stage(row, host, deadline)}
+             for row in value['files']]
+    if value['schema'] == 'hyprn-release-stage/v2':
+        transfer_receipt(value)
+    return {'plan_sha256': approved, 'files': files, 'application_started': False}
 
 
 def main():

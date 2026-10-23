@@ -91,3 +91,87 @@ symlink redirects are introduced. This prevents repeated archives filling the OS
 disk, but does not claim bounded retention for unique installed/native archives.
 Their complete rollback/backup policy remains a separate obligation. Monitor data
 volume headroom and retain bootstrap's free-space admission checks.
+
+## Durable artifacts and bounded transfer cache
+
+Object storage is the durable source for published release artifacts; the VM's
+transfer folders are a disposable local cache. Keeping another archive copy on the
+VM does not make storage scalable. Successful v2 staging now saves a protected
+`transfer-receipt.json` containing its exact destination/object/hash/size mappings.
+The receipt is create-only, belongs to that release and is saved after every
+transfer succeeds. No object location is inferred from a display name or path.
+V2 staging also requires the mounted data disk and enough space for the complete
+incoming transfer plus a 4 GiB reserve before writing.
+
+A `hyprn-deployment-cache-policy/v1` document has these exact fields:
+
+| Field | Meaning |
+|---|---|
+| `identity` | Existing exact attached-host identity, same shape as release staging |
+| `max_cleanup_bytes` | Maximum local/remote archive bytes verified per pass, 2–4 GiB |
+| `max_seconds` | Verification deadline, 30–600 seconds; in-flight network reads also have a 30-second timeout |
+| `max_cache_bytes` | Alert target for known transfer archives, 2–64 GiB |
+| `min_free_bytes` | Required free-space alert threshold on root and data disks, 1–32 GiB |
+
+A practical initial policy is 2 GiB per pass, 600 seconds, a 12 GiB archive target
+and 4 GiB free-space threshold. These are infrastructure cache budgets, never
+scientific input or execution defaults. The cache target is an observable operating
+target rather than permission to remove recovery artifacts. A pass unable to reach
+it reports pressure and exits 3; staging still refuses insufficient headroom.
+
+### Install and invoke
+
+1. Prepare the nonsecret policy with the reviewed host identity. Run
+   `python3 -I -B host/deployment_cache_setup.py plan --policy <policy.json>`.
+   Its plan pins policy bytes, seven helper source hashes, immutable snapshot path,
+   service and timer. It neither accesses staging nor starts cleanup.
+2. Through the existing reviewed deployment controller, stage the exact protected
+   source files and policy. Run the same helper with
+   `apply --policy <policy.json> --approve-sha256 <installation plan hash>`.
+   Installation uses the deployment lock, verifies the attached host and data
+   mount, installs immutable code/policy, reloads systemd and enables the timer.
+   For a later policy/code update, include `--previous-plan-sha256 <installed hash>`
+   in both plan and apply. Unknown unit edits or an unmatched prior policy refuse
+   replacement. The installed receipt is `/etc/hyprn/deployment-cache-install.json`.
+3. After successful activation, optionally invoke
+   `systemctl start hyprn-deployment-cache.service`. The same service runs hourly
+   with up to five minutes of jitter; boot delay is fifteen minutes. It is limited
+   to 25% CPU, 256 MiB memory, 16 tasks, idle I/O and a bounded service timeout.
+   Its filesystem is read-only except the two transfer roots and deployment
+   journal; it has no product-store write mount.
+4. Retain the service's JSON output in the operational journal. Inspect with
+   `journalctl -u hyprn-deployment-cache.service` and monitor nonzero service exits.
+   A busy deployment is a successful `skipped / deployment_in_progress` result;
+   the next scheduled pass retries. It must not fail application deployment.
+
+`deployment_archive_cleanup.py discover --policy <policy.json>` is the read-only
+inventory operation. `maintain --policy <policy.json> --approve-sha256 <policy hash>`
+is the service operation. Both derive current, installed and rollback release
+identities from protected runtime/journal records under the existing deployment
+lock. An incomplete deployment or unknown rollback identity refuses cleanup.
+
+Only the four known top-level archives are candidates. Receipt-less legacy files,
+unknown files, all inventories and all current/rollback release folders remain
+preserved. Changed, linked or unprotected candidate files are refused. Each chosen
+local file must match its payload inventory and transfer receipt. The same exact
+SHA-256 and length must match a streamed object-store read pinned to the observed
+GCS generation; this allocates no second local archive. Every selected candidate
+passes before the first unlink, and each local inode is checked again immediately
+before removal. A remote mismatch, interruption or deadline leaves all selected
+local archives intact. Object storage is never modified by this process.
+
+Reports include retained releases, protected/unmanaged archive bytes, eligible and
+selected bytes, removed paths, generation/hash/size recovery references, root/data
+free space before/after, remaining work and pressure. Work exceeding the per-pass
+budget remains eligible for subsequent passes. This makes backlog and storage
+limits visible instead of moving silent exhaustion to the data disk. Receipt-less
+legacy archives need the separately reviewed duplicate cleanup or an explicitly
+verified source receipt; no unverified automatic backfill is performed.
+
+The object bucket's private/versioned retention and recovery controls remain in
+force. Restore an obsolete transfer only from the reported exact generation and
+verify its SHA-256 before reuse. Installed native releases, Docker images, scientific
+stores and execution scratch have their own owners and are not collected here.
+Future horizontal workers should use per-worker bounded scratch and the same durable
+object references; no shared writable scratch filesystem or new cloud resource is
+introduced by this lifecycle.
