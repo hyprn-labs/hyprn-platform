@@ -47,3 +47,13 @@ target includes preserved legacy unique transfers; it may produce pressure while
 those remain unreceipted. A reviewed 16 GiB target can be chosen by regenerating
 only the policy/plan. No unique legacy archive is silently discarded. No fixed
 cloud resource or IAM change was introduced. Other agents' files remained untouched.
+
+### Seed-transfer correction
+
+Commit `34de6c5` prevents helper-only v2 seed manifests claiming the final delivery
+receipt. Receipt creation requires the release payload inventory plus a known
+archive; final receipt writes remain create-only. Release-stage 19/19 and cache
+lifecycle 10/10 pass again on that committed tree. Prior explicit cleanup 7/7 is
+unaffected. Installer source-pin regeneration supersedes the initial hash above:
+`ab2ddfdbfcc9171c9ed8b82919e60826f6a27c8b582b7a0555a225e260e50bb2`.
+The policy hash is unchanged. Parent must regenerate if changing its cache target.
