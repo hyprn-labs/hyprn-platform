@@ -15,6 +15,8 @@ PROJECT = 'hyprn-staging'
 BUCKET = 'hyprn-staging-artifacts'
 PLATFORM_ROOT = '/opt/hyprn/platform/staging-20261021'
 DEPLOYMENT_ROOT = '/opt/hyprn/staging-deployment'
+DATA_ROOT = '/srv/hyprn/staging'
+DATA_DEPLOYMENT_ROOT = DATA_ROOT + '/deployment'
 MAX_BYTES = 2 * 1024 ** 3
 MAX_MANIFEST = 4 * 1024 ** 2
 
@@ -33,7 +35,7 @@ def digest(value):
 
 def validate(value):
     if (not isinstance(value, dict) or set(value) != {'schema', 'release_sha256', 'identity', 'bucket', 'files'}
-            or value['schema'] != 'hyprn-release-stage/v1' or value['bucket'] != BUCKET
+            or value['schema'] not in ('hyprn-release-stage/v1', 'hyprn-release-stage/v2') or value['bucket'] != BUCKET
             or not re.fullmatch('[a-f0-9]{64}', str(value['release_sha256']))):
         raise Refused('manifest_shape')
     identity = value['identity']
@@ -51,7 +53,9 @@ def validate(value):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 1000:
         raise Refused('file_count')
     destinations, objects, total = set(), set(), 0
-    roots = (PLATFORM_ROOT + '/', DEPLOYMENT_ROOT + '/' + value['release_sha256'] + '/')
+    deployment = (DATA_DEPLOYMENT_ROOT if value['schema'] == 'hyprn-release-stage/v2'
+                  else DEPLOYMENT_ROOT)
+    roots = (PLATFORM_ROOT + '/', deployment + '/' + value['release_sha256'] + '/')
     for row in rows:
         if (not isinstance(row, dict) or set(row) != {'destination', 'object', 'sha256', 'size_bytes', 'mode'}
                 or not isinstance(row['destination'], str) or not isinstance(row['object'], str)
@@ -280,12 +284,24 @@ def reconcile(value):
     return {'plan_sha256': digest(value), 'files': result, 'changed': False}
 
 
+def mounted_data():
+    """A missing data mount must never silently fill the operating-system disk."""
+    fd = directory(DATA_ROOT)
+    try:
+        if not os.path.ismount(DATA_ROOT) or os.fstat(fd).st_dev == os.stat('/').st_dev:
+            raise Refused('deployment_data_mount_required')
+    finally:
+        os.close(fd)
+
+
 def apply(value, approved, host=None):
     validate(value)
     if os.geteuid() != OWNER or approved != digest(value):
         raise Refused('approval_or_privilege')
     host = host or AttachedHost()
     host.verify(value['identity'])
+    if value['schema'] == 'hyprn-release-stage/v2':
+        mounted_data()
     deadline = time.monotonic() + 600
     return {'plan_sha256': approved, 'files': [
         {'destination': row['destination'], 'state': stage(row, host, deadline)}

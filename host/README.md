@@ -67,3 +67,18 @@ same policy. Persistent journals target 1 GiB, volatile journals 128 MiB, and lo
 history 30 days; size limits may shorten that history. Docker logs already rotate
 at three 10 MiB files per container. [Retention operations](../runbooks/host-retention.md)
 describe ownership and remaining release/work cleanup constraints.
+
+
+Release staging manifest version 2 places reviewed deployment payloads under
+`/srv/hyprn/staging/deployment/<release SHA-256>`. It requires the protected data
+mount before writing; a missing mount cannot redirect archives to the operating
+system disk. Version 1 preserves its original `/opt` destination contract for
+historical recovery. Both retain create-only writes and exact byte verification.
+
+`deployment_archive_cleanup.py plan --manifest <file>` verifies a bounded explicit
+set of duplicate transfer archives. `apply --approve-sha256 <plan hash>` removes
+only those verified copies, under the deployment lock. It preserves the running,
+installed and backup-source releases, every declared retained copy, metadata and
+installed native trees. Source and retained payload inventories pin each file's
+bytes; linked, changed, missing-retained or unknown files refuse removal. See
+[retention operations](../runbooks/host-retention.md) for the scoped recovery procedure.

@@ -52,3 +52,42 @@ cleanup touches it. A future removal must use the execution owner's terminal-sta
 and artifact-retention proof, and a release cleanup must first have an explicit
 rollback/recovery retention set. Until then these areas can grow, so operator disk
 headroom remains a real deployment risk rather than a claimed solved bound.
+
+
+## Reviewed duplicate delivery archives
+
+The platform supports an explicit cleanup of duplicate transfer archives left in
+`/opt/hyprn/staging-deployment`. This is separate from installed native release
+retention and never selects execution work, images in Docker, logs or scientific
+stores. There is no age-based or directory-recursive deletion.
+
+A `hyprn-deployment-archive-cleanup/v1` manifest names the exact staging host,
+retained release hashes and candidate files. Keep at least the current and previous
+release in that set, plus any historical representative needed to retain a unique
+image archive. The live runtime identity, deployment journal's installed release
+and its backup source must all be in the set. Unknown or unsettled deployment
+state refuses cleanup. Hold the existing deployment lock for verification and apply.
+
+Each candidate is one top-level `app.oci.tar`, `modeling.oci.tar`, `worker.oci.tar`
+or `native.tar.gz` in an unretained historical delivery folder. It must have a
+byte-identical protected retained copy, and both files must match pinned payload
+inventory hashes, file hashes, sizes and modes. Every candidate is verified before
+any removal; checked inode and timestamps are compared immediately before unlink.
+Each retained copy is hashed once per operation and rechecked before each removal.
+No directory, inventory or installed release is deleted. Missing candidate files
+are already removed; a missing retained copy is a refusal.
+
+Run the helper's `plan` on the target host and review the resulting exact hash and
+reclaimable byte count. Apply only the same manifest/hash under the existing owner
+authorization. Keep stdout and source identities with the release evidence. If the
+operation stops, preserve its report, reconcile changed/missing candidates and
+repeat only the same reviewed manifest. Deleted duplicate bytes remain recoverable
+from the explicitly retained archive; reconstructing a historical transfer path is
+a separate reviewed operation, never an automatic rollback substitution.
+
+Future deployment manifests use release-stage version 2 and the protected data-disk
+root `/srv/hyprn/staging/deployment`. Existing control paths remain unchanged; no
+symlink redirects are introduced. This prevents repeated archives filling the OS
+disk, but does not claim bounded retention for unique installed/native archives.
+Their complete rollback/backup policy remains a separate obligation. Monitor data
+volume headroom and retain bootstrap's free-space admission checks.

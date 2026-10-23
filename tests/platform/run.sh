@@ -11,6 +11,7 @@ case "$group" in
   database-setup) pattern=test_database_setup.py ;;
   database-operator) pattern=test_database_operator.py ;;
   release-stage) pattern=test_release_stage.py ;;
+  deployment-storage) pattern=test_deployment_archive_cleanup.py ;;
   activation) pattern=test_activation.py ;;
   activation-install) pattern=test_activation_install.py ;;
   secrets) pattern=test_secrets.py ;;

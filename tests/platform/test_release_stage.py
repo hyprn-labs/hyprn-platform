@@ -59,6 +59,29 @@ class StageTests(unittest.TestCase):
         with self.assertRaisesRegex(stage.Refused, 'file_location'):
             stage.validate(value)
 
+    def test_data_disk_manifest_keeps_legacy_destinations_frozen(self):
+        value = manifest()
+        value['files'][0]['destination'] = stage.DATA_DEPLOYMENT_ROOT + '/' + 'a' * 64 + '/payload.json'
+        with self.assertRaisesRegex(stage.Refused, 'file_location'):
+            stage.validate(value)
+        value['schema'] = 'hyprn-release-stage/v2'
+        stage.validate(value)
+        value['files'][0]['destination'] = stage.DEPLOYMENT_ROOT + '/' + 'a' * 64 + '/payload.json'
+        with self.assertRaisesRegex(stage.Refused, 'file_location'):
+            stage.validate(value)
+
+    def test_unmounted_data_disk_refuses_before_downloading_or_writing(self):
+        value = manifest(); value['schema'] = 'hyprn-release-stage/v2'
+        host = Mock()
+        with patch.object(stage, 'mounted_data', side_effect=stage.Refused('missing_mount')), \
+                patch.object(stage, 'stage') as write:
+            with self.assertRaisesRegex(stage.Refused, 'missing_mount'):
+                stage.apply(value, stage.digest(value), host)
+            write.assert_not_called()
+        with patch.object(stage.os.path, 'ismount', return_value=False):
+            with self.assertRaisesRegex(stage.Refused, 'deployment_data_mount_required'):
+                stage.mounted_data()
+
     def test_identity_mismatch_never_requests_token(self):
         host = stage.AttachedHost()
         host.metadata = Mock(return_value='wrong-project')
