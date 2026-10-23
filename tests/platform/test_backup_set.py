@@ -80,6 +80,17 @@ class SchemaReceiptTests(unittest.TestCase):
                 with self.assertRaises(subject.Invalid):
                     subject.stopped_owners(lifecycle)
 
+    def test_provider_polling_uses_remaining_budget_without_exceeding_provider_bounds(self):
+        for remaining, attempts in ((1200, 20), (300, 20), (26, 5), (5, 1), (0.1, 1)):
+            with self.subTest(remaining=remaining):
+                actual = subject.provider_polling(remaining)
+                self.assertEqual(actual, dict(poll_attempts=attempts, poll_seconds=5))
+                self.assertLess((actual['poll_attempts'] - 1) * actual['poll_seconds'], remaining)
+                self.assertLessEqual(actual['poll_attempts'], 20)
+        for remaining in (0, -1, True, float('inf'), float('nan')):
+            with self.assertRaises(subject.Invalid):
+                subject.provider_polling(remaining)
+
     def test_schema_receipt_selection_is_explicit_and_exclusive(self):
         with self.assertRaises(subject.Invalid):
             subject.schema_receipt(None)

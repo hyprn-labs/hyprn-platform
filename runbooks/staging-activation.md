@@ -183,3 +183,12 @@ Focused verification: product `hosted-lifecycle` 21 passed and cross-repository
 `platform-backup-set` 19 passed. Evidence is retained outside Git in
 `/private/tmp/hyprn-stopped-upgrade-{lifecycle,backup}-final.log`. No live recovery
 was performed by this implementation task.
+
+Backup polling uses the caller's remaining budget, capped at the provider's twenty
+attempts with five-second intervals. A short remaining budget reduces the number
+of attempts; the provider's separate 300-second deadline and the caller's outer
+hold/deadline remain unchanged. A 1,200-second deployment therefore receives twenty
+polls per existing provider call, not the former hardcoded five. No additional
+backup creation or retry mode is introduced. The native hold receives remaining
+time rather than a renewed full timeout. `platform-backup-set`: 20 passed
+(9.964 s), log `/private/tmp/hyprn-backup-poll-budget.log`.

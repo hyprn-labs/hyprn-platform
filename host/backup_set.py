@@ -11,6 +11,7 @@ import fcntl
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import stat
@@ -285,6 +286,15 @@ def stopped_owners(lifecycle):
         raise Invalid('backup_native_workers_not_stopped')
 
 
+def provider_polling(remaining):
+    """Spend the caller's remaining wait budget within the provider's hard bounds."""
+    if type(remaining) not in (int, float) or not math.isfinite(remaining) or remaining <= 0:
+        raise Invalid('backup_timeout')
+    # A slot includes time for the request; at most nineteen sleeps are used.
+    # Twenty five-second slots stay below the provider's separate 300s deadline.
+    return dict(poll_attempts=min(20, max(1, int(remaining // 5))), poll_seconds=5)
+
+
 def run_child(args):
     if sys.platform != 'linux' or os.geteuid() != 0:
         raise Invalid('backup_linux_root_required')
@@ -321,14 +331,14 @@ def run_child(args):
             instance=policy['instance'], private_network=policy['private_network'],
             installation_id=identity['installation_id'], release_digest='sha256:' + identity['release_sha256'],
             configuration_digest='sha256:' + identity['config_sha256'], operation_id=args.operation_id,
-            poll_attempts=5, poll_seconds=5)
+            **provider_polling(lifecycle.remaining()))
         roots = {key: Path(runtime['mounts'][key]) for key in ('execution', 'modeling')}
         roots['artifacts'] = Path(runtime['mounts']['application']) / 'artifacts'
         return assemble(files=files, args=provider, roots=roots, identity=identity, owner=owner, schemas=schemas,
                         source=source, fence=fence,
                         assert_stopped=lambda: stopped_owners(lifecycle),
                         receipts={'stop': stop, schema_operation: schema_observation},
-                        timeout=args.timeout,
+                        timeout=lifecycle.remaining(),
                         expected_endpoint={key: database[key] for key in ('host', 'server_name')})
 
 
