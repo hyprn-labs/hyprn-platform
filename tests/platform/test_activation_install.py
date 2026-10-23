@@ -78,6 +78,18 @@ class ActivationInstallTests(unittest.TestCase):
         self.assertIn('/opt/hyprn/platform/release/host/activation.py',
                       units['hyprn-qualification-access.service'])
 
+    def test_unprivileged_probe_reads_only_installed_nonsecret_code(self):
+        self.policy['platform_root'] = '/private/deployment/release'
+        unit = subject.units(self.policy)['hyprn-tunnel-boundary-probe.service']
+        self.assertIn('ExecStart=/usr/bin/python3 -I -B /usr/lib/hyprn-tunnel-boundary-probe.py', unit)
+        self.assertNotIn('/private/', unit)
+        raw, mode = subject.files(self.policy)[str(subject.PROBE)]
+        self.assertEqual(raw, (ROOT / 'host/tunnel_boundary_probe.py').read_bytes())
+        self.assertEqual(mode, 0o644)
+        self.assertNotIn(b'import activation', raw)
+        self.assertIn('User=10006', unit)
+        self.assertIn('ProtectSystem=strict', unit)
+
     def test_connector_uses_local_dns_without_access_to_metadata_dns(self):
         unit = subject.units(self.policy)['hyprn-tunnel.service']
         self.assertIn('BindReadOnlyPaths=/etc/hyprn/tunnel-resolv.conf:/etc/resolv.conf', unit)
@@ -102,6 +114,24 @@ class ActivationInstallTests(unittest.TestCase):
                 self.assertRaises(subject.Refused) as caught:
             subject.boundary_probe()
         self.assertEqual(caught.exception.reason, 'tunnel_origin_unreachable')
+
+    def test_probe_requires_origin_success_and_metadata_denial(self):
+        from unittest.mock import MagicMock
+        with patch.object(subject.os, 'getuid', return_value=subject.UID), \
+                patch.object(subject.Path, 'read_text', return_value='0::/hyprn-tunnel.slice/probe'), \
+                patch.object(subject.socket, 'create_connection',
+                             side_effect=[MagicMock(), PermissionError(13, 'denied')]):
+            self.assertEqual(subject.boundary_probe()['metadata'], 'blocked-from-connector-slice')
+        for second, reason in ((MagicMock(), 'tunnel_metadata_reachable'),
+                               (ConnectionRefusedError(111, 'refused'),
+                                'tunnel_metadata_denial_unproven')):
+            with self.subTest(reason=reason), \
+                    patch.object(subject.os, 'getuid', return_value=subject.UID), \
+                    patch.object(subject.Path, 'read_text', return_value='0::/hyprn-tunnel.slice/probe'), \
+                    patch.object(subject.socket, 'create_connection', side_effect=[MagicMock(), second]), \
+                    self.assertRaises(subject.Refused) as caught:
+                subject.boundary_probe()
+            self.assertEqual(caught.exception.reason, reason)
 
     def test_access_projection_requires_one_exact_origin_and_access_jwt(self):
         target = SimpleNamespace(runtime={'external_origin': 'https://staging.example.test',

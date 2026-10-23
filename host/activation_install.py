@@ -20,6 +20,7 @@ from uuid import UUID
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import activation
 import setup
+import tunnel_boundary_probe
 
 bootstrap, reconcile, contract = activation.bootstrap, activation.reconcile, activation.contract
 Refused = activation.Refused
@@ -30,6 +31,7 @@ STATE = Path('/var/lib/hyprn-activation-install')
 TOKEN_ROOT = Path('/run/hyprn-tunnel')
 TOKEN = TOKEN_ROOT / 'tunnel-token'
 UID = 10006
+PROBE = Path('/usr/lib/hyprn-tunnel-boundary-probe.py')
 NAME = 'hyprn-tunnel'
 FIELDS = {'schema', 'platform_root', 'activation', 'account_id', 'tunnel_id',
           'secret_version', 'access_readback'}
@@ -144,7 +146,7 @@ Type=oneshot
 User={UID}
 Group={UID}
 Slice=hyprn-tunnel.slice
-ExecStart=/usr/bin/python3 -I -B {script} boundary-probe
+ExecStart=/usr/bin/python3 -I -B {PROBE}
 NoNewPrivileges=true
 CapabilityBoundingSet=
 ProtectSystem=strict
@@ -157,7 +159,8 @@ TimeoutStartSec=15
 
 
 def files(policy):
-    result = {str(POLICY): (contract.canonical(policy), 0o600),
+    result = {str(PROBE): ((ROOT / 'host/tunnel_boundary_probe.py').read_bytes(), 0o644),
+              str(POLICY): (contract.canonical(policy), 0o600),
               str(ADMISSION): (contract.canonical(policy['activation']), 0o600),
               '/etc/hyprn/tunnel-resolv.conf': (
                   b'nameserver 127.0.0.53\noptions timeout:2 attempts:2\n', 0o644)}
@@ -270,24 +273,10 @@ def require_root():
 
 
 def boundary_probe():
-    # This process runs in the same IP-filtered cgroup slice and UID as cloudflared.
-    if os.getuid() != UID or '/hyprn-tunnel.slice/' not in Path('/proc/self/cgroup').read_text():
-        raise Refused('tunnel_probe_scope')
     try:
-        with socket.create_connection(('127.0.0.1', 8080), timeout=3):
-            pass
-    except OSError:
-        raise Refused('tunnel_origin_unreachable') from None
-    try:
-        connection = socket.create_connection(('169.254.169.254', 80), timeout=3)
-    except OSError as error:
-        import errno
-        if error.errno not in (errno.EPERM, errno.EACCES, errno.ETIMEDOUT) and not isinstance(error, TimeoutError):
-            raise Refused('tunnel_metadata_denial_unproven') from None
-    else:
-        connection.close()
-        raise Refused('tunnel_metadata_reachable')
-    return {'metadata': 'blocked-from-connector-slice', 'loopback_origin': 'reachable'}
+        return tunnel_boundary_probe.boundary_probe()
+    except RuntimeError as error:
+        raise Refused(str(error)) from None
 
 
 def installed_sources(policy):
