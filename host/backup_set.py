@@ -234,7 +234,24 @@ def assemble(*, files, args, roots, identity, owner, schemas, source, fence, ass
         os.close(directory)
 
 
-def trusted_product(binding_path):
+def retained_platform(specification, retained_platform_root=None):
+    """A newer backup bridge may inspect an explicitly pinned compatible old platform."""
+    actual = secure_path(specification['platform_root'], directory=True, owner=0)
+    expected = HOST.parent if retained_platform_root is None else Path(retained_platform_root)
+    if actual != expected:
+        raise Invalid('backup_platform_source')
+    if actual != HOST.parent:
+        for name in ('host/contract.py', 'contracts/v1/deployment.schema.json'):
+            old = secure_path(actual / name, owner=0)
+            current = secure_path(HOST.parent / name, owner=0)
+            if (old.stat().st_mode & 0o022 or current.stat().st_mode & 0o022
+                    or hashlib.sha256(old.read_bytes()).digest()
+                    != hashlib.sha256(current.read_bytes()).digest()):
+                raise Invalid('backup_platform_contract_changed')
+    return actual
+
+
+def trusted_product(binding_path, retained_platform_root=None):
     """Consume the immutable source/native tree installed by trusted bootstrap.
 
     Bootstrap must already have verified/extracted the reviewed payload bytes;
@@ -247,8 +264,7 @@ def trusted_product(binding_path):
         raise Invalid('backup_product_binding')
     for key in required - {'schema'}:
         secure_path(specification[key], directory=key in ('platform_root', 'control_root'), owner=0)
-    if Path(specification['platform_root']) != HOST.parent:
-        raise Invalid('backup_platform_source')
+    retained_platform(specification, retained_platform_root)
     documents = {key: contract.read_json(specification[key]) for key in ('release', 'runtime', 'desired', 'workload')}
     contract.check_documents(documents)
     preview = contract.render(documents['release'], documents['runtime'])
@@ -298,7 +314,7 @@ def provider_polling(remaining):
 def run_child(args):
     if sys.platform != 'linux' or os.geteuid() != 0:
         raise Invalid('backup_linux_root_required')
-    lifecycle, module, files, source = trusted_product(args.binding)
+    lifecycle, module, files, source = trusted_product(args.binding, args.retained_platform_root)
     lifecycle.deadline = time.monotonic() + args.timeout
     parent = socket.socket(fileno=args.fence_channel)
     parent.settimeout(min(args.timeout, 30))
@@ -344,7 +360,7 @@ def run_child(args):
 
 def create(active_binding_path, *, deployment_fd, deployment_path, operation_id, state_root,
            stop_operation_id, approve_resource, backup_policy, recheck_fence, timeout=300,
-           drain_operation_id=None, inspect_operation_id=None):
+           drain_operation_id=None, inspect_operation_id=None, retained_platform_root=None):
     """Trusted reconciler seam. No scope approval or runtime path is invented."""
     if sys.platform != 'linux' or os.geteuid() != 0:
         raise Invalid('backup_linux_root_required')
@@ -365,6 +381,9 @@ def create(active_binding_path, *, deployment_fd, deployment_path, operation_id,
                '--approve-resource', approve_resource, '--backup-policy', str(backup_policy), '--timeout', str(timeout)]
     command.extend(['--inspect-operation-id', inspect_operation_id] if inspect_operation_id else
                    ['--drain-operation-id', drain_operation_id])
+    if retained_platform_root is not None:
+        retained_platform(specification, retained_platform_root)
+        command.extend(['--retained-platform-root', str(retained_platform_root)])
     parent, child = socket.socketpair()
     command.extend(['--fence-channel', str(child.fileno())])
     deadline = time.monotonic() + timeout + 5
@@ -421,6 +440,7 @@ def main(argv=None):
     parser.add_argument('--deployment-fd', required=True, type=int)
     parser.add_argument('--fence-channel', required=True, type=int)
     parser.add_argument('--timeout', type=int, default=300)
+    parser.add_argument('--retained-platform-root')
     try:
         args = parser.parse_args(argv)
         os.umask(0o077)

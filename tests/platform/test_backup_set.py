@@ -31,6 +31,32 @@ provider_tests = module('hyprn_backup_set_provider_fixture', ROOT / 'tests/platf
 
 
 class SchemaReceiptTests(unittest.TestCase):
+    def test_retained_platform_requires_explicit_identity_and_identical_contract(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder).resolve()
+            old, new = root / 'old', root / 'new'
+            for base in (old, new):
+                for name in ('host/contract.py', 'contracts/v1/deployment.schema.json'):
+                    path = base / name
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(b'identical pinned contract')
+                    path.chmod(0o644)
+            specification = dict(platform_root=str(old))
+            with patch.object(subject, 'HOST', new / 'host'), patch.object(
+                    subject, 'secure_path', side_effect=lambda path, **kwargs: Path(path)):
+                with self.assertRaisesRegex(subject.Invalid, 'backup_platform_source'):
+                    subject.retained_platform(specification)
+                with self.assertRaisesRegex(subject.Invalid, 'backup_platform_source'):
+                    subject.retained_platform(specification, new)
+                self.assertEqual(subject.retained_platform(specification, old), old)
+                for name in ('host/contract.py', 'contracts/v1/deployment.schema.json'):
+                    path = old / name
+                    before = path.read_bytes()
+                    path.write_bytes(b'changed contract')
+                    with self.assertRaisesRegex(subject.Invalid, 'backup_platform_contract_changed'):
+                        subject.retained_platform(specification, old)
+                    path.write_bytes(before)
+
     def test_successful_inspection_is_not_represented_as_a_drain(self):
         for operation in ('inspect', 'drain'):
             with self.subTest(operation=operation), tempfile.TemporaryDirectory() as folder:
