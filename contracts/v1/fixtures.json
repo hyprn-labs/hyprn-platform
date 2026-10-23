@@ -30,8 +30,8 @@
       "source_inventory_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "platform_contract": {
         "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "schema_sha256": "6bd56662fe8d534e8ae890fea49b3e7872eda0ef09265683ee1082c4effcc684",
-        "renderer_sha256": "214d371ed12a119e436e8a5602ecf52916b1a44888ad6014aaaf7ab8d84252f2",
+        "schema_sha256": "a11ce991311d35376991684c24d86368f0d4ac54dbbd1333549a96b358e1fb8c",
+        "renderer_sha256": "50a9edf35412c411e49d04cd0d2e82409bb4dac263356cd1581eda51f80f6d32",
         "workload_sha256": "b01d60cbdc2aaee26fab40cdc5fddb39e6a597ba8c1d1f8027a308e684400096"
       },
       "product_contracts": {
@@ -241,7 +241,7 @@
       "environment": "staging",
       "project_number": "123456789012",
       "sequence": 1,
-      "release_sha256": "3155f6e7ec9c378ba0d842633f713100ca256cf9278684c7dc3b7bd0f77aec09",
+      "release_sha256": "8785a59f535c608750de0fdbac6a95eacea52a89cc7de389e88cce8dbb7cd353",
       "target": "linux/amd64",
       "platform_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "config_sha256": "3d1410012596f2964868f84a0d6b6407031d570a1e830748a6a00eaf83b4a1d2",

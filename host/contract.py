@@ -73,9 +73,9 @@ def read_json(path):
         raise Invalid("document_size")
     try:
         value = json.loads(raw, object_pairs_hook=pairs, parse_constant=reject_constant)
+        finite(value)
     except (ValueError, UnicodeError, RecursionError):
         raise Invalid("invalid_json") from None
-    finite(value)
     return value
 
 
@@ -237,6 +237,13 @@ def assistant_environment(runtime):
         "APPROVED_CURRENCY": binding["budget"]["approved_currency"],
         "CONVERSION_DATE": binding["budget"]["conversion_timestamp"][:10],
     })
+    if "user_limits" in binding:
+        actors = [item["actor_id"] for item in binding["user_limits"]]
+        if len(set(actors)) != len(actors):
+            raise Invalid("duplicate_user_limit")
+        values["USER_LIMITS_CENTS"] = json.dumps(
+            {item["actor_id"]: item["limit_cents"] for item in binding["user_limits"]},
+            sort_keys=True, separators=(",", ":"))
     return {"HYPRN_MVP_ASSISTANT_" + key: value for key, value in values.items()}
 
 

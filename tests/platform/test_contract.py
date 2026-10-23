@@ -44,6 +44,18 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(result.stdout, "")
         self.assertEqual(json.loads(result.stderr)["error"], code)
 
+    def test_user_allowance_override_is_explicit_scoped_and_app_only(self):
+        actor = "11111111-1111-4111-8111-111111111111"
+        self.documents["runtime"]["assistant"]["user_limits"] = [{"actor_id": actor, "limit_cents": 4900}]
+        services = self.success(self.command())["preview"]["compose"]["services"]
+        key = "HYPRN_MVP_ASSISTANT_USER_LIMITS_CENTS"
+        self.assertEqual(json.loads(services["app"]["environment"][key]), {actor: 4900})
+        for role in ("dispatcher", "modeling"):
+            self.assertNotIn(key, services[role]["environment"])
+        for invalid in (True, 0, -1, 1.5, 1000001):
+            self.documents["runtime"]["assistant"]["user_limits"][0]["limit_cents"] = invalid
+            self.assertNotEqual(self.command().returncode, 0)
+
     def test_cloud_assistant_tools_are_enabled_only_in_application(self):
         preview = self.success(self.command())["preview"]
         services = preview["compose"]["services"]

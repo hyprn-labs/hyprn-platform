@@ -1183,6 +1183,29 @@
                 "conversion_timestamp",
                 "conversion_policy"
               ]
+            },
+            "user_limits": {
+              "type": "array",
+              "maxItems": 1000,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "actor_id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$"
+                  },
+                  "limit_cents": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "actor_id",
+                  "limit_cents"
+                ]
+              }
             }
           },
           "required": [
