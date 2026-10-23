@@ -175,3 +175,24 @@ stores and execution scratch have their own owners and are not collected here.
 Future horizontal workers should use per-worker bounded scratch and the same durable
 object references; no shared writable scratch filesystem or new cloud resource is
 introduced by this lifecycle.
+
+
+### Staging verification, 2026-10-23
+
+The sequence27 deployment installed the bounded cache timer with a16GiB target,
+4GiB free-space reserve,2GiB/pass and600-second verification budget. The initial
+installation refusal had no detailed retained cause; read-only reconciliation found
+no installed record, snapshot or units, and the identical idempotent continuation
+passed. A live pass verified the exact cloud generations and SHA256s and removed
+990,164,709 bytes of superseded transfer archives. A subsequent pass was a no-op.
+The current and recovery releases stayed protected. Both passes succeeded; no
+scientific records changed. Earlier explicit duplicate cleanup reclaimed about14.33GiB.
+
+The product separately owns disposable native scratch on the existing data disk,
+with process leases, normal-exit cleanup, bounded stale-session collection and free
+space admission. This platform timer does not remove native scratch or AiiDA records.
+Current observations were about15GB boot free and41GB data free. The data disk can
+be expanded through reviewed infrastructure code; automatic resizing is not claimed.
+Private evidence: hyprn-assistant-reliability-release/cache-status.json and
+postdeploy-runtime.json in the operator scratch area. The product checkpoint records
+exact release identities, test evidence and unchanged scientific-record hashes.

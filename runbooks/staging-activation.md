@@ -192,3 +192,27 @@ polls per existing provider call, not the former hardcoded five. No additional
 backup creation or retry mode is introduced. The native hold receives remaining
 time rather than a renewed full timeout. `platform-backup-set`: 20 passed
 (9.964 s), log `/private/tmp/hyprn-backup-poll-budget.log`.
+
+
+## Unprivileged boundary probe placement
+
+The connector probe runs as the connector user, inside its IP-filtered slice.
+Install its standalone, nonsecret code as the root-owned read-only file
+`/usr/lib/hyprn-tunnel-boundary-probe.py`; its hash is included in the activation
+plan and checked again by verification. It imports only the standard library.
+Private deployment directories retain their existing access restrictions. Do not
+make those directories traversable to solve a probe import failure.
+
+The probe must prove loopback-origin connectivity and denial of metadata access.
+An unrelated connection error is not evidence of denial. Activation also checks
+that metadata is reachable from the host as a positive control. Eleven focused
+installer tests passed at platform6b03d8b; live connector/probe verification passed
+on the sequence27 release. Original helper bytes and failed activation evidence
+were retained before the exact two-file host correction. Product scientific stores
+and credentials were not modified by that correction.
+
+The final promotion encountered the scheduled admission verifier's deployment lock.
+Read the promotion receipt before retrying. A reviewed operator may temporarily stop
+only the renewal timer, allow an already-running verification to finish, reconcile
+or complete promotion, and restore the timer in a finally block. Do not terminate
+scientific execution, reset the deployment journal or extend a stale admission lease.
