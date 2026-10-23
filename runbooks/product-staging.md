@@ -631,3 +631,31 @@ and HTTPS routes plus denied metadata, sibling and arbitrary Internet access on
 the actual host before opening admission. Then finish SQL role/secret provisioning,
 rebuild the pinned app payload, closed startup and live engineering/Assistant/
 recovery qualification. Automatic staging-branch deployment remains open.
+
+## Named-user access extension — 2026-10-23
+
+The owner explicitly authorized four additional named staging users. The reviewed
+Terraform plan updated only the existing invited-users policy's include list,
+retaining both existing users for six admitted addresses in total. Exact names
+remain in private operational inputs, not in repository content. No domain-wide
+rule, exclusion, requirement, session lifetime, Access application, identity
+provider, tunnel, DNS, runtime binding or budget changed. No app restart or study
+write occurred.
+
+Applied plan SHA256:
+`f70a750a05c3fb89231f842a05f528391b59e44dc94112f051a5e14dc48b9726`.
+Source: `492eeb2d6388aae8266bb5a3cfb8ee970b1a0993`; Terraform 1.16.5 and
+Cloudflare provider 5.28.0, using the existing dedicated staging Access state.
+The saved plan applied successfully. Direct Cloudflare API readback matched the
+six exact admitted addresses and unchanged allow/8-hour policy. A fresh Terraform
+plan exited 0 (no changes). Verification completed at 16:54 UTC.
+
+Private packet: `/private/tmp/hyprn-staging-named-users/`, containing the saved
+plan, reviewed summary, API readback, apply log and final result. Future Access
+plans must use this packet's `access.tfvars.json` (SHA256
+`a811ac5240596b54b1b751dc4833380466e738be91b8295cd8d3992a6d3b3156`)
+or an explicitly reviewed successor; the initial two-user deployment input is
+historical and must not be replayed. Tunnel activation readback is unchanged
+because its pinned issuer, audience and ingress are unchanged. Actual sign-in by
+the newly admitted users remains their own verification; no messages were sent
+and no accounts were impersonated.
