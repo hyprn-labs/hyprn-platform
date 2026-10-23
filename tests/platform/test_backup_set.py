@@ -30,6 +30,63 @@ owner_tests = module('hyprn_backup_set_owner_fixture', PRODUCT / 'deployment/tes
 provider_tests = module('hyprn_backup_set_provider_fixture', ROOT / 'tests/platform/test_cloudsql_backup.py')
 
 
+class SchemaReceiptTests(unittest.TestCase):
+    def test_successful_inspection_is_not_represented_as_a_drain(self):
+        for operation in ('inspect', 'drain'):
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder).resolve()
+                root.chmod(0o700)
+                lifecycle = SimpleNamespace(root=root, identity={'installation_id': 'fixture'},
+                                            binding={'schema': 'fixture'})
+                identifier = '00000000-0000-4000-8000-000000000002'
+                path = root / ('operation-' + identifier + '.json')
+                result = dict(operation=operation, operation_id=identifier,
+                              installation_id='fixture',
+                              status='success', reason_code='completed', evidence_refs=[path.name],
+                              observed_schema_versions={'application': 'retained-schema'})
+                value = dict(identity_sha256=subject.digest(dict(identity=lifecycle.identity,
+                             binding=lifecycle.binding, operation=operation,
+                             surface=None, state=None)),
+                             state='complete', exit_code=0, result=result)
+                path.write_text(json.dumps(value))
+                path.chmod(0o600)
+                key = operation + '_operation_id'
+                selected, receipt, schemas = subject.schema_receipt(lifecycle, **{key: identifier})
+                self.assertEqual(selected, operation)
+                self.assertEqual(receipt, value)
+                self.assertEqual(schemas, result['observed_schema_versions'])
+                self.assertEqual(json.loads(path.read_text()), value)
+                other = ('drain' if operation == 'inspect' else 'inspect') + '_operation_id'
+                with self.assertRaises(subject.Invalid):
+                    subject.schema_receipt(lifecycle, **{other: identifier})
+                value['result']['status'] = 'failed'
+                path.write_text(json.dumps(value))
+                with self.assertRaises(subject.Invalid):
+                    subject.schema_receipt(lifecycle, **{key: identifier})
+
+    def test_old_product_stop_assertions_are_supplemented_with_detached_worker_checks(self):
+        from unittest.mock import Mock
+        lifecycle = SimpleNamespace(runtime={'installation_id': 'fixture'},
+                                    assert_stopped=Mock(), remaining=lambda: 20)
+        with patch.object(subject.subprocess, 'run') as run:
+            run.return_value = SimpleNamespace(returncode=0, stdout='')
+            subject.stopped_owners(lifecycle)
+            lifecycle.assert_stopped.assert_called_once_with()
+            self.assertIn('label=org.hyprn-mvp.owner=hyprn-mvp-cloud-fixture',
+                          run.call_args.args[0])
+            for result in (SimpleNamespace(returncode=0, stdout='running-worker'),
+                           SimpleNamespace(returncode=1, stdout='')):
+                run.return_value = result
+                with self.assertRaises(subject.Invalid):
+                    subject.stopped_owners(lifecycle)
+
+    def test_schema_receipt_selection_is_explicit_and_exclusive(self):
+        with self.assertRaises(subject.Invalid):
+            subject.schema_receipt(None)
+        with self.assertRaises(subject.Invalid):
+            subject.schema_receipt(None, drain_operation_id='one', inspect_operation_id='two')
+
+
 class CombinedTests(unittest.TestCase):
     def setUp(self):
         self.old_umask = os.umask(0o077)

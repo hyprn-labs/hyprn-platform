@@ -151,3 +151,35 @@ verification report. A failure or interrupted operation requires reconciliation.
 Upstream format/flag references for the pinned connector:
 [2026.10.2 token-file implementation](https://github.com/cloudflare/cloudflared/blob/2026.10.2/cmd/cloudflared/tunnel/subcommands.go)
 and [token identity fields](https://github.com/cloudflare/cloudflared/blob/2026.10.2/connection/connection.go).
+
+## Upgrading with retained uncertain work
+
+An uncertain execution record is not an active writer and must not be changed merely
+to permit deployment. The normal reconciler still requires drain completion. An
+explicit stopped-owner recovery can instead use the existing release's successful
+`stop` receipt followed by its successful `inspect` receipt. Before stopping, verify
+closed admission and no active remote Assistant turn; do not send or retry a user
+command. Keep the actual uncertain records and their original identities.
+
+`host/backup_set.py create` accepts exactly one schema observation source:
+`drain_operation_id` for existing drained deployments, or `inspect_operation_id`
+for this stopped-owner recovery. The child CLI uses the corresponding mutually
+exclusive `--drain-operation-id` or `--inspect-operation-id` option. The successful
+receipt must belong to the exact active binding and operation. The coherent backup
+manifest keeps the actual receipt kind; an inspection is never recorded as a drain.
+Deployment, product, executor and AiiDA holds, repeated closed/stopped-owner checks,
+managed SQL backup completion and file integrity checks remain required. Detached
+worker containers are checked repeatedly even when the active product's older
+stop verifier predates that check. Nonterminated native processes still refuse
+backup/rebind; no paused process is silently killed or marked complete.
+
+The incoming product's migration operation separately verifies closed admission,
+stopped local owners and workers, no active request lease and no active Assistant
+turn through a read-only migration-role probe. Retained uncertain/pending counts
+remain unchanged. This does not authorize reopening, provider activity or retries.
+A user may resume through the product after the verified release is active.
+
+Focused verification: product `hosted-lifecycle` 21 passed and cross-repository
+`platform-backup-set` 19 passed. Evidence is retained outside Git in
+`/private/tmp/hyprn-stopped-upgrade-{lifecycle,backup}-final.log`. No live recovery
+was performed by this implementation task.

@@ -128,6 +128,24 @@ def receipt(lifecycle, operation, operation_id):
     return value
 
 
+def schema_receipt(lifecycle, *, drain_operation_id=None, inspect_operation_id=None):
+    """A stopped-owner snapshot needs observed schemas, not completed work.
+
+    Legacy successful drain receipts remain valid. An explicit inspect receipt
+    records only schema observation; it never claims uncertain work reconciled.
+    The caller must still hold the deployment fence and prove writers stopped.
+    """
+    if bool(drain_operation_id) == bool(inspect_operation_id):
+        raise Invalid('backup_schema_receipt_selection')
+    operation = 'inspect' if inspect_operation_id else 'drain'
+    identifier = inspect_operation_id or drain_operation_id
+    value = receipt(lifecycle, operation, identifier)
+    schemas = value['result'].get('observed_schema_versions')
+    if not isinstance(schemas, dict) or not schemas:
+        raise Invalid('backup_schema_observation_missing')
+    return operation, value, schemas
+
+
 def verify_output_authority(root):
     secure_path(root, directory=True, owner=os.geteuid(), mode=0o700)
     for path in root.rglob('*'):
@@ -255,6 +273,18 @@ def trusted_product(binding_path):
                                                     modules=hashes, native_python=configuration['python'])
 
 
+def stopped_owners(lifecycle):
+    """Keep old product receipts usable while checking detached workers too."""
+    lifecycle.assert_stopped()
+    owner = 'hyprn-mvp-cloud-' + lifecycle.runtime['installation_id']
+    result = subprocess.run(
+        ['docker', 'ps', '--quiet', '--no-trunc', '--filter', 'label=org.hyprn-mvp.owner=' + owner],
+        capture_output=True, text=True, timeout=lifecycle.remaining(),
+        env={key: value for key, value in os.environ.items() if key in ('PATH', 'LANG', 'LC_ALL')})
+    if result.returncode or result.stdout.strip():
+        raise Invalid('backup_native_workers_not_stopped')
+
+
 def run_child(args):
     if sys.platform != 'linux' or os.geteuid() != 0:
         raise Invalid('backup_linux_root_required')
@@ -265,11 +295,12 @@ def run_child(args):
     fence = DeploymentFence(args.deployment_fd, args.deployment_path, parent)
     with module.exclusive(lifecycle.root):
         stop = receipt(lifecycle, 'stop', args.stop_operation_id)
-        drain = receipt(lifecycle, 'drain', args.drain_operation_id)
-        schemas = drain['result']['observed_schema_versions']
+        schema_operation, schema_observation, schemas = schema_receipt(
+            lifecycle, drain_operation_id=args.drain_operation_id,
+            inspect_operation_id=args.inspect_operation_id)
         if not hasattr(lifecycle, 'assert_stopped'):
             raise Invalid('backup_stopped_inspection_unavailable')
-        lifecycle.assert_stopped()
+        stopped_owners(lifecycle)
         owner = private_document(lifecycle.root / 'native-owner.json')
         identity = dict(lifecycle.identity, store_ids=lifecycle.runtime['store_ids'])
         configuration = lifecycle.native_projection()
@@ -294,16 +325,21 @@ def run_child(args):
         roots = {key: Path(runtime['mounts'][key]) for key in ('execution', 'modeling')}
         roots['artifacts'] = Path(runtime['mounts']['application']) / 'artifacts'
         return assemble(files=files, args=provider, roots=roots, identity=identity, owner=owner, schemas=schemas,
-                        source=source, fence=fence, assert_stopped=lifecycle.assert_stopped,
-                        receipts={'stop': stop, 'drain': drain}, timeout=args.timeout,
+                        source=source, fence=fence,
+                        assert_stopped=lambda: stopped_owners(lifecycle),
+                        receipts={'stop': stop, schema_operation: schema_observation},
+                        timeout=args.timeout,
                         expected_endpoint={key: database[key] for key in ('host', 'server_name')})
 
 
 def create(active_binding_path, *, deployment_fd, deployment_path, operation_id, state_root,
-           stop_operation_id, drain_operation_id, approve_resource, backup_policy, recheck_fence, timeout=300):
+           stop_operation_id, approve_resource, backup_policy, recheck_fence, timeout=300,
+           drain_operation_id=None, inspect_operation_id=None):
     """Trusted reconciler seam. No scope approval or runtime path is invented."""
     if sys.platform != 'linux' or os.geteuid() != 0:
         raise Invalid('backup_linux_root_required')
+    if bool(drain_operation_id) == bool(inspect_operation_id):
+        raise Invalid('backup_schema_receipt_selection')
     specification = private_document(active_binding_path)
     documents = {key: contract.read_json(specification[key]) for key in ('release', 'runtime', 'desired', 'workload')}
     contract.check_documents(documents)
@@ -315,8 +351,10 @@ def create(active_binding_path, *, deployment_fd, deployment_path, operation_id,
     command = [executable, '-I', '-B', str(HOST / 'backup_set.py'), '--binding', str(active_binding_path),
                '--deployment-fd', str(deployment_fd), '--deployment-path', str(deployment_path),
                '--operation-id', operation_id, '--state-root', str(state_root),
-               '--stop-operation-id', stop_operation_id, '--drain-operation-id', drain_operation_id,
+               '--stop-operation-id', stop_operation_id,
                '--approve-resource', approve_resource, '--backup-policy', str(backup_policy), '--timeout', str(timeout)]
+    command.extend(['--inspect-operation-id', inspect_operation_id] if inspect_operation_id else
+                   ['--drain-operation-id', drain_operation_id])
     parent, child = socket.socketpair()
     command.extend(['--fence-channel', str(child.fileno())])
     deadline = time.monotonic() + timeout + 5
@@ -365,8 +403,11 @@ def create(active_binding_path, *, deployment_fd, deployment_path, operation_id,
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('binding', 'deployment-path', 'operation-id', 'state-root', 'stop-operation-id',
-                 'drain-operation-id', 'approve-resource', 'backup-policy'):
+                 'approve-resource', 'backup-policy'):
         parser.add_argument('--' + name, required=True)
+    schema_source = parser.add_mutually_exclusive_group(required=True)
+    schema_source.add_argument('--drain-operation-id')
+    schema_source.add_argument('--inspect-operation-id')
     parser.add_argument('--deployment-fd', required=True, type=int)
     parser.add_argument('--fence-channel', required=True, type=int)
     parser.add_argument('--timeout', type=int, default=300)
